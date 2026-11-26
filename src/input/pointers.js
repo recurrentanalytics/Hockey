@@ -11,7 +11,11 @@ export class Pointers {
     this.lastType = null;
 
     canvas.addEventListener('pointerdown', (e) => {
+      // preventDefault stops scrolling/zooming but also stops the browser from moving
+      // keyboard focus here, which matters when the game runs inside a frame.
       e.preventDefault();
+      window.focus();
+      canvas.focus({ preventScroll: true });
       canvas.setPointerCapture?.(e.pointerId);
       const p = display.toUI(e.clientX, e.clientY);
       const rec = { id: e.pointerId, x: p.x, y: p.y, sx: p.x, sy: p.y, type: e.pointerType, claimed: false, moved: false };

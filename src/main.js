@@ -14,6 +14,7 @@ import { Audio } from './engine/audio.js';
 import { TitleScene } from './scenes/title.js';
 
 const canvas = document.getElementById('screen');
+canvas.focus({ preventScroll: true }); // works when allowed; otherwise the first click focuses it
 const display = new Display(canvas, settings);
 const input = new InputManager(display, canvas);
 
