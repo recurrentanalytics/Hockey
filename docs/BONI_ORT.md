@@ -49,8 +49,20 @@ Bild: `docs/ort/boni_bolzplatz_grundriss.jpg` (Luftbild © GeoBasis-DE / LGLN, C
 
 `intro.html` zeigt einen Kameraflug: aus 1,2 km Höhe über Hannover-List hinab auf den Boni, Drehung, bis der Platz quer liegt, und Abkippen in den Blickwinkel der Spielkamera (Boden 2:1 gestaucht wie `PROJ`). Am Ende erscheinen der Zaun, der Vereinsname und „Spiel starten“.
 
-- **Bilder:** `assets/intro/boni_umgebung.jpg` (1,2 × 1,2 km, 0,5 m/Pixel), `boni_park.jpg` (Ausschnitt des Referenz-Luftbilds, 2× vergrößert), `boni_platz.jpg` (Platzumgebung, 4× vergrößert). Alle aus dem LGLN-Dienst `ni_dop20`, deckungsgleich.
-- **Glättung:** `tools/intro/enhance.py` (OpenCV): Entrauschen (entfernt JPEG-Blöcke), Lanczos-Vergrößerung, kantenerhaltende Glättung, leichtes Nachschärfen. Es wird nichts erfunden, nur interpoliert.
-- **Darstellung:** WebGL2 mit Mipmaps und anisotroper Filterung (`src/intro/intro.js`); die Ebenen werden an den Rändern weich überblendet.
-- **Vorschauvideo:** `node tools/intro/record.cjs <ordner> 1280 720 30` (Playwright und ffmpeg).
-- **Grenze:** Die Auflösung des Luftbilds ist 20 cm. Näher als etwa 50 m Bildbreite wird es weich; deshalb endet der Flug in dieser Entfernung.
+Die ganze Umgebung ist echtes 3D, gebaut nur aus freien amtlichen Daten des LGLN (CC BY 4.0):
+
+| Datei | Quelle | Inhalt |
+|---|---|---|
+| `assets/intro/boni_umgebung.jpg` | DOP20 (`dop_wms`, `ni_dop20`) | Luftbild 1,2 × 1,2 km, 0,5 m/Pixel |
+| `assets/intro/boni_park.jpg` | DOP20 | Referenz-Luftbild des Viertels, 2× vergrößert |
+| `assets/intro/boni_platz.jpg` | DOP20 | Platzumgebung, 4× vergrößert |
+| `assets/intro/boni_hoehe.png` | DOM1 und DGM1 (`dom_wms`, `dgm_wms`, Farbskala) | Höhe über Grund, 1 m Raster, 0,15 m je Stufe |
+| `assets/intro/boni_gebaeude.png` | ALKIS (`alkis_wms`) | Gebäudegrundrisse, 1 m Raster |
+
+- **Glättung des Luftbilds:** `tools/intro/enhance.py` (OpenCV): Entrauschen (entfernt JPEG-Blöcke), Lanczos-Vergrößerung, kantenerhaltende Glättung, leichtes Nachschärfen. Es wird nichts erfunden, nur interpoliert.
+- **Höhen:** `tools/intro/height.py` liest die Farbskala des DOM-Kartendienstes zurück in Meter (Kalibrierung: Firsthöhe der Gründerzeitblöcke ≈ 21 m, Genauigkeit etwa ±0,5 m je Punkt, Maßstab ±15 %). Der eingezäunte Platz wird eingeebnet, denn im Sommer-Oberflächenmodell hängen Baumkronen darüber.
+- **Häuser und Bäume:** `tools/intro/buildings.py` macht aus der Liegenschaftskarte eine Gebäudemaske. Hauswände bekommen Putz- oder Klinkerfarben mit Fensterreihen (das Luftbild zeigt nur Dächer), Baumkronen werden als Laub schattiert (das Luftbild ist eine Winteraufnahme).
+- **Sichtlinie:** Zwischen Kamera und vorderem Zaun versinken Bäume und Häuser, die höher als die Sichtlinie auf den Platz wären. Im Luftbild bleiben sie sichtbar.
+- **Darstellung:** WebGL2, Gitter mit 1 m (Viertel) und 4 m (Umgebung) Maschenweite, Mipmaps, anisotrope Filterung, Tiefenpuffer, leichter Dunst (`src/intro/intro.js`).
+- **Vorschauvideo:** `node tools/intro/record.cjs <ordner> 960 540 25` (Playwright und ffmpeg).
+- **Grenzen:** Die Daten haben 1 m (Höhe) und 20 cm (Bild) Auflösung. Aus der Nähe wirken Baumkronen wie weiche Wände, Dachkanten sind leicht abgerundet, und das Luftbild ist nicht entzerrt (hohe Dächer liegen etwas versetzt).
