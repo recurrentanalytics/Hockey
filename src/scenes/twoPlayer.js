@@ -34,15 +34,20 @@ export class TwoPlayerScene extends MenuScene {
 
   update(dt) {
     const { input } = this.app;
+    let acted = false;
     for (const c of this.joinable()) {
       const slot = this.slots.indexOf(c.id);
       if (c.pressed.shoot && slot < 0) {
         const free = this.slots.indexOf(null);
-        if (free >= 0) this.slots[free] = c.id;
+        if (free >= 0) { this.slots[free] = c.id; acted = true; }
       } else if (c.pressed.check && slot >= 0) {
         this.slots[slot] = null;
+        acted = true;
       }
+      if (c.pressed.shoot || c.pressed.check) acted = true;
     }
+    // On 8BitDo pads SHOOT is B, which is also "back" in menus: a join/leave press isn't a menu press.
+    if (acted) { input.menu.back = false; input.menu.confirm = false; }
     // Drop players whose gamepad went away.
     this.slots = this.slots.map((id) => (id && input.controller(id)?.connected === false ? null : id));
     // Touch players join by tapping a slot.
