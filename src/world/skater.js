@@ -420,7 +420,7 @@ export class Skater {
         ctx.drawImage(img, -ax, -SK_AY + 8);
         ctx.restore();
         const tt = performance.now() / 180;
-        const hx = X + (right ? 40 : -40), hy = Y - 14;
+        const hx = X + (right ? 30 : -30), hy = Y - 12;
         for (let i = 0; i < 3; i++) {
           const a = tt + (i * Math.PI * 2) / 3;
           ctx.fillStyle = i === 1 ? PAL.white : PAL.yellow;

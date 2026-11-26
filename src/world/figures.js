@@ -182,8 +182,11 @@ function mirror(canvas) {
 // ------------------------------------------------------------------ skater
 
 export const SK_W = 72, SK_H = 80, SK_AX = 34, SK_AY = 76;
-const THIGH = 12, SHIN = 12, UPPER = 8, FORE = 8, TORSO = 15, ANKLE = 5;
-const RAISE = 2.5; // poses were authored for a slightly shorter body
+// Kids in a cute chibi style: a big round head, a round little body, short chubby limbs.
+const THIGH = 8.5, SHIN = 8, UPPER = 5.4, FORE = 5.2, TORSO = 9.5, ANKLE = 5;
+const HEAD_R = 8.6;
+const RAISE = 2.5;   // pose data was authored for a taller body…
+const K = 0.74;      // …and is scaled down to a child's size
 
 /** Inline skate: dark boot with a light tongue and trim, aluminium frame, four wheels. */
 function skate(pt, ank, C, far) {
@@ -215,17 +218,17 @@ function leg(pt, hip, foot, C, far) {
   const { j: knee, end } = ik(hip, ank, THIGH, SHIN, 1);
   const k = far ? -0.22 : 0;
   const sock = { l: tint(C.sock.l, k), m: tint(C.sock.m, k), d: tint(C.sock.d, k) };
-  pt.shaded(knee, end, 2.5, 1.9, sock);
+  pt.shaded(knee, end, 2.4, 2.1, sock);
   // sock stripes
-  for (const t of [0.3, 0.46]) {
-    const a = lerpP(knee, end, t), b = lerpP(knee, end, t + 0.06);
-    pt.capsule(a, b, 2.1, 2.0, far ? tint(C.stripe.m, -0.3) : C.stripe.m);
+  {
+    const a = lerpP(knee, end, 0.34), b = lerpP(knee, end, 0.46);
+    pt.capsule(a, b, 2.3, 2.2, far ? tint(C.stripe.m, -0.3) : C.stripe.m);
   }
   skate(pt, end, C, far);
   // hockey socks run up over the knee to mid-thigh; the short, bulky pants sit above them
-  pt.shaded(lerpP(hip, knee, 0.45), knee, 2.8, 2.5, sock);
+  pt.shaded(lerpP(hip, knee, 0.5), knee, 2.7, 2.5, sock);
   const pants = { l: tint(C.pants.l, k), m: tint(C.pants.m, k), d: tint(C.pants.d, k) };
-  pt.shaded(hip, lerpP(hip, knee, 0.58), 4.2, 3.7, pants);
+  pt.shaded(hip, lerpP(hip, knee, 0.62), 3.9, 3.5, pants);
   // knee bump
   pt.circle({ x: knee.x + 0.5, y: knee.y + 0.3 }, 2.3, far ? tint(C.sock.d, -0.1) : C.sock.d);
   pt.circle({ x: knee.x + 0.2, y: knee.y }, 1.5, far ? sock.d : sock.m);
@@ -237,131 +240,173 @@ function arm(pt, sh, hand, C, far) {
   const { j: elbow, end } = ik(sh, hand, UPPER, FORE, 1);
   const k = far ? -0.25 : 0;
   const sl = { l: tint(C.jersey.l, k), m: tint(C.jersey.m, k), d: tint(C.jersey.d, k) };
-  pt.shaded(sh, elbow, 2.4, 2.0, sl);
-  pt.shaded(elbow, lerpP(elbow, end, 0.7), 2.0, 1.8, sl);
+  pt.shaded(sh, elbow, 2.4, 2.1, sl);
+  pt.shaded(elbow, lerpP(elbow, end, 0.7), 2.1, 2.0, sl);
   // sleeve stripe near the elbow
   pt.capsule(lerpP(sh, elbow, 0.72), lerpP(sh, elbow, 0.92), 2.2, 2.1, far ? tint(C.stripe.m, -0.3) : C.stripe.m);
   // glove: padded cuff and fist
   const gl = { l: tint(C.glove.l, k), m: tint(C.glove.m, k), d: tint(C.glove.d, k) };
   pt.circle(lerpP(elbow, end, 0.8), 2.0, far ? tint(C.trim.m, -0.3) : C.trim.m);
-  pt.circle(end, 2.2, gl.d);
-  pt.circle({ x: end.x - 0.4, y: end.y - 0.4 }, 1.5, gl.m);
+  pt.circle(end, 2.7, gl.d);
+  pt.circle({ x: end.x - 0.4, y: end.y - 0.5 }, 1.9, gl.m);
   pt.px({ x: end.x - 1, y: end.y - 1.5 }, gl.l);
   return { elbow, hand: end };
 }
 
-/** Helmet, face and mood. Facing right, slightly toward the camera. */
+/** Fill a path clipped to another shape (helmet over the head). */
+function clipped(pt, clipFn, drawFn) {
+  const g = pt.g;
+  g.save();
+  g.beginPath();
+  clipFn(g);
+  g.clip();
+  drawFn();
+  g.restore();
+}
+
+/**
+ * Big round kid's head, facing right and a little toward the camera: helmet over the top
+ * and back, a fringe peeking out, big shiny eyes, rosy cheeks.
+ */
 function head(pt, hc, C, mood, look, tilt) {
-  const r = 5.6;
+  const r = HEAD_R;
   if (look.kind === 'boar') return boarHead(pt, hc, C, mood);
+  const [cx, cy] = pt.P(hc);
   // neck
-  pt.capsule({ x: hc.x - 1, y: hc.y + 3 }, { x: hc.x - 1.8, y: hc.y + 6.5 }, 2.2, 2.4, C.skin.d);
-  // hair at the back of the neck
-  if (look.kind !== 'bald') pt.ellipse({ x: hc.x - 3.6, y: hc.y + 2.6 }, 2.4, 2, 0.3, look.hair ?? C.hair);
-  else pt.ellipse({ x: hc.x - 3.8, y: hc.y + 2.2 }, 2.2, 1.6, 0.3, '#c8c2b8');
-  // face (lower front part of the head)
-  pt.ellipse({ x: hc.x + 1.4, y: hc.y + 1.6 }, 4.2, 4.1, 0, C.skin.m);
-  pt.ellipse({ x: hc.x + 0.2, y: hc.y + 2.4 }, 2.4, 3, 0, C.skin.d);   // cheek shadow under the helmet edge
-  pt.ellipse({ x: hc.x + 2, y: hc.y + 1.4 }, 3.2, 3.2, 0, C.skin.m);
-  // nose
-  pt.px({ x: hc.x + 5.2, y: hc.y + 1.4 }, C.skin.m, 1, 2);
-  pt.px({ x: hc.x + 4.6, y: hc.y + 3 }, C.skin.d);
-  // helmet shell over the top and back
+  pt.capsule({ x: hc.x - 1.5, y: hc.y + r - 2 }, { x: hc.x - 2, y: hc.y + r + 1 }, 2.2, 2.3, C.skin.d);
+  // face
+  pt.circle(hc, r, C.skin.m);
+  pt.ellipse({ x: hc.x - 2.5, y: hc.y + 2 }, 4.5, 5.5, 0, C.skin.d);           // shade toward the back
+  pt.ellipse({ x: hc.x + 1.2, y: hc.y + 1.4 }, 6.6, 6.6, 0, C.skin.m);
+  pt.ellipse({ x: hc.x + 3, y: hc.y + 0.2 }, 2.6, 1.6, -0.3, C.skin.l);         // light on the cheek
+  // hair: fringe at the front, a tuft at the nape
+  const hairCol = look.kind === 'bald' ? '#c8c2b8' : (look.hair ?? C.hair);
+  if (look.kind !== 'bald') {
+    pt.poly([{ x: hc.x + 0.5, y: hc.y - 2.2 }, { x: hc.x + 7.6, y: hc.y - 2.6 }, { x: hc.x + 6.6, y: hc.y - 0.6 }, { x: hc.x + 4.6, y: hc.y - 1.4 }, { x: hc.x + 3, y: hc.y - 0.2 }, { x: hc.x + 1.4, y: hc.y - 1 }], hairCol);
+  }
+  pt.ellipse({ x: hc.x - 6, y: hc.y + 4.4 }, 2.6, 2.4, 0.4, hairCol);
+  // helmet shell: the top and the back of the head
   const H = C.helmet;
-  pt.g.save();
-  pt.g.beginPath();
-  pt.g.arc(...pt.P(hc), r, Math.PI * 0.92 + tilt, Math.PI * 2.08 + tilt);
-  pt.g.closePath();
-  pt.g.fillStyle = H.d; pt.g.fill();
-  pt.g.restore();
-  pt.ellipse({ x: hc.x - 0.4, y: hc.y - 1.2 }, r - 0.8, r - 1.8, 0, H.m);
-  pt.ellipse({ x: hc.x - 1.6, y: hc.y - 3 }, 2.4, 1.2, -0.3, H.l);
-  // back of the helmet comes down over the ear
-  pt.ellipse({ x: hc.x - 3, y: hc.y + 0.6 }, 2.8, 3.4, 0, H.m);
-  pt.circle({ x: hc.x - 2.6, y: hc.y + 1.4 }, 1, H.d);                   // ear hole
-  // brim and visor
-  pt.line({ x: hc.x + 1.4, y: hc.y - 1.2 }, { x: hc.x + 6, y: hc.y - 0.6 }, 1.2, H.d);
-  pt.line({ x: hc.x + 3.4, y: hc.y + 0.2 }, { x: hc.x + 6.3, y: hc.y + 0.6 }, 1, C.visor);
-  // chin strap
-  pt.line({ x: hc.x - 1.6, y: hc.y + 2 }, { x: hc.x + 2.6, y: hc.y + 5.2 }, 0.7, H.d);
-  if (look.kind === 'bald') {
-    // Balding Borstis: grey sideburn and round glasses
-    pt.px({ x: hc.x - 0.6, y: hc.y + 0.4 }, '#c8c2b8', 1, 3);
-    pt.circle({ x: hc.x + 3.4, y: hc.y + 1.1 }, 1.5, '#3c3550');
-    pt.circle({ x: hc.x + 3.4, y: hc.y + 1.1 }, 0.8, 'rgba(220,240,255,0.9)');
-  }
+  const shell = (g) => {
+    g.moveTo(cx - r - 2, cy + 4.5);
+    g.lineTo(cx - 3.5, cy + 3);
+    g.lineTo(cx - 1.5, cy - 1.4);
+    g.lineTo(cx + r + 2, cy - 2.6);
+    g.lineTo(cx + r + 2, cy - r - 3);
+    g.lineTo(cx - r - 3, cy - r - 3);
+    g.closePath();
+  };
+  clipped(pt, shell, () => {
+    pt.circle(hc, r + 0.7, H.d);
+    pt.circle({ x: hc.x - 0.3, y: hc.y - 0.5 }, r - 0.3, H.m);
+    pt.ellipse({ x: hc.x - 1.5, y: hc.y - 5.4 }, 3.4, 1.6, -0.25, H.l);          // shine
+    pt.px({ x: hc.x + 1.5, y: hc.y - 7 }, '#ffffff', 2, 1);
+    // vent slots
+    pt.px({ x: hc.x - 4.5, y: hc.y - 4.5 }, H.d, 2, 1);
+    pt.px({ x: hc.x - 1, y: hc.y - 6.6 }, H.d, 2, 1);
+  });
+  // rim and a little peak over the eyes
+  pt.line({ x: hc.x - 1.6, y: hc.y - 1.6 }, { x: hc.x + r + 1.4, y: hc.y - 2.8 }, 1.3, H.d);
+  pt.circle({ x: hc.x - 4, y: hc.y + 1.6 }, 1.2, H.d);                            // ear hole
+  pt.line({ x: hc.x - 3.4, y: hc.y + 2.6 }, { x: hc.x + 1, y: hc.y + r - 0.6 }, 0.8, H.d); // chin strap
   face(pt, hc, C, mood);
+  if (look.kind === 'bald') {
+    // Borstis: big round glasses
+    for (const ex of [1.6, 5.8]) {
+      pt.g.strokeStyle = '#3c3550'; pt.g.lineWidth = 0.9;
+      pt.g.beginPath(); pt.g.arc(...pt.P({ x: hc.x + ex, y: hc.y + 1.6 }), 2.1, 0, Math.PI * 2); pt.g.stroke();
+    }
+    pt.px({ x: hc.x + 3.4, y: hc.y + 1.2 }, '#3c3550', 1, 1);
+  }
 }
 
+/** Big cartoon eyes (both visible in a three-quarter view), cheeks and a little mouth. */
 function face(pt, hc, C, mood) {
-  const e = { x: hc.x + 3.2, y: hc.y + 0.6 };
-  const ink = C.ink;
-  switch (mood) {
-    case 'blink': pt.px({ x: e.x - 0.5, y: e.y + 0.5 }, ink, 2, 1); break;
-    case 'happy': pt.px({ x: e.x - 0.5, y: e.y + 0.4 }, ink, 1, 1); pt.px({ x: e.x + 0.5, y: e.y - 0.4 }, ink); pt.px({ x: e.x + 1.5, y: e.y + 0.4 }, ink); break;
-    case 'effort': pt.px({ x: e.x - 0.5, y: e.y }, ink, 2, 1); pt.px({ x: e.x - 1, y: e.y - 1 }, ink, 2, 1); break;
-    case 'dizzy': pt.px({ x: e.x - 0.5, y: e.y - 0.5 }, ink); pt.px({ x: e.x + 0.5, y: e.y + 0.5 }, ink); pt.px({ x: e.x + 0.5, y: e.y - 0.5 }, ink); pt.px({ x: e.x - 0.5, y: e.y + 0.5 }, ink); break;
-    case 'sad': pt.px({ x: e.x - 0.5, y: e.y + 0.5 }, ink, 2, 1); pt.px({ x: e.x - 1, y: e.y - 0.6 }, ink); break;
-    default: pt.px({ x: e.x - 0.5, y: e.y - 0.5 }, ink, 1, 2); pt.px({ x: e.x + 0.5, y: e.y - 0.5 }, '#ffffff');
+  const ink = C.ink, white = '#ffffff';
+  const eyes = [{ x: hc.x + 1.2, y: hc.y + 0.4, w: 2 }, { x: hc.x + 5.4, y: hc.y + 0.4, w: 2 }];
+  for (const e of eyes) {
+    const x = Math.round(e.x), y = Math.round(e.y);
+    switch (mood) {
+      case 'blink': pt.px({ x, y: y + 2 }, ink, 2, 1); break;
+      case 'happy': pt.px({ x, y: y + 1 }, ink); pt.px({ x: x + 1, y }, ink); pt.px({ x: x + 2, y: y + 1 }, ink); break;
+      case 'effort': pt.px({ x, y }, ink); pt.px({ x: x + 1, y: y + 1 }, ink); pt.px({ x, y: y + 2 }, ink); break;
+      case 'dizzy': pt.px({ x, y }, ink); pt.px({ x: x + 1, y: y + 1 }, ink); pt.px({ x: x + 2, y: y + 2 }, ink); pt.px({ x: x + 2, y }, ink); pt.px({ x, y: y + 2 }, ink); break;
+      case 'sad':
+        pt.px({ x, y: y + 1 }, ink, 2, 2); pt.px({ x, y: y + 1 }, white);
+        pt.px({ x: x - 0.5, y: y - 1 }, ink); break;
+      default:
+        pt.px({ x, y }, ink, 2, 3);
+        pt.px({ x, y }, white);                          // sparkle
+        pt.px({ x: x + 1, y: y + 2 }, '#5a4a8a');        // a hint of colour in the eye
+    }
   }
-  // eyebrow
-  if (mood !== 'sad') pt.px({ x: e.x - 1, y: e.y - 2 }, C.ink, 2, 1);
-  else pt.px({ x: e.x, y: e.y - 2.2 }, C.ink, 2, 1);
-  const m = { x: hc.x + 3.6, y: hc.y + 3.6 };
+  // rosy cheeks
+  pt.px({ x: Math.round(hc.x - 0.6), y: Math.round(hc.y + 4) }, '#ff9fb4', 2, 1);
+  pt.px({ x: Math.round(hc.x + 7.2), y: Math.round(hc.y + 4) }, '#ff9fb4', 1, 1);
+  if (mood === 'sad') pt.px({ x: Math.round(hc.x - 0.4), y: Math.round(hc.y + 3) }, '#9fdcff', 1, 2);   // tear
+  // mouth
+  const m = { x: Math.round(hc.x + 3.4), y: Math.round(hc.y + 5) };
   switch (mood) {
-    case 'happy': pt.px({ x: m.x - 1, y: m.y - 0.4 }, ink, 3, 1); pt.px({ x: m.x - 0.5, y: m.y + 0.5 }, '#e0607a', 2, 1); break;
-    case 'effort': pt.px({ x: m.x - 1, y: m.y - 0.4 }, '#ffffff', 3, 1); pt.px({ x: m.x - 1, y: m.y + 0.5 }, ink, 3, 1); break;
-    case 'sad': pt.px({ x: m.x - 1, y: m.y + 0.4 }, ink); pt.px({ x: m.x, y: m.y - 0.4 }, ink); pt.px({ x: m.x + 1, y: m.y + 0.4 }, ink); break;
-    case 'dizzy': pt.px({ x: m.x - 0.5, y: m.y - 0.5 }, ink, 2, 2); break;
-    default: pt.px({ x: m.x - 0.5, y: m.y }, C.skin.d, 2, 1);
+    case 'happy': pt.px({ x: m.x - 1, y: m.y }, ink, 3, 1); pt.px({ x: m.x - 1, y: m.y + 1 }, ink, 3, 1); pt.px({ x: m.x, y: m.y + 1 }, '#e0607a'); break;
+    case 'effort': pt.px({ x: m.x - 1, y: m.y }, ink, 3, 2); pt.px({ x: m.x - 1, y: m.y }, white, 3, 1); break;
+    case 'sad': pt.px({ x: m.x - 1, y: m.y + 1 }, ink); pt.px({ x: m.x, y: m.y }, ink); pt.px({ x: m.x + 1, y: m.y + 1 }, ink); break;
+    case 'dizzy': pt.px({ x: m.x, y: m.y }, ink, 2, 2); break;
+    default: pt.px({ x: m.x - 1, y: m.y }, '#b0506a'); pt.px({ x: m.x, y: m.y + 1 }, '#b0506a');
   }
 }
 
-/** Bonny, the club's wild boar: helmet over furry ears, long snout, tusks. */
+/** Bonny, the club's little wild boar: round furry head, big snout, tusks, ears out of the helmet. */
 function boarHead(pt, hc, C, mood) {
-  const F = C.fur;
-  pt.capsule({ x: hc.x - 1, y: hc.y + 3 }, { x: hc.x - 2, y: hc.y + 6.5 }, 2.6, 2.8, F.d);
-  pt.ellipse({ x: hc.x + 0.6, y: hc.y + 1.4 }, 5.2, 4.6, 0, F.m);
-  pt.ellipse({ x: hc.x - 1.4, y: hc.y + 2.4 }, 3, 3.4, 0, F.d);
-  // snout
-  pt.ellipse({ x: hc.x + 5.2, y: hc.y + 2.6 }, 3.4, 2.4, 0.15, F.l);
-  pt.ellipse({ x: hc.x + 7.6, y: hc.y + 2.8 }, 1.3, 1.9, 0, C.snout);
-  pt.px({ x: hc.x + 7.6, y: hc.y + 2.4 }, F.d);
-  pt.px({ x: hc.x + 4.6, y: hc.y + 4.4 }, C.tusk, 1, 2);
-  pt.px({ x: hc.x + 5.6, y: hc.y + 3.8 }, C.tusk);
-  // ears poking out from under the helmet
-  pt.poly([{ x: hc.x - 4.6, y: hc.y - 2 }, { x: hc.x - 6.6, y: hc.y - 6.6 }, { x: hc.x - 2.4, y: hc.y - 4 }], F.m);
-  pt.poly([{ x: hc.x - 4.4, y: hc.y - 2.8 }, { x: hc.x - 5.8, y: hc.y - 5.4 }, { x: hc.x - 3.4, y: hc.y - 4 }], C.snout);
+  const F = C.fur, r = HEAD_R;
+  const [cx, cy] = pt.P(hc);
+  pt.capsule({ x: hc.x - 1.5, y: hc.y + r - 2 }, { x: hc.x - 2, y: hc.y + r + 1 }, 2.4, 2.6, F.d);
+  // ears sticking out of the helmet
+  pt.poly([{ x: hc.x - 6.5, y: hc.y - 4 }, { x: hc.x - 10, y: hc.y - 11 }, { x: hc.x - 2.5, y: hc.y - 7 }], F.d);
+  pt.poly([{ x: hc.x - 6.2, y: hc.y - 5.2 }, { x: hc.x - 8.6, y: hc.y - 9.4 }, { x: hc.x - 4, y: hc.y - 6.8 }], C.snout);
+  pt.circle(hc, r, F.m);
+  pt.ellipse({ x: hc.x - 2.6, y: hc.y + 2.2 }, 4.5, 5.4, 0, F.d);
+  pt.ellipse({ x: hc.x + 1.4, y: hc.y + 1.6 }, 6.4, 6.4, 0, F.m);
+  pt.ellipse({ x: hc.x + 2.4, y: hc.y + 4.8 }, 5, 3.2, 0, F.l);                 // lighter muzzle
   // helmet
   const H = C.helmet;
-  pt.ellipse({ x: hc.x - 0.2, y: hc.y - 2 }, 5.2, 3.6, 0, H.d);
-  pt.ellipse({ x: hc.x - 0.6, y: hc.y - 2.6 }, 4.4, 2.8, 0, H.m);
-  pt.ellipse({ x: hc.x - 1.8, y: hc.y - 3.8 }, 2, 1, -0.3, H.l);
-  pt.line({ x: hc.x + 1.6, y: hc.y - 0.6 }, { x: hc.x + 5.4, y: hc.y - 0.2 }, 1.2, H.d);
-  // bristly crest at the back
-  for (let i = 0; i < 3; i++) pt.px({ x: hc.x - 5 - i * 0.8, y: hc.y + i * 1.4 }, F.d, 1, 1);
-  face(pt, { x: hc.x - 0.2, y: hc.y - 0.6 }, { ...C, skin: { m: F.m, d: F.d } }, mood);
+  clipped(pt, (g) => { g.rect(cx - r - 3, cy - r - 3, 2 * r + 6, r + 1.5); }, () => {
+    pt.circle(hc, r + 0.7, H.d);
+    pt.circle({ x: hc.x - 0.3, y: hc.y - 0.5 }, r - 0.3, H.m);
+    pt.ellipse({ x: hc.x - 1.5, y: hc.y - 5.4 }, 3.4, 1.6, -0.25, H.l);
+    pt.px({ x: hc.x + 1.5, y: hc.y - 7 }, '#ffffff', 2, 1);
+  });
+  pt.line({ x: hc.x - r, y: hc.y - 1.6 }, { x: hc.x + r + 1.4, y: hc.y - 2.6 }, 1.3, H.d);
+  // bristly crest at the back of the neck
+  for (let i = 0; i < 3; i++) pt.px({ x: Math.round(hc.x - 8 - i * 0.6), y: Math.round(hc.y + i * 1.6) }, F.d, 2, 1);
+  face(pt, { x: hc.x - 0.6, y: hc.y - 0.6 }, { ...C, skin: { m: F.m, d: F.d, l: F.l } }, mood);
+  // big pink snout with nostrils, little tusks
+  pt.ellipse({ x: hc.x + 7.6, y: hc.y + 4.2 }, 2.8, 2.3, 0, C.snout);
+  pt.ellipse({ x: hc.x + 7.2, y: hc.y + 3.6 }, 1.6, 1, 0, tint(C.snout, 0.35));
+  pt.px({ x: Math.round(hc.x + 7), y: Math.round(hc.y + 4.4) }, F.d);
+  pt.px({ x: Math.round(hc.x + 9), y: Math.round(hc.y + 4.4) }, F.d);
+  pt.px({ x: Math.round(hc.x + 4.2), y: Math.round(hc.y + 6) }, C.tusk, 1, 2);
 }
 
-/** Torso along the spine (hip → neck) with jersey, shoulder pads, hem stripes and the team animal. */
+/** Round little body along the spine (hip → neck): jersey with hem stripes and the team animal. */
 function torso(pt, hip, neck, C, emblemFn) {
-  const ux = (neck.x - hip.x) / TORSO, uy = (neck.y - hip.y) / TORSO; // along the spine
-  const vx = -uy, vy = ux;                                             // forward (chest side)
+  const ux = (neck.x - hip.x) / TORSO, uy = (neck.y - hip.y) / TORSO;
+  const vx = -uy, vy = ux;
   const at = (u, v) => ({ x: hip.x + ux * u + vx * v, y: hip.y + uy * u + vy * v });
+  const mid = at(TORSO * 0.58, 0.4);
+  const rot = Math.atan2(uy, ux);
   const J = C.jersey;
-  // Jersey body: wider at the shoulders (pads), hanging loose at the hem.
-  const outline = [at(-3, -5), at(-3, 4.6), at(4, 4.8), at(10, 5.2), at(13.5, 5.2), at(15.5, 3), at(16, 0), at(15.5, -3.6), at(13.5, -5.8), at(9, -5.4), at(4, -5.2)];
-  pt.poly(outline, J.d);
-  pt.poly([at(-2.4, -3.8), at(-2.4, 3.8), at(4, 4), at(10, 4.4), at(13, 4.4), at(14.8, 2.4), at(15.2, 0), at(14.6, -3), at(13, -4.6), at(9, -4.2), at(4, -4)], J.m);
-  // light falls on the upper chest and the shoulder pad
-  pt.poly([at(8, 1), at(10.5, 4), at(13, 3.8), at(14.6, 1.4), at(14.6, -0.6), at(12, 0)], J.l);
-  // hem stripes
-  pt.poly([at(-1, -4.8), at(-1, 4.6), at(0.8, 4.7), at(0.8, -4.9)], C.stripe.m);
-  pt.poly([at(1.4, -4.9), at(1.4, 4.7), at(2.4, 4.8), at(2.4, -5)], C.trim.m);
-  // collar
-  pt.poly([at(14.4, -2.2), at(14.4, 2.2), at(15.6, 1.8), at(15.6, -1.8)], C.trim.m);
-  emblemFn?.(at(9.5, 2.2));
-  return { at, numberAt: at(9, -2.8) };
+  const RX = TORSO * 0.6, RY = 6.2;       // along the spine, and front-to-back (a round tummy)
+  pt.ellipse(mid, RX + 0.6, RY + 0.6, rot, J.d);
+  pt.ellipse({ x: mid.x - 0.5, y: mid.y - 0.6 }, RX, RY - 0.4, rot, J.m);
+  pt.ellipse(at(TORSO * 0.62, 2.4), RX * 0.42, RY * 0.38, rot, J.l);
+  // hem stripes, clipped to the jersey
+  const [mx, my] = pt.P(mid);
+  clipped(pt, (g) => g.ellipse(mx, my, RX + 0.6, RY + 0.6, rot, 0, Math.PI * 2), () => {
+    pt.poly([at(0.4, -9), at(0.4, 9), at(1.8, 9), at(1.8, -9)], C.stripe.m);
+    pt.poly([at(1.8, -9), at(1.8, 9), at(2.7, 9), at(2.7, -9)], C.trim.m);
+  });
+  emblemFn?.(at(TORSO * 0.55, 3.2));
+  return { at, numberAt: at(TORSO * 0.5, -3.4) };
 }
 
 /** Team animal on the chest as a 3×3 badge. */
@@ -389,28 +434,29 @@ function emblem(pt, team, p) {
 function bakeSkater(team, look, pose, mood) {
   const C = palette(team, look);
   const pt = new Painter(SK_W, SK_H, SK_AX, SK_AY);
-  const hip0 = pose.hip ?? { x: -1, y: -24 };
-  const hip = { x: hip0.x, y: hip0.y - RAISE };
-  const up = (h) => h && { x: h.x, y: h.y - RAISE };
+  // Pose data is for a taller body: scale it to a child.
+  const sc = (p) => p && { x: p.x * K, y: (p.y - RAISE) * K };
+  const hip = sc(pose.hip ?? { x: -1, y: -24 });
   const lean = pose.lean ?? 0.4;
   const neck = { x: hip.x + Math.sin(lean) * TORSO, y: hip.y - Math.cos(lean) * TORSO };
-  const foot = (f) => ({ x: f.x, y: (f.y ?? 0) - (f.lift ?? 0) });
+  const foot = (f) => ({ x: f.x * K, y: ((f.y ?? 0) - (f.lift ?? 0)) * K });
   const farFoot = foot(pose.far ?? { x: -4, y: -1 }), nearFoot = foot(pose.near ?? { x: 3 });
 
   // Far side first (in shade), then the body, then the near side.
-  const farHip = { x: hip.x - 1.2, y: hip.y - 0.6 };
-  const nearHip = { x: hip.x + 1, y: hip.y + 0.6 };
-  // provisional torso frame for shoulder positions
+  const farHip = { x: hip.x - 1, y: hip.y - 0.5 };
+  const nearHip = { x: hip.x + 1, y: hip.y + 0.5 };
   const ux = (neck.x - hip.x) / TORSO, uy = (neck.y - hip.y) / TORSO;
   const at = (u, v) => ({ x: hip.x + ux * u - uy * v, y: hip.y + uy * u + ux * v });
-  const shFar = at(13.2, -3), shNear = at(13.4, 1.2);
-  const free = up(pose.freeHand) ?? at(8, 9);
-  const stick = up(pose.stickHand) ?? at(4, 12);
+  const shFar = at(TORSO * 0.8, -3.4), shNear = at(TORSO * 0.82, 1.8);
+  const free = sc(pose.freeHand) ?? at(5, 6);
+  const stick = sc(pose.stickHand) ?? at(3, 8);
   const farArm = arm(pt, shFar, free, C, true);
   leg(pt, farHip, farFoot, C, true);
-  const tor = torso(pt, hip, neck, C, (p) => emblem(pt, team, p));
   leg(pt, nearHip, nearFoot, C, false);
-  const hc = { x: neck.x + Math.sin(lean * 0.6 + (pose.headTilt ?? 0)) * 6.2 + 1, y: neck.y - Math.cos(lean * 0.6) * 5.4 + (pose.headDrop ?? 0) };
+  const tor = torso(pt, hip, neck, C, (p) => emblem(pt, team, p));
+  // The big head sits up on the neck; it leans less than the body.
+  const hl = lean * 0.45 + (pose.headTilt ?? 0);
+  const hc = { x: neck.x + Math.sin(hl) * HEAD_R * 0.8 + 1.2, y: neck.y - Math.cos(hl) * HEAD_R * 0.8 + (pose.headDrop ?? 0) * K };
   head(pt, hc, C, mood, look, pose.headTilt ?? 0);
   const nearArm = arm(pt, shNear, stick, C, false);
   const canvas = pt.finish(C.ink);
@@ -419,7 +465,7 @@ function bakeSkater(team, look, pose, mood) {
     hand: nearArm.hand,
     top: pose.topHand ? farArm.hand : null,
     num: tor.numberAt,
-    headTop: hc.y - 6,
+    headTop: hc.y - HEAD_R - 1,
     lean,
   };
 }
@@ -559,6 +605,9 @@ function legPad(pt, top, bottom, w, C, far) {
 function bakeGoalie(team, pose, mood = 'normal') {
   const C = palette(team, {});
   const pt = new Painter(GK_W, GK_H, GK_AX, GK_AY);
+  // A kid goalie: the gear is drawn at child size, then a big round head with the mask on top.
+  const GS = 0.74;
+  pt.g.setTransform(GS, 0, 0, GS, GK_AX * (1 - GS), GK_AY * (1 - GS));
   const down = !!pose.down;
   const sway = pose.sway ?? 0;
   const hip = down ? { x: 0, y: -13 } : { x: 0, y: -24 + sway };
@@ -593,23 +642,6 @@ function bakeGoalie(team, pose, mood = 'normal') {
   pt.line({ x: blocker.x + 1, y: blocker.y + 3 }, { x: -6, y: paddleY - 6 }, 1.6, '#8a5a34');
   pt.poly([{ x: -9, y: paddleY - 7 }, { x: 6, y: paddleY - 7 }, { x: 6, y: paddleY - 4.6 }, { x: -9, y: paddleY - 4.6 }], '#7a4b2c');
   pt.poly([{ x: 6, y: paddleY - 2.6 }, { x: 13, y: paddleY - 2.6 }, { x: 13, y: paddleY - 0.8 }, { x: 6, y: paddleY - 0.8 }], '#2a2438');
-  // head: mask with cage
-  const hc = { x: 1, y: top - 5 };
-  pt.circle(hc, 6.2, '#d8dce8');
-  pt.circle({ x: hc.x - 0.6, y: hc.y - 0.6 }, 5.4, '#f4f6fb');
-  if (team.animal === 'boarGlasses') {
-    pt.circle(hc, 5.4, C.fur.m); pt.px({ x: hc.x - 4, y: hc.y + 3 }, C.tusk, 1, 2); pt.px({ x: hc.x + 4, y: hc.y + 3 }, C.tusk, 1, 2);
-  } else {
-    pt.poly([{ x: hc.x - 1.2, y: hc.y - 6 }, { x: hc.x + 1.2, y: hc.y - 6 }, { x: hc.x + 1.2, y: hc.y - 2 }, { x: hc.x - 1.2, y: hc.y - 2 }], J.m);
-  }
-  if (team.animal === 'boar') {
-    pt.poly([{ x: hc.x - 5, y: hc.y - 3 }, { x: hc.x - 6.5, y: hc.y - 8 }, { x: hc.x - 2.6, y: hc.y - 5 }], C.fur.m);
-    pt.poly([{ x: hc.x + 5, y: hc.y - 3 }, { x: hc.x + 6.5, y: hc.y - 8 }, { x: hc.x + 2.6, y: hc.y - 5 }], C.fur.m);
-  }
-  pt.ellipse({ x: hc.x + 0.5, y: hc.y + 1.6 }, 3.6, 3, 0, C.skin.d);
-  pt.px({ x: hc.x - 1.5, y: hc.y + 0.6 }, C.ink); pt.px({ x: hc.x + 2, y: hc.y + 0.6 }, C.ink);
-  for (const x of [-3, -1, 1, 3]) pt.line({ x: hc.x + x + 0.5, y: hc.y - 0.6 }, { x: hc.x + x * 0.8 + 0.5, y: hc.y + 4.6 }, 0.6, '#8c93a6');
-  pt.line({ x: hc.x - 3.4, y: hc.y + 2.2 }, { x: hc.x + 4.4, y: hc.y + 2.2 }, 0.6, '#8c93a6');
   // catch glove arm (front side)
   const glove = pose.glove === 'high' ? { x: 17, y: top - 6 } : pose.glove === 'cover' ? { x: 9, y: -6 } : { x: 14, y: hip.y - 7 };
   pt.shaded({ x: 9, y: top + 3 }, glove, 3.2, 3, J);
@@ -617,7 +649,41 @@ function bakeGoalie(team, pose, mood = 'normal') {
   pt.circle({ x: glove.x - 0.6, y: glove.y - 0.6 }, 4, C.glove.m);
   pt.ellipse({ x: glove.x + 0.6, y: glove.y - 1.4 }, 2.2, 1.6, 0.3, C.trim.m);
   pt.px({ x: glove.x - 2, y: glove.y - 3 }, C.glove.l, 2, 1);
+  pt.g.setTransform(1, 0, 0, 1, 0, 0);
+  goalieHead(pt, { x: 1 * GS, y: (top - 4) * GS - 5 }, team, C, mood);
   return pt.finish(C.ink);
+}
+
+/** Kid goalie head: big round white mask, a cage over the face, eyes peeking through. */
+function goalieHead(pt, hc, team, C, mood) {
+  const r = 8.4;
+  const keiler = team.animal === 'boarGlasses';
+  const shell = keiler ? C.fur : { l: '#ffffff', m: '#f1f3f9', d: '#c9cedd' };
+  if (team.animal === 'boar') {
+    for (const sx of [-1, 1]) {
+      pt.poly([{ x: hc.x + sx * 5, y: hc.y - 5 }, { x: hc.x + sx * 8.5, y: hc.y - 11 }, { x: hc.x + sx * 2.2, y: hc.y - 7.5 }], C.fur.d);
+      pt.poly([{ x: hc.x + sx * 5, y: hc.y - 6 }, { x: hc.x + sx * 7.4, y: hc.y - 9.6 }, { x: hc.x + sx * 3.2, y: hc.y - 7.4 }], C.snout);
+    }
+  }
+  pt.circle(hc, r, shell.d);
+  pt.circle({ x: hc.x - 0.4, y: hc.y - 0.5 }, r - 0.8, shell.m);
+  pt.ellipse({ x: hc.x - 3, y: hc.y - 4.6 }, 2.6, 1.4, -0.4, shell.l);
+  if (!keiler) pt.poly([{ x: hc.x - 1.3, y: hc.y - r }, { x: hc.x + 1.3, y: hc.y - r }, { x: hc.x + 1.3, y: hc.y - 2.6 }, { x: hc.x - 1.3, y: hc.y - 2.6 }], C.jersey.m);
+  // face behind the cage
+  pt.ellipse({ x: hc.x, y: hc.y + 2.2 }, 5.2, 4.4, 0, C.skin.m);
+  pt.ellipse({ x: hc.x, y: hc.y + 4.4 }, 4.4, 2, 0, C.skin.d);
+  const ink = C.ink;
+  for (const ex of [-3, 1]) {
+    if (mood === 'happy') { pt.px({ x: hc.x + ex, y: hc.y + 1.4 }, ink); pt.px({ x: hc.x + ex + 1, y: hc.y + 0.4 }, ink); pt.px({ x: hc.x + ex + 2, y: hc.y + 1.4 }, ink); }
+    else { pt.px({ x: hc.x + ex, y: hc.y + 0.4 }, ink, 2, 3); pt.px({ x: hc.x + ex, y: hc.y + 0.4 }, '#ffffff'); }
+  }
+  pt.px({ x: hc.x - 4.4, y: hc.y + 3.6 }, '#ff9fb4', 2, 1); pt.px({ x: hc.x + 3.4, y: hc.y + 3.6 }, '#ff9fb4', 2, 1);
+  // cage
+  const bar = '#7d849a';
+  for (const x of [-3.6, -1.2, 1.2, 3.6]) pt.line({ x: hc.x + x, y: hc.y - 0.8 }, { x: hc.x + x * 0.85, y: hc.y + 6.4 }, 0.6, bar);
+  pt.line({ x: hc.x - 5, y: hc.y + 2.6 }, { x: hc.x + 5, y: hc.y + 2.6 }, 0.6, bar);
+  pt.line({ x: hc.x - 5.4, y: hc.y - 0.8 }, { x: hc.x + 5.4, y: hc.y - 0.8 }, 0.9, shell.d);
+  if (keiler) { pt.px({ x: hc.x - 6, y: hc.y + 4 }, C.tusk, 1, 3); pt.px({ x: hc.x + 5, y: hc.y + 4 }, C.tusk, 1, 3); }
 }
 
 function skateMini(pt, g, C) {
