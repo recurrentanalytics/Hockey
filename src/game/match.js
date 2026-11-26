@@ -69,6 +69,7 @@ export class Match {
 
   /** Face-off at a spot (centre by default); line-ups are shifted to it and kept on the rink. */
   faceoff(at = { x: 0, y: 0 }) {
+    if (this.ref) this.applyStrength();
     this.puck.reset(at.x, at.y);
     const team = { home: 0, away: 0 };
     for (const s of this.skaters) {
@@ -151,7 +152,10 @@ export class Match {
     const drive = Math.max(va, vb); // how hard the hitter skated into the other player
     a.hitCd = b.hitCd = 0.8;
     const p = this.puck;
-    const legalCheck = this.ref?.r.bodyCheck && victim.hasPuck;
+    // A fair check hits the carrier from the front or side; from behind it is always a foul.
+    const fx = Math.cos(victim.dir), fy = Math.sin(victim.dir);
+    const fromBehind = sx * fx + sy * fy > 0.5;
+    const legalCheck = this.ref?.r.bodyCheck && victim.hasPuck && !fromBehind;
     if (victim.hasPuck && (legalCheck || Math.random() < 0.5)) {
       p.carrier = null;
       victim.hasPuck = false;
@@ -171,7 +175,7 @@ export class Match {
     // Racing for a loose puck is a puck battle, not a penalty.
     if (p.loose && Math.hypot(p.pos.x - victim.pos.x, p.pos.y - victim.pos.y) < 2.5) return;
     const chance = Math.min(0.7, (approach - 6) / 4 + 0.15);
-    if (Math.random() < chance) this.ref.foul(hitter, victim, this.ref.r.bodyCheck ? 'INTERFERENCE' : 'BODY CHECKING');
+    if (Math.random() < chance) this.ref.foul(hitter, victim, fromBehind ? 'CHECKING FROM BEHIND' : this.ref.r.hitFoul);
   }
 
   // ------------------------------------------------------------------ who is on the ice
@@ -220,7 +224,7 @@ export class Match {
 
   restore() {
     for (const s of this.saved ?? []) {
-      if (this.ref?.box.some((b) => b.skater === s && b.active)) continue;
+      if (this.ref?.box.some((b) => b.skater === s && b.active) || s.benched) continue;
       this.onIce(s, s.pos.x, s.pos.y);
     }
     this.saved = null;
@@ -229,6 +233,21 @@ export class Match {
       if (this.skaters.includes(h.skater)) continue;
       const mate = this.skaters.find((k) => k.sideKey === h.side && !k.human);
       if (mate) this.giveControl(h, mate);
+    }
+  }
+
+  /** Line changes at a stoppage: fit each side to the allowed strength (e.g. 3 on 3 in overtime). */
+  applyStrength() {
+    const cap = this.ref.strengthCap();
+    for (const side of ['home', 'away']) {
+      const boxed = this.ref.penaltiesOf(side).length;
+      const want = Math.max(this.ref.r.minSkaters, cap - boxed);
+      const on = this.skaters.filter((s) => s.sideKey === side);
+      // Bench extras, keeping human-controlled skaters on.
+      on.sort((a, b) => (a.human ? -1 : 0) - (b.human ? -1 : 0));
+      for (const s of on.slice(want)) { this.offIce(s); s.benched = true; }
+      const bench = this.roster.filter((s) => s.sideKey === side && s.benched);
+      for (const s of bench.slice(0, Math.max(0, want - Math.min(on.length, want)))) { s.benched = false; this.onIce(s, 0, 0); }
     }
   }
 

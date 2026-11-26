@@ -119,6 +119,11 @@ export class Referee {
     this.whistle('COVERED', { x, y });
   }
 
+  /** Skaters a side may have on the ice right now (overtime can be 3 on 3). */
+  strengthCap() {
+    return this.phase === 'overtime' ? this.r.overtime?.skaters ?? this.r.skaters : this.r.skaters;
+  }
+
   // ------------------------------------------------------------------ penalties
 
   foul(offender, victim, name) {
@@ -143,7 +148,7 @@ export class Referee {
   }
 
   assess(pen) {
-    const seconds = this.r.minor * 60 * this.r.penaltyScale;
+    const seconds = Math.round(this.r.minor * 60 * this.r.penaltyScale);
     const entry = { skater: pen.offender, side: pen.side, t: seconds, total: seconds, foul: pen.foul, active: false };
     this.box.push(entry);
     const onIce = this.m.skaters.filter((s) => s.sideKey === pen.side).length;
@@ -194,6 +199,7 @@ export class Referee {
       this.breakThen('OVERTIME', () => {
         this.phase = 'overtime';
         this.clock = this.r.overtimeSeconds;
+        if (this.r.overtime.switchEnds) m.switchEnds();
         m.faceoff();
       });
       return;
@@ -273,7 +279,8 @@ export class Referee {
 
   startShootout() {
     this.phase = 'shootout';
-    this.so = { rounds: this.r.shootout.rounds, taken: { home: 0, away: 0 }, goals: { home: 0, away: 0 }, log: { home: [], away: [] }, next: { home: 0, away: 0 } };
+    const first = Math.random() < 0.5 ? 'home' : 'away'; // coin toss
+    this.so = { rounds: this.r.shootout.rounds, first, taken: { home: 0, away: 0 }, goals: { home: 0, away: 0 }, log: { home: [], away: [] }, next: { home: 0, away: 0 } };
     this.nextShootoutAttempt();
   }
 
@@ -298,7 +305,12 @@ export class Referee {
       this.finish(winner, 'SO');
       return;
     }
-    const side = this.so.taken.home <= this.so.taken.away ? 'home' : 'away';
+    const other = (s) => (s === 'home' ? 'away' : 'home');
+    const n = this.so.taken.home + this.so.taken.away;
+    const round = Math.floor(n / 2);
+    let lead = this.so.first;
+    if (round >= this.so.rounds && this.r.shootout.reverseSuddenDeath) lead = other(lead);
+    const side = n % 2 === 0 ? lead : other(lead);
     // Players with a penalty still running may not shoot.
     const roster = m.roster.filter((s) => s.sideKey === side && !this.box.some((b) => b.skater === s));
     const shooter = roster[this.so.next[side] % roster.length];

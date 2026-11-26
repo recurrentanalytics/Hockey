@@ -237,7 +237,8 @@ export class AI {
     if (len > 1) { mx /= len; my /= len; }
     // Ease off when closing on an opponent: contact at speed is a body-checking call.
     let limit = lv.speed;
-    if (t.near) {
+    // Where checking the carrier is legal (inline-skaterhockey) the AI closes at full speed.
+    if (t.near && !this.m.ref?.r.bodyCheck) {
       const dn = dist(s.pos, t.near);
       if (dn < 3) limit *= clamp(dn / 3, 0.45, 1);
     }

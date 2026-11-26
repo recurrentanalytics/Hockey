@@ -42,7 +42,7 @@ ES modules need HTTP; opening `index.html` straight from disk won't work.
 - Difficulty changes opponent speed, reaction time, pokes, passing and aim. Teammates of human players always play at normal.
 - 4-on-4 with goalies in VS AI, 2P versus (each player has 3 AI teammates) and 2P co-op.
 
-**Phase 4 (rules engine):** VS AI and 2-player games are full matches under the ruleset you choose in Settings. See [RULES.md](RULES.md) for the values and which are still unconfirmed.
+**Phase 4 (rules engine):** VS AI and 2-player games are full matches under the ruleset you choose in Settings. Values come from the official rulebooks; see [RULES.md](RULES.md) for each rule with its reference.
 - Game clock with stop time or running time
 - Periods, period breaks, and changing ends
 - Penalties: tripping and slashing from missed pokes, and body checking or interference on hard hits
@@ -50,7 +50,8 @@ ES modules need HTTP; opening `index.html` straight from disk won't work.
 - Penalty shots on fouled breakaways
 - Sudden-death overtime and shootouts with sudden death
 - Final screen
-- ISHD is played with a ball, and checking the ball carrier is allowed.
+- World Skate: 90-second minors, 3-on-3 overtime, and sudden death with the shooting order reversed
+- ISHD: played with a ball, fair checks on the carrier allowed, penalties halved in games under 30 minutes
 
 ## Default controls
 
