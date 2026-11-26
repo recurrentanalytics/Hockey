@@ -1,2 +1,12 @@
 node_modules/
 .DS_Store
+
+# Android build (web files are copied in by tools/android/build.sh)
+android/app/src/main/assets/
+android/.cesium/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.keystore
+*.jks

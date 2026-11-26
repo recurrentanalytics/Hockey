@@ -22,7 +22,8 @@ function aerial(message = '') {
 
 function photoreal(token) {
   import('./photoreal.js')
-    .then((m) => m.run({ token, cesiumBase: params.get('cesiumBase') }))
+    // the Android app carries CesiumJS itself (tools/android/build.sh)
+    .then((m) => m.run({ token, cesiumBase: params.get('cesiumBase') || (window.BoniAndroid ? 'vendor/cesium/' : null) }))
     .catch((e) => {
       console.error(e);
       // a rejected token is forgotten, so the next start asks again

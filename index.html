@@ -14,7 +14,8 @@
 </head>
 <body>
   <canvas id="screen" tabindex="0"></canvas>
+  <script src="src/native/pads.js"></script>
   <script type="module" src="src/main.js"></script>
-  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+  <script>if ('serviceWorker' in navigator && !window.BoniAndroid) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
 </body>
 </html>
