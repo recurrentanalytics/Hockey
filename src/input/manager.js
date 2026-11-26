@@ -136,7 +136,9 @@ export class InputManager {
       const info = this.padInfo.get(key) ?? { layout: 'standard' };
       // Older saves kept one shared profile for all standard pads.
       if (info.layout === 'standard' && this.bindings.pad) return this.bindings.pad;
-      return actionsFor(LAYOUTS[info.layout] ?? LAYOUTS.standard, info.style);
+      // The BUTTON LABELS setting also picks the layout (NINTENDO = A pass), else what the pad looks like.
+      const style = settings.buttonLabels !== 'auto' ? settings.buttonLabels : info.style;
+      return actionsFor(LAYOUTS[info.layout] ?? LAYOUTS.standard, style);
     }
     return defaultProfile(key);
   }
@@ -429,11 +431,10 @@ export class InputManager {
       const val = (d) => Math.max(0, ...(prof[d] || []).map((b) => bindingValue(c, b)));
       // Menus accept the configured directions, any d-pad (buttons 12-15 or a hat) and the left stick.
       const pad = padDirection(c);
-      const A = c.axes;
-      held.up ||= val('up') > 0.5 || pad.y < 0 || (A[1] ?? 0) < -0.5;
-      held.down ||= val('down') > 0.5 || pad.y > 0 || (A[1] ?? 0) > 0.5;
-      held.left ||= val('left') > 0.5 || pad.x < 0 || (A[0] ?? 0) < -0.5;
-      held.right ||= val('right') > 0.5 || pad.x > 0 || (A[0] ?? 0) > 0.5;
+      held.up ||= val('up') > 0.5 || pad.y < 0;
+      held.down ||= val('down') > 0.5 || pad.y > 0;
+      held.left ||= val('left') > 0.5 || pad.x < 0;
+      held.right ||= val('right') > 0.5 || pad.x > 0;
       const menu = prof.menu ?? { south: L.south, east: L.east, start: L.start };
       const edge = (b) => b?.startsWith('b:') && c.buttonEdge(+b.slice(2));
       confirm ||= edge(menu[confirmKey]) || edge(menu.start);

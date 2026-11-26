@@ -62,7 +62,7 @@ export const OPTIONS = {
   buttonLabels: [
     { value: 'auto', label: 'AUTO' },
     { value: 'xbox', label: 'XBOX' },
-    { value: 'nintendo', label: 'NINTENDO' },
+    { value: 'nintendo', label: 'NINTENDO (A PASS)' },
     { value: 'playstation', label: 'PLAYSTATION' },
   ],
   padConfirm: [

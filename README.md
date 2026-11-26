@@ -87,6 +87,7 @@ ES modules need HTTP; opening `index.html` straight from disk won't work.
   - START+A: macOS
   - START+Y: Switch. Detected as a Pro Controller, with Nintendo letters.
 - **Default buttons** (SN30 letters): **A pass**, B or ZR shoot, Y poke check, X or L switch, R or ZL sprint, START pause. Move with the d-pad or the left stick. A confirms in menus and B goes back; Settings → Controls → Menu confirm changes this. Xbox and PlayStation pads are laid out by position instead: bottom pass, left shoot, right poke check.
+- **A not passing?** If the browser reports the pad as an Xbox or PlayStation pad, set Settings → Controls → **Button labels: NINTENDO (A PASS)**. That switches labels and layout for every pad.
 - **Guided setup:** Settings → Controls → *Pad 1* → **Guided setup**. A drawing of the pad lights up each button to press, so the mapping and the letters on screen match your pad in any mode and browser. It's recommended for X-input mode, where the browser reports an Xbox pad.
 - **Rumble:** hits, goals, shots and posts, where the browser and mode support it (Chrome, X-input). Turn it off under Controls → Rumble.
 

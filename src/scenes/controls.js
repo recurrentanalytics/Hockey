@@ -1,6 +1,6 @@
 // Device list → per-device binding editor.
 import { PAL } from '../engine/palette.js';
-import { drawText } from '../engine/font.js';
+import { drawText, fitText } from '../engine/font.js';
 import { choice, Menu } from '../ui/menu.js';
 import { MenuScene } from './menuScene.js';
 import { BindingsScene } from './bindings.js';
@@ -49,6 +49,17 @@ export class ControlsScene extends MenuScene {
       drawText(ctx, 'START+A MACOS, START+Y SWITCH. RUMBLE NEEDS X-INPUT.', W / 2, H - 34, { color: PAL.mist, align: 'center', shadow: PAL.ink });
     }
     if (!pads.length) {
+      // What the browser itself reports, independent of the game's own handling.
+      let raw = 'NO GAMEPAD SUPPORT IN THIS BROWSER';
+      try {
+        if (navigator.getGamepads) {
+          const list = [...navigator.getGamepads()].filter(Boolean);
+          raw = list.length ? `BROWSER REPORTS: ${list.map((g) => g.id).join(' | ')}` : 'BROWSER REPORTS: NO GAMEPAD (PRESS A BUTTON ON IT)';
+        }
+      } catch (e) {
+        raw = `GAMEPADS BLOCKED: ${e.message}`;
+      }
+      drawText(ctx, fitText(raw.toUpperCase(), W - 8), W / 2, H - 52, { color: PAL.yellow, align: 'center', shadow: PAL.ink });
       drawText(ctx, 'NO GAMEPAD FOUND. CONNECT ONE (USB OR', W / 2, H - 42, { color: PAL.mist, align: 'center', shadow: PAL.ink });
       drawText(ctx, 'BLUETOOTH) AND PRESS ANY BUTTON ON IT.', W / 2, H - 34, { color: PAL.mist, align: 'center', shadow: PAL.ink });
     }

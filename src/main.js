@@ -75,7 +75,27 @@ function drawPortraitHint() {
 
 let last = performance.now();
 let acc = 0;
+let lastError = null;
+window.addEventListener('error', (e) => { lastError = e.message; });
+window.addEventListener('unhandledrejection', (e) => { lastError = String(e.reason?.message ?? e.reason); });
+
 function frame(now) {
+  try {
+    step(now);
+  } catch (e) {
+    lastError = e.message;
+    console.error(e);
+  }
+  if (lastError) {
+    const ctx = display.uctx;
+    panel(ctx, 4, display.height - 22, display.width - 8, 12, { fill: PAL.ink, border: PAL.red, alpha: 0.95 });
+    drawText(ctx, `ERROR: ${lastError}`.slice(0, 90), 8, display.height - 19, { color: PAL.red });
+    display.present();
+  }
+  requestAnimationFrame(frame);
+}
+
+function step(now) {
   acc += Math.min((now - last) / 1000, TIMING.maxFrame);
   last = now;
   let steps = 0;
@@ -106,7 +126,6 @@ function frame(now) {
   app.toasts.draw(display.uctx, display.width, display.height);
   drawPortraitHint();
   display.present();
-  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
