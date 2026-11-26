@@ -53,7 +53,7 @@ export class PauseScene {
         return Math.round(100 * (1 - team.reduce((a, s) => a + (s.fatigue ?? 0), 0) / team.length));
       };
       const text = `ENERGY  ${TEAMS[m.sides.home.team].name} ${energy('home')}%   ${TEAMS[m.sides.away.team].name} ${energy('away')}%`;
-      drawText(ctx, text, display.width / 2, 70 + this.menu.items.length * 10 + 8, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+      drawText(ctx, text, display.width / 2, 70 + this.menu.items.length * 11 + 8, { color: PAL.cloud, align: 'center', shadow: PAL.ink });
     }
     hintBar(ctx, display.width, display.height, [[input.confirmLabel(), 'SELECT'], [input.backLabel(), 'RESUME']]);
   }

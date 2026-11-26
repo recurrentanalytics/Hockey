@@ -150,7 +150,7 @@ export class PadSetupScene {
       drawText(ctx, 'WHICH LETTERS ARE PRINTED ON YOUR PAD?', W / 2, 108, { color: PAL.white, align: 'center', shadow: PAL.ink });
       this.styleMenu.draw(ctx, W);
       const mode = this.pad.info?.mode ? `DETECTED: ${this.pad.info.mode} MODE` : '';
-      drawText(ctx, mode, W / 2, 152, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+      drawText(ctx, mode, W / 2, 158, { color: PAL.mist, align: 'center', shadow: PAL.ink });
       hintBar(ctx, W, H, [[input.confirmLabel(), 'SELECT'], [input.backLabel(), 'BACK']]);
       return;
     }

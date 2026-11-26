@@ -1,9 +1,10 @@
 // Vertical menu: keyboard/gamepad navigation plus tap/click support.
 import { PAL } from '../engine/palette.js';
 import { drawText, textWidth, fitText } from '../engine/font.js';
+import { panel } from '../engine/draw.js';
 import { settings, saveSettings, OPTIONS } from '../settings.js';
 
-const ROW_H = 10;
+const ROW_H = 11;
 
 /** A menu row that cycles through one of the OPTIONS lists in settings. */
 export function choice(label, key, onChange) {
@@ -100,24 +101,24 @@ export class Menu {
       const sel = i === this.index;
       const off = it.disabled?.();
       if (sel) {
-        ctx.fillStyle = PAL.slate;
-        ctx.fillRect(r.x, r.y, r.w, r.h);
+        panel(ctx, r.x, r.y - 1, r.w, r.h + 2, { fill: PAL.slate, border: PAL.yellow, alpha: 0.95 });
         ctx.fillStyle = PAL.yellow;
-        ctx.fillRect(r.x, r.y, 2, r.h);
+        ctx.fillRect(r.x + 2, r.y + 2, 2, r.h - 4);
       }
       const color = off ? PAL.steel : sel ? PAL.yellow : it.color ?? PAL.white;
       const value = it.value?.();
-      const labelMax = value ? r.w - 14 - textWidth(value) - 12 : r.w - 14;
-      drawText(ctx, fitText(it.label, labelMax), r.x + 6, r.y + 2, { color, shadow: PAL.ink });
+      const big = { big: true };
+      const labelMax = value ? r.w - 14 - textWidth(value, 1, true) - 14 : r.w - 14;
+      drawText(ctx, fitText(it.label, labelMax, 1, true), r.x + 7, r.y + 2, { color, shadow: PAL.ink, ...big });
       if (value != null) {
         const vx = r.x + r.w - 6;
         const vcolor = off ? PAL.steel : sel ? PAL.white : PAL.cloud;
         if (sel && it.isChoice) {
-          drawText(ctx, '>', vx, r.y + 2, { color: PAL.yellow, align: 'right' });
-          const w = drawText(ctx, value, vx - 6, r.y + 2, { color: vcolor, align: 'right', shadow: PAL.ink });
-          drawText(ctx, '<', vx - 10 - w, r.y + 2, { color: PAL.yellow, align: 'right' });
+          drawText(ctx, '>', vx, r.y + 2, { color: PAL.yellow, align: 'right', ...big });
+          const w = drawText(ctx, value, vx - 8, r.y + 2, { color: vcolor, align: 'right', shadow: PAL.ink, ...big });
+          drawText(ctx, '<', vx - 14 - w, r.y + 2, { color: PAL.yellow, align: 'right', ...big });
         } else {
-          drawText(ctx, value, vx, r.y + 2, { color: vcolor, align: 'right', shadow: PAL.ink });
+          drawText(ctx, value, vx, r.y + 2, { color: vcolor, align: 'right', shadow: PAL.ink, ...big });
         }
       }
     });

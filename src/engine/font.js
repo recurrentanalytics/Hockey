@@ -21,9 +21,93 @@ const GLYPHS = {
   '|': '.#./.#./.#./.#./.#.', '~': '.../.#./#.#/.../...',
 };
 
+// 5×7 font for menus, headings and banners.
+const BIG = {
+  'A': '.###./#...#/#...#/#####/#...#/#...#/#...#',
+  'B': '####./#...#/#...#/####./#...#/#...#/####.',
+  'C': '.###./#...#/#..../#..../#..../#...#/.###.',
+  'D': '####./#...#/#...#/#...#/#...#/#...#/####.',
+  'E': '#####/#..../#..../####./#..../#..../#####',
+  'F': '#####/#..../#..../####./#..../#..../#....',
+  'G': '.###./#...#/#..../#.###/#...#/#...#/.####',
+  'H': '#...#/#...#/#...#/#####/#...#/#...#/#...#',
+  'I': '.###./..#../..#../..#../..#../..#../.###.',
+  'J': '..###/...#./...#./...#./...#./#..#./.##..',
+  'K': '#...#/#..#./#.#../##.../#.#../#..#./#...#',
+  'L': '#..../#..../#..../#..../#..../#..../#####',
+  'M': '#...#/##.##/#.#.#/#.#.#/#...#/#...#/#...#',
+  'N': '#...#/#...#/##..#/#.#.#/#..##/#...#/#...#',
+  'O': '.###./#...#/#...#/#...#/#...#/#...#/.###.',
+  'P': '####./#...#/#...#/####./#..../#..../#....',
+  'Q': '.###./#...#/#...#/#...#/#.#.#/#..#./.##.#',
+  'R': '####./#...#/#...#/####./#.#../#..#./#...#',
+  'S': '.####/#..../#..../.###./....#/....#/####.',
+  'T': '#####/..#../..#../..#../..#../..#../..#..',
+  'U': '#...#/#...#/#...#/#...#/#...#/#...#/.###.',
+  'V': '#...#/#...#/#...#/#...#/#...#/.#.#./..#..',
+  'W': '#...#/#...#/#...#/#.#.#/#.#.#/#.#.#/.#.#.',
+  'X': '#...#/#...#/.#.#./..#../.#.#./#...#/#...#',
+  'Y': '#...#/#...#/.#.#./..#../..#../..#../..#..',
+  'Z': '#####/....#/...#./..#../.#.../#..../#####',
+  '0': '.###./#...#/#..##/#.#.#/##..#/#...#/.###.',
+  '1': '..#../.##../..#../..#../..#../..#../.###.',
+  '2': '.###./#...#/....#/...#./..#../.#.../#####',
+  '3': '####./....#/....#/.###./....#/....#/####.',
+  '4': '...#./..##./.#.#./#..#./#####/...#./...#.',
+  '5': '#####/#..../####./....#/....#/#...#/.###.',
+  '6': '..##./.#.../#..../####./#...#/#...#/.###.',
+  '7': '#####/....#/...#./..#../.#.../.#.../.#...',
+  '8': '.###./#...#/#...#/.###./#...#/#...#/.###.',
+  '9': '.###./#...#/#...#/.####/....#/...#./.##..',
+  '.': '...../...../...../...../...../.##../.##..',
+  ',': '...../...../...../...../.##../..#../.#...',
+  ':': '...../.##../.##../...../.##../.##../.....',
+  ';': '...../.##../.##../...../.##../..#../.#...',
+  '-': '...../...../...../.###./...../...../.....',
+  '!': '..#../..#../..#../..#../..#../...../..#..',
+  '?': '.###./#...#/....#/...#./..#../...../..#..',
+  '/': '....#/...#./...#./..#../.#.../.#.../#....',
+  "'": '..#../..#../...../...../...../...../.....',
+  '(': '...#./..#../.#.../.#.../.#.../..#../...#.',
+  ')': '.#.../..#../...#./...#./...#./..#../.#...',
+  '+': '...../..#../..#../#####/..#../..#../.....',
+  '<': '...#./..#../.#.../#..../.#.../..#../...#.',
+  '>': '.#.../..#../...#./....#/...#./..#../.#...',
+  '=': '...../...../#####/...../#####/...../.....',
+  '%': '##..#/##.#./...#./..#../.#.../.#.##/#..##',
+  '&': '.##../#..#./#.#../.#.../#.#.#/#..#./.##.#',
+  '*': '...../#.#.#/.###./#####/.###./#.#.#/.....',
+  '#': '.#.#./.#.#./#####/.#.#./#####/.#.#./.#.#.',
+  '_': '...../...../...../...../...../...../#####',
+  '"': '.#.#./.#.#./...../...../...../...../.....',
+  '^': '..#../.#.#./#...#/...../...../...../.....',
+  '[': '.###./.#.../.#.../.#.../.#.../.#.../.###.',
+  ']': '.###./...#./...#./...#./...#./...#./.###.',
+  '|': '..#../..#../..#../..#../..#../..#../..#..',
+  '~': '...../...../.#.../#.#.#/...#./...../.....',
+};
+
 const CHARS = Object.keys(GLYPHS);
+const BIG_CHARS = Object.keys(BIG);
+const BIG_INDEX = new Map(BIG_CHARS.map((c, i) => [c, i]));
 const INDEX = new Map(CHARS.map((c, i) => [c, i]));
 const atlases = new Map();
+
+function bigAtlas(color) {
+  const key = 'big:' + color;
+  let a = atlases.get(key);
+  if (a) return a;
+  a = makeCanvas(BIG_CHARS.length * 5, 7);
+  const g = a.getContext('2d');
+  g.fillStyle = color;
+  BIG_CHARS.forEach((ch, i) => {
+    BIG[ch].split('/').forEach((row, y) => {
+      for (let x = 0; x < 5; x++) if (row[x] === '#') g.fillRect(i * 5 + x, y, 1, 1);
+    });
+  });
+  atlases.set(key, a);
+  return a;
+}
 
 function atlas(color) {
   let a = atlases.get(color);
@@ -43,12 +127,20 @@ function atlas(color) {
 export const LINE_HEIGHT = 6;
 const ADVANCE = 4;
 
-export function textWidth(text, scale = 1) {
+export function textWidth(text, scale = 1, big = false) {
   const n = String(text).length;
-  return n ? (n * ADVANCE - 1) * scale : 0;
+  return n ? (n * (big ? 6 : ADVANCE) - 1) * scale : 0;
 }
 
-function run(ctx, text, x, y, color, scale) {
+function run(ctx, text, x, y, color, scale, big) {
+  if (big) {
+    const a = bigAtlas(color);
+    for (let i = 0; i < text.length; i++) {
+      const idx = BIG_INDEX.get(text[i]);
+      if (idx !== undefined) ctx.drawImage(a, idx * 5, 0, 5, 7, x + i * 6 * scale, y, 5 * scale, 7 * scale);
+    }
+    return;
+  }
   const a = atlas(color);
   for (let i = 0; i < text.length; i++) {
     const idx = INDEX.get(text[i]);
@@ -57,20 +149,30 @@ function run(ctx, text, x, y, color, scale) {
 }
 
 /** Draw text at integer pixel positions. Returns its width. */
-export function drawText(ctx, text, x, y, { color = '#f5f6fb', scale = 1, align = 'left', shadow = null } = {}) {
+export function drawText(ctx, text, x, y, { color = '#fffaf4', scale = 1, align = 'left', shadow = null, big = false } = {}) {
   text = String(text).toUpperCase();
-  const w = textWidth(text, scale);
+  const w = textWidth(text, scale, big);
   let sx = align === 'center' ? x - Math.floor(w / 2) : align === 'right' ? x - w : x;
   sx = Math.round(sx);
   y = Math.round(y);
-  if (shadow) run(ctx, text, sx + scale, y + scale, shadow, scale);
-  run(ctx, text, sx, y, color, scale);
+  if (shadow) run(ctx, text, sx + scale, y + scale, shadow, scale, big);
+  run(ctx, text, sx, y, color, scale, big);
   return w;
 }
 
 /** Truncate text to fit a pixel width. */
-export function fitText(text, maxWidth, scale = 1) {
+export function fitText(text, maxWidth, scale = 1, big = false) {
   text = String(text);
-  while (text.length > 1 && textWidth(text, scale) > maxWidth) text = text.slice(0, -1);
+  while (text.length > 1 && textWidth(text, scale, big) > maxWidth) text = text.slice(0, -1);
   return text;
+}
+
+/** Chunky title text: an outline all around, a drop shadow, then the fill. */
+export function drawTextOutlined(ctx, text, x, y, { color = '#fffaf4', outline = '#2a1f3d', shadow = null, scale = 1, align = 'left', big = false } = {}) {
+  const o = scale;
+  const ring = [[-o, 0], [o, 0], [0, -o], [0, o], [-o, -o], [o, -o], [-o, o], [o, o]];
+  // Solid drop shadow: the outlined shape again, a little lower, in the shadow colour.
+  if (shadow) for (const [dx, dy] of [[0, 0], ...ring]) drawText(ctx, text, x + dx, y + dy + o * 2, { color: shadow, scale, align, big });
+  for (const [dx, dy] of ring) drawText(ctx, text, x + dx, y + dy, { color: outline, scale, align, big });
+  return drawText(ctx, text, x, y, { color, scale, align, big });
 }

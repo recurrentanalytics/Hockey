@@ -1,6 +1,6 @@
 // On-ice scene: runs a Match and draws it with single, shared or split cameras.
 import { PAL } from '../engine/palette.js';
-import { drawText, textWidth } from '../engine/font.js';
+import { drawText, textWidth, drawTextOutlined } from '../engine/font.js';
 import { panel } from '../engine/draw.js';
 import { PLAYER_COLORS, TEAMS, RINK, GOAL } from '../config.js';
 import { settings } from '../settings.js';
@@ -8,6 +8,7 @@ import { Camera } from '../world/camera.js';
 import { BAKE } from '../world/rink.js';
 import { project } from '../world/projection.js';
 import { Match } from '../game/match.js';
+import { Particles } from '../world/particles.js';
 import { resolveRules } from '../game/rules.js';
 import { hintBar } from '../ui/hud.js';
 import { PauseScene } from './pause.js';
@@ -50,6 +51,7 @@ export class RinkScene {
     this.cams = this.match.humans.map(() => new Camera());
     this.shared = new Camera();
     this.banner = null;
+    this.fx = new Particles();
     this.snapCameras();
   }
 
@@ -127,9 +129,9 @@ export class RinkScene {
         case 'pickup': sfx.play('stick', 0.4); break;
         case 'boards': sfx.play('boards', e.speed / 15); break;
         case 'post': sfx.play('post', e.speed / 20); this.shake = Math.max(this.shake, 0.15); break;
-        case 'save': sfx.play('save'); break;
-        case 'hit': sfx.play('hit', e.approach / 8); if (e.approach > 5) this.shake = Math.max(this.shake, 0.2); break;
-        case 'goal': sfx.play('horn'); this.shake = 0.5; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); break;
+        case 'save': sfx.play('save'); this.fx.puff(m.puck.pos.x, m.puck.pos.y); break;
+        case 'hit': sfx.play('hit', e.approach / 8); if (e.approach > 5) { this.shake = Math.max(this.shake, 0.2); this.fx.stars(e.victim.pos.x, e.victim.pos.y); } break;
+        case 'goal': sfx.play('horn'); this.shake = 0.5; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); this.fx.confetti(m.puck.pos.x - Math.sign(m.puck.pos.x) * 3, m.puck.pos.y); break;
         case 'whistle': sfx.play('whistle'); break;
         case 'break': case 'final': sfx.play('buzzer'); if (e.type === 'final') sfx.play('cheer'); break;
         case 'attempt': if (!e.scored) sfx.play('save', 0.6); break;
@@ -142,7 +144,7 @@ export class RinkScene {
         case 'post': for (const h of m.humans) rumble(h, 0.2, 0.6, 90); break;
         case 'goal': for (const h of m.humans) rumble(h, h.side === e.side ? 0.6 : 1, 0.8, h.side === e.side ? 300 : 450); break;
         case 'steal': rumble(e.from.human, 0.3, 0.3, 80); break;
-        case 'faceoffWon': sfx.play('stick', 0.9); break;
+        case 'faceoffWon': sfx.play('stick', 0.9); this.fx.stars(m.puck.pos.x, m.puck.pos.y, 0.3, 4); break;
         case 'faceoffEarly': this.notice = { text: 'TOO EARLY - DRAW LOST', t: 1.5 }; break;
         case 'lineChange': if (m.humans.some((h) => h.side === e.side)) this.notice = { text: `LINE CHANGE - ${name(e.side)}`, t: 1.5 }; break;
         case 'timeoutRequested': this.notice = { text: `TIME-OUT REQUESTED - ${name(e.side)}`, t: 2 }; break;
@@ -157,6 +159,10 @@ export class RinkScene {
       if (e.type === 'final') this.banner = { text: 'FINAL', sub: this.finalText(e), t: Infinity, final: true };
       if (e.type === 'release') this.notice = { text: `${name(e.side)} BACK TO FULL STRENGTH`, t: 2 };
     }
+    // Wheel sparkles on fast skaters, a glowing trail behind hard shots.
+    for (const s of m.skaters) if (s.speed > 6 && Math.random() < 0.3) this.fx.spray(s);
+    if (m.puck.loose && m.puck.speed > 14) this.fx.trail(m.puck);
+    this.fx.update(dt);
     this.shake = Math.max(0, (this.shake ?? 0) - dt);
     this.cheerT = Math.max(0, (this.cheerT ?? 0) - dt);
     if (this.banner && (this.banner.t -= dt) <= 0) this.banner = null;
@@ -257,8 +263,9 @@ export class RinkScene {
   draw(isTop = true) {
     const { display, world, input } = this.app;
     display.setZoom(this.zoom);
+    world.cheer = (this.cheerT ?? 0) > 0 || this.match.state === 'final';
     const ctx = display.wctx, W = display.width, H = display.height;
-    const ents = [...this.match.entities, ...this.effects()];
+    const ents = [...this.match.entities, ...this.effects(), ...this.fx.entities()];
 
     if (this.cameraMode === 'split') {
       const v = this.viewSize();
@@ -341,18 +348,19 @@ export class RinkScene {
     const b = this.banner;
     if (!b) return;
     if (b.small) {
-      drawText(ctx, b.text, W / 2, 40, { color: PAL.white, scale: 2, align: 'center', shadow: PAL.ink });
+      drawTextOutlined(ctx, b.text, W / 2, 36, { color: PAL.white, scale: 2, align: 'center', big: true });
       return;
     }
-    const scale = b.small2 ? 3 : 4;
-    const y = Math.round(H * 0.32);
-    const h = scale * 5 + (b.sub ? 18 : 12) + (b.final ? 10 : 0);
-    panel(ctx, 0, y - 6, W, h, { fill: PAL.ink, border: null, alpha: 0.65 });
-    drawText(ctx, b.text, W / 2 + 2, y + 2, { color: PAL.ink, scale, align: 'center' });
-    drawText(ctx, b.text, W / 2, y, { color: PAL.yellow, scale, align: 'center' });
-    if (b.sub) drawText(ctx, b.sub, W / 2, y + scale * 5 + 4, { color: PAL.white, align: 'center' });
+    const scale = b.small2 ? 2 : 3;
+    const y = Math.round(H * 0.3);
+    const th = scale * 7;
+    const h = th + (b.sub ? 22 : 14) + (b.final ? 10 : 0);
+    const bw = Math.min(W - 16, Math.max(textWidth(b.text, scale, true), textWidth(b.sub ?? '', 1, true)) + 40);
+    panel(ctx, W / 2 - bw / 2, y - 7, bw, h, { fill: PAL.ink, border: PAL.pink, alpha: 0.85 });
+    drawTextOutlined(ctx, b.text, W / 2, y, { color: PAL.yellow, scale, align: 'center', shadow: PAL.redDark, big: true });
+    if (b.sub) drawText(ctx, b.sub, W / 2, y + th + 5, { color: PAL.white, align: 'center', big: true });
     if (b.final) {
-      drawText(ctx, `${this.app.input.confirmLabel()} TO CONTINUE`, W / 2, y + scale * 5 + 14, { color: PAL.mist, align: 'center' });
+      drawText(ctx, `${this.app.input.confirmLabel()} TO CONTINUE`, W / 2, y + th + 15, { color: PAL.mist, align: 'center' });
       this.drawStats(ctx, W, y + h + 2);
     }
   }

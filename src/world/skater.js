@@ -6,7 +6,7 @@ import { pixelLine } from '../engine/draw.js';
 import { drawText } from '../engine/font.js';
 import { RINK_CORE, goalBox } from './rink.js';
 import { project } from './projection.js';
-import { skaterSprites, shadowSprite, ANCHOR_X, ANCHOR_Y, SPRITE_W } from './sprites.js';
+import { skaterSprites, shadowSprite, ANCHOR_X, ANCHOR_Y, SPRITE_W, HAND } from './sprites.js';
 
 export const REACH = 0.72;      // body centre → blade, metres
 export const POKE_TIME = 0.24;
@@ -62,6 +62,7 @@ export class Skater {
     // Knocked down: no skating until back on the wheels.
     this.downT = Math.max(0, (this.downT ?? 0) - dt);
     this.celebrateT = Math.max(0, (this.celebrateT ?? 0) - dt);
+    this.happyT = Math.max(0, (this.happyT ?? 0) - dt);
     if (this.downT > 0) {
       move = { x: 0, y: 0 };
       sprint = false;
@@ -217,7 +218,7 @@ export class Skater {
   }
 
   drawStick(ctx, p, ox, oy) {
-    const hx = Math.round(p.x + ox + this.facing * 5), hy = Math.round(p.y + oy - 15);
+    const hx = Math.round(p.x + ox + this.facing * HAND.x), hy = Math.round(p.y + oy + HAND.y);
     const b = this.bladePoint();
     const bp = project(b.x, b.y, this.bladeHeight());
     const bx = Math.round(bp.x + ox), by = Math.round(bp.y + oy);
@@ -236,7 +237,14 @@ export class Skater {
     const p = project(this.pos.x, this.pos.y);
     const frame = this.pushing ? Math.floor(this.anim) % 4 : 0;
     const right = this.facing >= 0;
-    const img = (right ? this.sprites.right : this.sprites.left)[frame];
+    const sp = this.sprites;
+    // Expressions: dizzy when knocked down, happy after a goal, an occasional blink.
+    this.blinkT = (this.blinkT ?? Math.random() * 4) - 1 / 60;
+    if (this.blinkT < -0.12) this.blinkT = 2 + Math.random() * 4;
+    let img = (right ? sp.right : sp.left)[frame];
+    if (this.downT > 0) img = right ? sp.dizzyRight : sp.dizzyLeft;
+    else if (this.celebrateT > 0 || this.happyT > 0) img = right ? sp.happyRight : sp.happyLeft;
+    else if (this.blinkT < 0 && frame === 0) img = right ? sp.blinkRight : sp.blinkLeft;
     const ax = right ? ANCHOR_X : SPRITE_W - 1 - ANCHOR_X;
     const x = Math.round(p.x + ox - ax), y = Math.round(p.y + oy - ANCHOR_Y);
     if (this.downT > 0) {
@@ -246,6 +254,14 @@ export class Skater {
       ctx.rotate(right ? Math.PI / 2 : -Math.PI / 2);
       ctx.drawImage(img, -ax, -ANCHOR_Y + 4);
       ctx.restore();
+      // Little stars circling over the dizzy head
+      const t = performance.now() / 180;
+      const hx = Math.round(p.x + ox + (right ? 10 : -10)), hy = Math.round(p.y + oy - 8);
+      for (let i = 0; i < 3; i++) {
+        const a = t + (i * Math.PI * 2) / 3;
+        ctx.fillStyle = i === 1 ? PAL.white : PAL.yellow;
+        ctx.fillRect(hx + Math.round(Math.cos(a) * 5), hy + Math.round(Math.sin(a) * 2), 1, 1);
+      }
     } else {
       const behind = this.bladePoint().y < this.pos.y - 0.05;
       if (behind) this.drawStick(ctx, p, ox, oy);

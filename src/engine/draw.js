@@ -17,18 +17,23 @@ export function strokeCircle(ctx, cx, cy, r) {
   }
 }
 
-export function panel(ctx, x, y, w, h, { fill = '#171a2b', border = '#57608a', alpha = 1 } = {}) {
+/** Panel with rounded (2px) corners. */
+export function panel(ctx, x, y, w, h, { fill = '#352a4f', border = '#8174a8', alpha = 1 } = {}) {
+  x = Math.round(x); y = Math.round(y);
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.fillStyle = fill;
-  ctx.fillRect(x, y, w, h);
+  ctx.fillRect(x + 2, y, w - 4, h);
+  ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+  ctx.fillRect(x, y + 2, w, h - 4);
   ctx.restore();
   if (border) {
     ctx.fillStyle = border;
-    ctx.fillRect(x, y, w, 1);
-    ctx.fillRect(x, y + h - 1, w, 1);
-    ctx.fillRect(x, y, 1, h);
-    ctx.fillRect(x + w - 1, y, 1, h);
+    ctx.fillRect(x + 2, y, w - 4, 1);
+    ctx.fillRect(x + 2, y + h - 1, w - 4, 1);
+    ctx.fillRect(x, y + 2, 1, h - 4);
+    ctx.fillRect(x + w - 1, y + 2, 1, h - 4);
+    for (const [cx, cy] of [[x + 1, y + 1], [x + w - 2, y + 1], [x + 1, y + h - 2], [x + w - 2, y + h - 2]]) ctx.fillRect(cx, cy, 1, 1);
   }
 }
 

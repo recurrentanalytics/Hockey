@@ -690,6 +690,7 @@ export class Match {
         this.lastGoal = { side: scorer, by };
         this.nextSpot = null;
         if (by && by.sideKey === scorer) by.celebrateT = 2.5;
+        for (const s of this.roster) if (s.sideKey === scorer) s.happyT = 2.6;
         this.state = 'goal';
         this.timer = 2.6;
         this.events.push({ type: 'goal', side: scorer, by, shootout: !counts });

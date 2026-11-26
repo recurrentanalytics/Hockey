@@ -30,10 +30,11 @@ export class Backdrop {
     this.camera.follow(lead.x, lead.y - 10, dt, width, height, 0.8);
   }
 
-  draw(dimAmount = 0.55) {
+  draw(dimAmount = 0.38) {
     const { display, world } = this.app;
     display.setZoom(1);
+    world.cheer = false;
     world.draw(display.wctx, { x: 0, y: 0, w: display.worldWidth, h: display.worldHeight }, this.camera, this.skaters.map((k) => k.s));
-    dim(display.uctx, display.width, display.height, dimAmount);
+    dim(display.uctx, display.width, display.height, dimAmount, '#2a1f3d');
   }
 }

@@ -29,6 +29,11 @@ export class WorldView {
     ctx.fillStyle = PAL.night;
     ctx.fillRect(vp.x, vp.y, vp.w, vp.h);
     ctx.drawImage(this.rink.background, this.rink.x0 + ox, this.rink.y0 + oy);
+    // Crowd: gentle bobbing, or jumping and waving while `cheer` is set.
+    const t = performance.now() / 1000;
+    const cr = this.rink.crowd;
+    const f = this.cheer ? 2 + (Math.floor(t * 7) % 2) : Math.floor(t * 1.4) % 2;
+    ctx.drawImage(cr.frames[f], cr.x0 + ox, cr.y0 + oy);
 
     for (const e of entities) e.drawShadow?.(ctx, ox, oy);
     const sorted = [...entities, ...this.goals].sort((a, b) => a.sortY - b.sortY);
