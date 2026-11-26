@@ -45,9 +45,20 @@ Bild: `docs/ort/boni_bolzplatz_grundriss.jpg` (Luftbild © GeoBasis-DE / LGLN, C
   - D West: 52.388939 / 9.744438
 - **Umgebung:** links (Nordwest) der Sandspielplatz mit Holz-Nilpferd, rechts (Südost) hinter Mulchstreifen die Metallschale, oben die Straße mit Schrägparkern und Altbauten, unten links Hecke und Straße.
 
-## Intro-Anflug (Experiment)
+## Intro-Anflug
 
-`intro.html` zeigt einen Kameraflug: aus 1,2 km Höhe über Hannover-List hinab auf den Boni, Drehung, bis der Platz quer liegt, und Abkippen in den Blickwinkel der Spielkamera (Boden 2:1 gestaucht wie `PROJ`). Am Ende erscheinen der Zaun, der Vereinsname und „Spiel starten“.
+`intro.html` zeigt einen Kameraflug: aus 1,2 km Höhe über Hannover-List hinab auf den Boni, Drehung, bis der Platz quer liegt, und Abkippen in den Blickwinkel der Spielkamera (60° aus der Senkrechten, Boden 2:1 gestaucht wie `PROJ`). Am Ende erscheinen die Platzlinie, der Vereinsname und „Spiel starten“.
+
+### Fotorealistisch: Google 3D über Cesium ion (`src/intro/photoreal.js`)
+
+- **Daten:** „Google Photorealistic 3D Tiles“ (Cesium-ion-Asset 2275207), dargestellt mit CesiumJS 1.147.0 (vom CDN jsDelivr).
+- **Zugang:** kostenloses Cesium-ion-Community-Konto des Vereins, 1.000 Sitzungen („Root Tiles“) im Monat, nur nicht-kommerziell. Das Google- und das Cesium-Logo müssen sichtbar bleiben; CesiumJS blendet sie ein.
+- **Token:** einmalig `intro.html?token=<Cesium-ion-Token>` aufrufen; er wird im Browser gespeichert. Der Token ist im Spiel für jeden auslesbar, das ist bei Cesium so vorgesehen. Im Cesium-Konto unter „Access Tokens“ sollte er auf die Adresse des Spiels beschränkt werden („Allowed URLs“).
+- **Ohne Token** oder wenn das Laden scheitert, läuft die Luftbild-Version unten.
+- **Bekannte Eigenheit:** Im Google-Modell überdecken die Baumkronen den Platz großteils. Das Spiel zeichnet Feld, Banden und Tore ohnehin selbst über diese Stelle.
+- **Vorschauvideo in der Entwicklungsumgebung:** `CESIUM_DIR=<node_modules/cesium/Build/Cesium> node tools/intro/record.cjs <ordner> 960 540 20 proxy` (der Token kommt dort vom Netzwerk-Proxy).
+
+### Rückfallebene: Luftbild-Version (`src/intro/aerial.js`)
 
 Die ganze Umgebung ist echtes 3D, gebaut nur aus freien amtlichen Daten des LGLN (CC BY 4.0):
 
