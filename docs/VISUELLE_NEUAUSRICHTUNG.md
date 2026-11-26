@@ -300,3 +300,50 @@ Comic-Effekte bestehen aus **wenigen gezeichneten Phasen** (4–8 Bilder, abgesp
 4. **Gegner-Teams:** Sie haben schon Tier-Embleme (Blazers = Fuchs, Waves = Robbe, Vipers = Schlange, Storm = Eule). Vorschlag: Daraus werden echte Tier-Teams.
 5. **Spielwirkung der Effekte:** zunächst nur visuell (Vorschlag); ein Arcade-Superschuss als spätere Option.
 6. **Halle:** behalten (im Comicstil) oder ausschließlich der Boni.
+
+---
+
+## 10. Entscheidungen (Runde 2) und Hybrid-Ansatz
+
+**Entscheidungen**
+
+| Frage | Entscheidung |
+|---|---|
+| Mannschaft | **B: gemischte Eilenriede-Bande** (Bonny plus weitere Waldtiere) |
+| Helm | **Alle Spieler mit Helm**, bei Bonny mit Ohr-Aussparungen |
+| Umgebung | **Fotorealistische Umgebung mit gezeichneten Figuren und Effekten** (Prinzip „Roger Rabbit / Space Jam“) |
+| Referenzen | Luftbild, freie Fotos sowie Fotos vom Training (vom Nutzer) |
+
+**Was die Trainingsfotos und das Luftbild zeigen**
+- Gespielt wird auf **offenem, dunkelgrauem Asphalt ohne Bande**, mit ausgeblichenen weißen Linien.
+- Der Platz liegt fast vollständig **unter Baumkronen**. Typisch sind runde Sonnenflecken auf dem Boden.
+- Rundherum steht ein **hoher grüngrauer Stabmattenzaun** mit Schrägstreben. Darin sind **große graue Stahl-Fußballtore** eingebaut.
+- Gespielt wird mit **roten Bauer-Hockeytoren** (weißes Netz), **roten Bällen** und einem **grünen Lochpuck**.
+- Hintergrund: helle Linden, die **weiße Gründerzeit-Schule mit rotem Ziegeldach und Gauben**, parkende Autos.
+- Das Luftbild zeigt kaum Boden. Es dient nur zur Lage (Sandkasten mit Nilpferd nordwestlich, Straße mit Parkreihe diagonal südwestlich).
+
+**Hybrid-Rendering („gezeichnete Figuren in echter Welt“)**
+
+1. **Boden:**
+   - fotorealistischer Asphalt (Körnung, Steinchen, Abnutzung), prozedural erzeugt in Bildschirmauflösung
+   - darauf ausgeblichene Linien und **Sonnenflecken durch das Laub**, die sich langsam im Wind bewegen
+2. **Kulisse hinter dem Zaun:**
+   - eine **Foto-Platte** (frontale Ansicht von Schule, Linden und Autos) mit leichter Parallaxe
+   - **Quelle:** eigene Fotos ohne Personen oder Fotos unter CC BY-SA mit Namensnennung (zum Beispiel von Axel Hindemith auf Wikimedia Commons). Kennzeichen und Personen werden unkenntlich gemacht.
+3. **Zaun und Tore:** realistisch gezeichnet (dünne Stabmatten, Pfosten, Streben), halbtransparent. Die Fußballtore im Zaun und die roten Hockeytore kommen als realistische Objekte dazu.
+4. **Figuren und Effekte im Comicstil:**
+   - Tuschekontur und Cel-Farben (`src/world/toon/`)
+   - **Verankerung in der echten Welt:** weicher Kontaktschatten auf dem Asphalt, Figuren im Laubschatten etwas dunkler, warme Sonnenflecken, die über die Figur wandern (wie bei Roger Rabbit)
+5. **Rechte und Datenschutz:**
+   - Fotos mit Kindern dienen **nur als Vorlage** und kommen nicht ins Repository.
+   - Kartendienst-Bilder (Google) werden nicht als Asset verwendet.
+   - Amtliche Luftbilder (LGLN) nur nach Klärung der Lizenz.
+
+**Stand des Prototyps** (`studio.html`, Code in `src/world/toon/ink.js`, `src/world/toon/bonny.js`)
+- Bonny als Modellblatt: Vorder-, Seiten- und Rückansicht, 6 Gesichtsausdrücke, 7 Aktionsposen (Stand, Laufen, Sprint, Ausholen, Schuss, Jubel, Sturz)
+- Vorschau in Spielgröße auf Boni-Asphalt mit Sonnenflecken und Kontaktschatten
+- **Noch offen:**
+  - Die Posen sind noch zu steif für den Franquin-Schwung (mehr Linienschwung, Stauchen und Strecken).
+  - Beim Spiegeln muss die Rückennummer getrennt gezeichnet werden.
+  - Das Brustwappen ist noch zu schlicht.
+  - Ins Spiel eingebaut ist Bonny noch nicht (Schritt 3).
