@@ -41,10 +41,22 @@ for tx in range(60, W, 190):
         r = random.randint(60, 95)
         ox, oy = tx + random.randint(-90, 90), random.randint(90, 280)
         d.ellipse([ox - r, oy - r * 0.8, ox + r, oy + r * 0.8], fill=random.choice([(127, 174, 74), (100, 150, 60), (140, 190, 90)]), outline=K, width=2)
-# playground at the right end: red-roof hut and the dome climbing frame
-d.rectangle([1300, 560, 1440, 650], fill=(232, 214, 186), outline=K, width=3)
-d.polygon([(1290, 560), (1370, 510), (1450, 560)], fill=(184, 80, 46), outline=K, width=3)
-d.chord([1180, 590, 1280, 690], 180, 360, outline=K, width=4)
+# left (north-west) behind the fence: the sand playground with the wooden hippo sculpture,
+# a red brick border, a swing and the play house with a red roof
+d.polygon([(0, 600), (420, 600), (380, 660), (0, 660)], fill=(236, 217, 168), outline=K, width=3)   # sand
+d.line([(0, 598), (420, 598)], fill=(170, 70, 50), width=6)                                    # brick border
+d.ellipse([120, 560, 300, 640], fill=(150, 140, 125), outline=K, width=3)                      # hippo body (wood)
+d.ellipse([270, 545, 345, 610], fill=(150, 140, 125), outline=K, width=3)                      # hippo head
+d.rectangle([140, 620, 160, 650], fill=(150, 140, 125), outline=K, width=2); d.rectangle([250, 620, 270, 650], fill=(150, 140, 125), outline=K, width=2)
+d.line([(330, 470), (360, 600)], fill=K, width=4); d.line([(420, 470), (390, 600)], fill=K, width=4); d.line([(325, 470), (425, 470)], fill=K, width=5)  # swing frame
+d.rectangle([20, 520, 110, 600], fill=(190, 150, 100), outline=K, width=3)                     # play house
+d.polygon([(10, 520), (65, 480), (120, 520)], fill=(184, 80, 46), outline=K, width=3)
+# right (south-east), right next to the fence: the stainless steel bowl ("Schale") and spinning tops
+d.ellipse([1040, 640, 1320, 690], fill=(200, 205, 210), outline=K, width=4)
+d.ellipse([1070, 648, 1290, 682], fill=(225, 230, 235), outline=K, width=2)
+for kx in (1380, 1460):
+    d.line([(kx, 600), (kx, 660)], fill=(200, 40, 40), width=6)
+    d.ellipse([kx - 30, 640, kx + 30, 660], fill=(160, 165, 170), outline=K, width=3)
 # tall welded-mesh ball-stop fence with posts, diagonal struts and two built-in steel football goals
 ft, fb = 300, 680
 for gx in range(0, W, 14):

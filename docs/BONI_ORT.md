@@ -16,8 +16,8 @@
 - **Nordost:** Gründerzeit-Häuserzeile (4–5 Geschosse, rote Ziegeldächer, Gauben). Nördlich steht die **Bonifatiusschule** (großer Bau, rotes Dach).
 - **Südwest:** die **Ricarda-Huch-Schule** und Wohnhäuser.
 - **Südost:** jenseits der Kollenrodtstraße die **Comeniusschule** (historisch, Rundbogenfenster).
-- **In der Grünfläche:** Rindenmulch, große Linden und Platanen, ein Kuppel-Klettergerüst, eine Edelstahl-Drehschale, Drehkreisel, ein Sandkasten mit dem Holz-Nilpferd, ein Spielhaus mit rotem Dach, Bänke und ein kleines Häuschen mit rotem Dach am Südostende.
-- **Bolzplatz:** gepflasterte bzw. asphaltierte Fläche im mittleren Teil, schräg zur Längsachse, neben dem Kuppelgerüst. Ringsum steht ein hoher Stabmattenzaun mit Schrägstreben und eingebauten Stahl-Fußballtoren.
+- **In der Grünfläche:** Rindenmulch, große Linden und Platanen, ein Kuppel-Klettergerüst, die Edelstahl-Schale (die glänzende Stelle im Luftbild), Drehkreisel, ein Sandkasten mit dem Holz-Nilpferd, ein Spielhaus mit rotem Dach, Bänke und ein kleines Häuschen mit rotem Dach am Südostende.
+- **Bolzplatz (vom Verein bestätigt):** die Asphaltfläche **links neben der Edelstahl-Schale**, also nordwestlich davon. Die glänzende Stelle im Luftbild ist die Schale. **Links neben dem Bolzplatz** liegt der **Sandspielplatz mit der Holz-Nilpferd-Skulptur** (Klinker-Einfassung, Schaukel, Spielhaus mit rotem Dach). Reihenfolge von Nordwest nach Südost: Sandspielplatz mit Nilpferd, Bolzplatz, Schale, übriger Spielbereich, Häuschen mit rotem Dach. Ringsum steht ein hoher Stabmattenzaun mit Schrägstreben und eingebauten Stahl-Fußballtoren.
 
 ## Spielansicht
 Die Kamera steht an der Südwest-Langseite des Bolzplatzes und schaut nach Nordosten. Von dort sieht man:
@@ -26,6 +26,7 @@ Die Kamera steht an der Südwest-Langseite des Bolzplatzes und schaut nach Nordo
 - Mulch und Linden
 - die Straße mit Parkreihe
 - die Häuserzeile, links die Bonifatiusschule
-- rechts das Häuschen mit rotem Dach und das Kuppelgerüst
+- links (Nordwest) hinter dem Zaun den Sandspielplatz mit Nilpferd, Schaukel und Spielhaus
+- rechts (Südost) direkt am Zaun die Edelstahl-Schale und die Drehkreisel
 
 Die Skizze `docs/ort/boni_skizze.png` (erzeugt von `tools/art/venue/boni_blockout.py`) legt diese Anordnung fest. Die Bild-KI zeichnet sie im Ligne-claire-Stil nach (`tools/art/venue/pollinations_edit.py`, Modell `microsoft/mai-image-2.7`, Beschreibung in `boni_backdrop_prompt.txt`).
