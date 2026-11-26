@@ -30,3 +30,17 @@ Die Kamera steht an der Südwest-Langseite des Bolzplatzes und schaut nach Nordo
 - rechts (Südost) direkt am Zaun die Edelstahl-Schale und die Drehkreisel
 
 Die Skizze `docs/ort/boni_skizze.png` (erzeugt von `tools/art/venue/boni_blockout.py`) legt diese Anordnung fest. Die Bild-KI zeichnet sie im Ligne-claire-Stil nach (`tools/art/venue/pollinations_edit.py`, Modell `microsoft/mai-image-2.7`, Beschreibung in `boni_backdrop_prompt.txt`).
+
+## Grundriss Bolzplatz (aus dem Luftbild rekonstruiert, vom Verein in Lage und Form bestätigt)
+
+Bild: `docs/ort/boni_bolzplatz_grundriss.jpg` (Luftbild © GeoBasis-DE / LGLN, CC BY 4.0).
+
+- **Form:** Rechteck, eingezäunt. Seite oben (zur Straße mit den Parkplätzen) und Seite links (zum Nilpferd-Sandplatz) wurden aus dem Luftbild abgelesen, die anderen beiden rechtwinklig ergänzt.
+- **Größe:** ca. 18 m × 18,5 m (Messgenauigkeit etwa ±1 m; im Winterbild verdecken Astschatten den Rand).
+- **Ausrichtung:** Die obere Seite ist um ca. 25° gegen Ost–West gedreht (fällt nach Südosten ab).
+- **Ecken (WGS84, Breite/Länge):**
+  - A Nordwest: 52.389135 / 9.744611
+  - B Nordost: 52.389067 / 9.744850
+  - C Südost: 52.388917 / 9.744735
+  - D Südwest: 52.388985 / 9.744496
+- **Umgebung:** links (Nordwest) der Sandspielplatz mit Holz-Nilpferd, rechts (Südost) hinter Mulchstreifen die Metallschale, oben die Straße mit Schrägparkern und Altbauten, unten links Hecke und Straße.
