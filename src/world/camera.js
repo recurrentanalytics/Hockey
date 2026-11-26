@@ -1,5 +1,6 @@
 // Smooth follow camera in world-pixel space.
 import { BAKE } from './rink.js';
+import { FIXED } from './projection.js';
 
 export class Camera {
   constructor(x = 0, y = 0) {
@@ -8,12 +9,14 @@ export class Camera {
   }
 
   snap(x, y, viewW, viewH) {
+    if (FIXED) { this.x = viewW / 2; this.y = viewH / 2; return; }
     this.x = x;
     this.y = y;
     this.clamp(viewW, viewH);
   }
 
   follow(tx, ty, dt, viewW, viewH, stiffness = 5) {
+    if (FIXED) { this.x = viewW / 2; this.y = viewH / 2; return; }
     const k = 1 - Math.exp(-stiffness * dt);
     this.x += (tx - this.x) * k;
     this.y += (ty - this.y) * k;

@@ -1,6 +1,7 @@
 // Draws the arena + entities into a viewport of the world layer.
 import { PAL } from '../engine/palette.js';
 import { bakeRink, bakeGoal, BAKE } from './rink.js';
+import { FIXED } from './projection.js';
 
 export class WorldView {
   constructor() {
@@ -83,6 +84,14 @@ export class WorldView {
     ctx.beginPath();
     ctx.rect(vp.x, vp.y, vp.w, vp.h);
     ctx.clip();
+    if (FIXED) {
+      // real court behind a transparent layer: only the moving things are drawn
+      ctx.clearRect(vp.x, vp.y, vp.w, vp.h);
+      for (const e of entities) e.drawShadow?.(ctx, ox, oy);
+      for (const e of [...entities].sort((a, b) => a.sortY - b.sortY)) e.draw(ctx, ox, oy);
+      ctx.restore();
+      return;
+    }
     ctx.fillStyle = PAL.night;
     ctx.fillRect(vp.x, vp.y, vp.w, vp.h);
     ctx.drawImage(this.rink.background, this.rink.x0 + ox, this.rink.y0 + oy, BAKE.w, BAKE.h);

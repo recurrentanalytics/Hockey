@@ -16,6 +16,7 @@ import { TitleScene } from './scenes/title.js';
 const canvas = document.getElementById('screen');
 canvas.focus({ preventScroll: true }); // works when allowed; otherwise the first click focuses it
 const display = new Display(canvas, settings);
+if (globalThis.BONI_3D) { globalThis.BONI_3D.display = display; display.transparent = true; }
 const input = new InputManager(display, canvas);
 
 const app = {

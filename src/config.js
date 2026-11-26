@@ -14,7 +14,11 @@ export const PROJ = { x: 16, y: 8, z: 14 };
 // while players, goalies, sticks and the ball are drawn with RES× the detail.
 export const RES = 2;
 
-export const RINK = {
+// Played on the real Boni court (intro.html → "Spiel starten"): the photorealistic 3D view is the
+// backdrop and the game is drawn on top. The intro sets globalThis.BONI_3D before loading the game.
+export const BONI_3D = !!globalThis.BONI_3D;
+
+const ARENA_RINK = {
   length: 60,
   width: 30,
   cornerRadius: 7.5,
@@ -25,7 +29,21 @@ export const RINK = {
   creaseRadius: 1.8,
 };
 
-export const GOAL = { width: 1.83, height: 1.22, depth: 1.0 };
+// Real court inside the fence (25.2 m × 18 m): end walls at the fronts of the football-goal cages,
+// street-hockey goals 9.2 m from the centre (tools/intro/court_glb.py).
+const BONI_RINK = {
+  length: 22.8,
+  width: 17.2,
+  cornerRadius: 1.0,
+  goalLineX: 9.2,
+  boardHeight: 1.0,
+  centerCircleRadius: 3,
+  endCircle: { x: 6.2, y: 4.2, r: 2 },
+  creaseRadius: 1.2,
+};
+export const RINK = BONI_3D ? BONI_RINK : ARENA_RINK;
+
+export const GOAL = BONI_3D ? { width: 1.37, height: 1.12, depth: 0.6 } : { width: 1.83, height: 1.22, depth: 1.0 };
 
 export const SKATE = {
   radius: 0.4,

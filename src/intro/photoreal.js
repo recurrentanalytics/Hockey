@@ -86,7 +86,7 @@ export async function run({ token, cesiumBase }) {
     return Cesium.Matrix4.multiplyByPoint(enu, off, new Cesium.Cartesian3());
   };
 
-  let fixedT = null, start = null, skip = false;
+  let fixedT = null, start = null, skip = false, started = false;
   const now = () => (fixedT ?? (skip ? END : start === null ? 0 : (performance.now() - start) / 1000));
   const place = (t) => {
     const aspect = scene.canvas.clientWidth / Math.max(1, scene.canvas.clientHeight);
@@ -183,8 +183,8 @@ export async function run({ token, cesiumBase }) {
       seeThrough.setUniform('u_axis', new Cesium.Cartesian2(frame.u.x, frame.u.y));
       seeThrough.setUniform('u_fade', fade);
     }
-    title.classList.toggle('on', t >= T.title);
-    go.classList.toggle('on', t >= T.button);
+    title.classList.toggle('on', t >= T.title && !started);
+    go.classList.toggle('on', t >= T.button && !started);
   });
 
   const loaded = (timeout = 25000) => new Promise((res) => {
@@ -209,15 +209,44 @@ export async function run({ token, cesiumBase }) {
     /** Freeze the flight at time s and resolve once that view's tiles are loaded and drawn. */
     freeze: async (s) => { fixedT = s; await new Promise((r) => requestAnimationFrame(() => r())); await loaded(); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); },
   };
+  // ---------------------------------------------------------------- the game on the real court
+  // Metres in game coordinates (x along the court, y towards the camera, z up) → window CSS px,
+  // through the very same camera that draws the photorealistic view.
+  let gameMatrix = null;
+  scene.postRender.addEventListener(() => {
+    const { u, v, C } = frame;
+    const local = new Cesium.Matrix4(u.x, -v.x, 0, C.x, u.y, -v.y, 0, C.y, 0, 0, 1, 0, 0, 0, 0, 1);
+    const m = Cesium.Matrix4.multiply(camera.frustum.projectionMatrix, camera.viewMatrix, new Cesium.Matrix4());
+    Cesium.Matrix4.multiply(m, frame.enu, m);
+    gameMatrix = Cesium.Matrix4.multiply(m, local, m);
+  });
+  const toCss = (x, y, z) => {
+    const m = gameMatrix;
+    const cx = m[0] * x + m[4] * y + m[8] * z + m[12], cy = m[1] * x + m[5] * y + m[9] * z + m[13], cw = m[3] * x + m[7] * y + m[11] * z + m[15];
+    return { x: (cx / cw + 1) / 2 * scene.canvas.clientWidth, y: (1 - cy / cw) / 2 * scene.canvas.clientHeight };
+  };
+  const startGame = async () => {
+    if (started) return;
+    started = true; skip = true; fixedT = END;
+    title.classList.remove('on'); go.classList.remove('on');
+    document.getElementById('hint').style.display = 'none';
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // final view drawn → matrix ready
+    globalThis.BONI_3D = { toCss };
+    document.getElementById('screen').style.display = 'block';
+    await import('../main.js');
+  };
+  window.introDebug.startGame = startGame;
+
   if (new URLSearchParams(location.search).has('record')) { window.introReady = true; return; }
   fixedT = null; start = performance.now();
   window.introReady = true;
 
   window.addEventListener('keydown', (e) => {
+    if (started) return;
     if (e.key === 'r' || e.key === 'R') { start = performance.now(); skip = false; }
-    else if (e.key === 'Enter' && skip) location.href = 'index.html';
+    else if (e.key === 'Enter' && skip) startGame();
     else skip = true;
   });
   scene.canvas.addEventListener('pointerdown', () => { skip = true; });
-  go.addEventListener('click', () => { location.href = 'index.html'; });
+  go.addEventListener('click', startGame);
 }

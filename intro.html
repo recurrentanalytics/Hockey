@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#0e0f1a" />
   <title>Anflug auf den Boni</title>
+  <link rel="stylesheet" href="css/style.css" />
   <style>
     html, body { margin: 0; height: 100%; background: #0e0f1a; overflow: hidden; }
     #gl { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; }
@@ -28,6 +29,7 @@
 <body>
   <div id="cesium"></div>
   <canvas id="gl"></canvas>
+  <canvas id="screen" tabindex="0" style="display:none"></canvas>
   <div id="ui">
     <div id="title"><div class="club">BONI BORSTENTIERE</div><div class="sub">Das große Spiel am Boni</div></div>
     <button id="go" type="button">Spiel starten</button>

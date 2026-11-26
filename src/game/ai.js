@@ -33,10 +33,12 @@ function segDist(p, a, b) {
 /** Keep a target on the rink and out of both creases. */
 function legal(x, y) {
   const m = 1.0;
-  const hx = RINK_CORE.halfX, hy = RINK_CORE.halfY, r = RINK_CORE.radius - m;
+  // the rink shrunk by m: works for big rounded corners (arena) and near-square ones (Boni court)
+  const shrink = Math.max(0, m - RINK_CORE.radius);
+  const hx = RINK_CORE.halfX - shrink, hy = RINK_CORE.halfY - shrink, r = Math.max(0, RINK_CORE.radius - m);
   const cx = clamp(x, -hx, hx), cy = clamp(y, -hy, hy);
   const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
-  if (d > r) { x = cx + (dx / d) * r; y = cy + (dy / d) * r; }
+  if (d > r) { x = cx + (d ? (dx / d) * r : 0); y = cy + (d ? (dy / d) * r : 0); }
   for (const side of [-1, 1]) {
     const gx = side * RINK.goalLineX;
     const ddx = x - gx, dd = Math.hypot(ddx, y);

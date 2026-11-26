@@ -6,7 +6,7 @@ import { PLAYER_COLORS, TEAMS, RINK, GOAL, isBoarTeam } from '../config.js';
 import { settings } from '../settings.js';
 import { Camera } from '../world/camera.js';
 import { BAKE } from '../world/rink.js';
-import { project } from '../world/projection.js';
+import { project, FIXED, fixedZoom } from '../world/projection.js';
 import { Match } from '../game/match.js';
 import { Particles } from '../world/particles.js';
 import { VideoWall } from '../ui/videoWall.js';
@@ -43,8 +43,9 @@ export class RinkScene {
     this.app = app;
     this.title = title;
     this.mode = mode;
-    this.cameraMode = humans.length > 1 ? camera : 'single';
-    this.zoom = CLOSE_ZOOM;
+    // on the real Boni court the camera is fixed, so there is never a split screen
+    this.cameraMode = humans.length > 1 && !FIXED ? camera : 'single';
+    this.zoom = fixedZoom(CLOSE_ZOOM);
     this.rules = mode === 'practice' ? null : resolveRules(settings.ruleset, settings.periodLength);
     const homeKey = teams?.home ?? settings.homeTeam;
     let awayKey = teams?.away ?? (mode === 'practice' ? otherTeam(settings.homeTeam) : settings.awayTeam);
@@ -439,7 +440,7 @@ export class RinkScene {
       const m = this.midpoint();
       this.shared.follow(m.x, m.y, dt, v.w, v.h, 4);
     } else {
-      this.zoom = this.cameraMode === 'split' ? SPLIT_ZOOM : CLOSE_ZOOM;
+      this.zoom = fixedZoom(this.cameraMode === 'split' ? SPLIT_ZOOM : CLOSE_ZOOM);
       const v = this.viewSize();
       this.match.humans.forEach((h, i) => { const t = this.target(h); this.cams[i].follow(t.x, t.y, dt, v.w, v.h, 5); });
     }
@@ -500,7 +501,7 @@ export class RinkScene {
 
   drawReplay() {
     const { display, world } = this.app;
-    display.setZoom(CLOSE_ZOOM);
+    display.setZoom(fixedZoom(CLOSE_ZOOM));
     world.cheer = false;
     const ctx = display.wctx;
     const ents = [...this.replay.entities, ...this.fx.entities(), this.ballGhost()];

@@ -73,8 +73,8 @@ export class Display {
   present() {
     const { sctx } = this;
     sctx.imageSmoothingEnabled = false;
-    sctx.fillStyle = '#05060c';
-    sctx.fillRect(0, 0, this.screen.width, this.screen.height);
+    if (this.transparent) sctx.clearRect(0, 0, this.screen.width, this.screen.height);
+    else { sctx.fillStyle = '#05060c'; sctx.fillRect(0, 0, this.screen.width, this.screen.height); }
     const dw = this.width * this.scale, dh = this.height * this.scale;
     sctx.drawImage(this.world, this.ox, this.oy, dw, dh);
     sctx.drawImage(this.ui, this.ox, this.oy, dw, dh);
