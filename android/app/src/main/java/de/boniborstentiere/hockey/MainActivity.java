@@ -26,8 +26,10 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Full-screen WebView running the game from the app's own assets (served under
- * https://appassets.androidplatform.net/ so ES modules and fetch work). Google 3D tiles still
+ * Full-screen WebView running the game. With a connection it loads the live version from GitHub
+ * Pages, so every change pushed to the repository reaches the app without a new APK; offline (or
+ * if that fails) it runs the copy bundled in the APK, served under
+ * https://appassets.androidplatform.net/ so ES modules and fetch work. Google 3D tiles always
  * come from the network.
  *
  * Gamepads (e.g. two 8BitDo Micro in D-input mode) are read natively and handed to the page in
@@ -37,6 +39,9 @@ import java.util.Map;
 public class MainActivity extends Activity {
     private static final String HOST = "appassets.androidplatform.net";
     private static final String START = "https://" + HOST + "/www/intro.html";
+    private static final String LIVE = "https://recurrentanalytics.github.io/Hockey/intro.html";
+    private static final String LIVE_PREFIX = "https://recurrentanalytics.github.io/Hockey/";
+    private boolean fellBack = false;
     private WebView web;
 
     /** One connected pad: standard-mapping buttons (0..16) and axes (0..3). */
@@ -64,6 +69,25 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(new Bridge(), "BoniAndroid");
         web.setWebViewClient(new WebViewClient() {
             @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
+                String u = req.getUrl().toString();
+                if (u.startsWith(LIVE_PREFIX) || HOST.equals(req.getUrl().getHost())) return false;
+                // links in the map credits etc. open in the browser
+                try { startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW, req.getUrl())); } catch (Exception ignored) { }
+                return true;
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest req, android.webkit.WebResourceError err) {
+                if (req.isForMainFrame()) fallBack();
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest req, WebResourceResponse res) {
+                if (req.isForMainFrame() && res.getStatusCode() >= 400) fallBack();
+            }
+
+            @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
                 if (!HOST.equals(req.getUrl().getHost())) return null;
                 String path = req.getUrl().getPath();
@@ -83,8 +107,22 @@ public class MainActivity extends Activity {
         });
         setContentView(web);
         hideSystemBars();
-        if (state == null) web.loadUrl(START);
-        else web.restoreState(state);
+        if (state != null) web.restoreState(state);
+        else web.loadUrl(online() ? LIVE : START);
+    }
+
+    private boolean online() {
+        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+        android.net.NetworkCapabilities nc = cm.getNetworkCapabilities(cm.getActiveNetwork());
+        return nc != null && nc.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET);
+    }
+
+    /** The live version could not be loaded: run the copy inside the APK. */
+    private void fallBack() {
+        if (fellBack) return;
+        fellBack = true;
+        web.post(() -> web.loadUrl(START));
     }
 
     private static String mime(String path) {
@@ -233,8 +271,10 @@ public class MainActivity extends Activity {
         web.evaluateJavascript(sb.toString(), null);
     }
 
-    /** Lets the page know it runs inside the Android app. */
+    /** Lets the page know it runs inside the Android app; keeps the Cesium token for both origins. */
     private final class Bridge {
-        @JavascriptInterface public String version() { return "0.1"; }
+        @JavascriptInterface public String version() { return "0.2"; }
+        @JavascriptInterface public String token() { return getPreferences(MODE_PRIVATE).getString("cesiumToken", ""); }
+        @JavascriptInterface public void saveToken(String t) { getPreferences(MODE_PRIVATE).edit().putString("cesiumToken", t == null ? "" : t).apply(); }
     }
 }

@@ -1,7 +1,7 @@
 // Service worker: keeps the app's own files and the CesiumJS library on the device so the app
 // starts fast. Google 3D tiles and Cesium ion requests always go to the network: their terms do
 // not allow storing them.
-const CACHE = 'boni-v1';
+const CACHE = 'boni-v2';
 const NEVER = ['tile.googleapis.com', 'api.cesium.com', 'assets.ion.cesium.com'];
 const LIBS = ['cdn.jsdelivr.net/npm/cesium@'];
 

@@ -3,9 +3,11 @@
 // The token is asked for once (or passed as ?token=…) and then remembered on this device.
 const params = new URLSearchParams(location.search);
 const KEY = 'boniCesiumToken';
+// inside the Android app the token lives in the app (shared by the live and the bundled version)
+const app = window.BoniAndroid;
 const store = {
-  get: () => { try { return localStorage.getItem(KEY); } catch { return null; } },
-  set: (v) => { try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch { /* storage blocked */ } },
+  get: () => { if (app?.token) return app.token() || null; try { return localStorage.getItem(KEY); } catch { return null; } },
+  set: (v) => { if (app?.saveToken) { app.saveToken(v || ''); return; } try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch { /* storage blocked */ } },
 };
 if (params.get('token')) store.set(params.get('token'));
 
@@ -22,8 +24,8 @@ function aerial(message = '') {
 
 function photoreal(token) {
   import('./photoreal.js')
-    // the Android app carries CesiumJS itself (tools/android/build.sh)
-    .then((m) => m.run({ token, cesiumBase: params.get('cesiumBase') || (window.BoniAndroid ? 'vendor/cesium/' : null) }))
+    // the copy inside the Android app carries CesiumJS itself (tools/android/build.sh)
+    .then((m) => m.run({ token, cesiumBase: params.get('cesiumBase') || (location.host === 'appassets.androidplatform.net' ? 'vendor/cesium/' : null) }))
     .catch((e) => {
       console.error(e);
       // a rejected token is forgotten, so the next start asks again

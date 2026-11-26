@@ -22,6 +22,13 @@ const ease = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * t * (t * (t * 6 - 15) + 1
 const phase = (t, [a, b]) => ease((t - a) / (b - a));
 const FOV_START = (40 * Math.PI) / 180, FOV_END = (18 * Math.PI) / 180;
 
+// Performance: phones and tablets fly at reduced resolution and coarser tiles; once landed, the
+// view is drawn once at full resolution and then only when something changes (request render
+// mode), so the game on top runs at full speed.
+const MOBILE = !!window.BoniAndroid || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+const FLIGHT = { res: MOBILE ? 0.6 : 1, sse: MOBILE ? 18 : 10, msaa: MOBILE ? 1 : 4 };
+const STILL = { res: 1, sse: 8 };
+
 function loadCesium(base) {
   window.CESIUM_BASE_URL = base;
   const css = document.createElement('link');
@@ -59,7 +66,7 @@ export async function run({ token, cesiumBase }) {
   const viewer = new Cesium.Viewer('cesium', {
     globe: false, baseLayer: false, animation: false, timeline: false, baseLayerPicker: false, geocoder: false,
     homeButton: false, sceneModePicker: false, navigationHelpButton: false, fullscreenButton: false,
-    infoBox: false, selectionIndicator: false, msaaSamples: 4, useBrowserRecommendedResolution: false,
+    infoBox: false, selectionIndicator: false, msaaSamples: FLIGHT.msaa, useBrowserRecommendedResolution: false,
   });
   const { scene, camera } = viewer;
   scene.skyAtmosphere.show = true;
@@ -67,13 +74,13 @@ export async function run({ token, cesiumBase }) {
   viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-06-12T13:30:00Z');
   viewer.clock.shouldAnimate = false;
   scene.screenSpaceCameraController.enableInputs = false;
-  viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 2);
+  viewer.resolutionScale = FLIGHT.res; // on top of devicePixelRatio
 
   // Google tiles through the club's Cesium ion account (the endpoint hands out a session key)
   const url = `https://api.cesium.com/v1/assets/${GOOGLE_3D_TILES}/endpoint${token ? `?access_token=${encodeURIComponent(token)}` : ''}`;
   const ep = await (await fetch(url)).json();
   if (!ep.options?.url) throw new Error(ep.message || 'Cesium ion: kein Zugriff');
-  const tileset = await Cesium.Cesium3DTileset.fromUrl(ep.options.url, { showCreditsOnScreen: true, maximumScreenSpaceError: 8 });
+  const tileset = await Cesium.Cesium3DTileset.fromUrl(ep.options.url, { showCreditsOnScreen: true, maximumScreenSpaceError: FLIGHT.sse });
   scene.primitives.add(tileset);
   for (const a of ep.attributions ?? []) viewer.creditDisplay.addStaticCredit(new Cesium.Credit(a.html, true));
 
@@ -236,6 +243,23 @@ export async function run({ token, cesiumBase }) {
     await import('../main.js');
   };
   window.introDebug.startGame = startGame;
+
+  // settle into request-render mode once the flight is over (and wake up again for a replay)
+  const RECORD = new URLSearchParams(location.search).has('record');
+  let settled = null;
+  const settle = () => {
+    const s = now() >= END;
+    if (s !== settled) {
+      settled = s;
+      viewer.resolutionScale = s ? STILL.res : FLIGHT.res;
+      tileset.maximumScreenSpaceError = s ? STILL.sse : FLIGHT.sse;
+      scene.requestRenderMode = s && !RECORD;
+      scene.maximumRenderTimeChange = Infinity;
+      scene.requestRender();
+    }
+  };
+  setInterval(settle, 200);
+  window.addEventListener('resize', () => scene.requestRender());
 
   if (new URLSearchParams(location.search).has('record')) { window.introReady = true; return; }
   fixedT = null; start = performance.now();
