@@ -88,7 +88,7 @@ export class TouchController {
     strokeCircle(ctx, base.x, base.y, STICK_R);
     ctx.fillStyle = this.stick ? PAL.yellow : PAL.cloud;
     fillCircle(ctx, base.x + this.move.x * STICK_R, base.y + this.move.y * STICK_R, 10);
-    if (!this.stick) drawText(ctx, 'MOVE', base.x, base.y - STICK_R - 8, { color: PAL.white, align: 'center', shadow: PAL.ink });
+    if (!this.stick) drawText(ctx, 'LAUFEN', base.x, base.y - STICK_R - 8, { color: PAL.white, align: 'center', shadow: PAL.ink });
 
     for (const b of L.buttons) {
       const on = this.down[b.action];
