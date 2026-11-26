@@ -8,9 +8,13 @@
   <meta name="theme-color" content="#0e0f1a" />
   <title>Inline Hockey</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/app/icon-192.png" />
+  <link rel="apple-touch-icon" href="assets/app/icon-192.png" />
 </head>
 <body>
   <canvas id="screen" tabindex="0"></canvas>
   <script type="module" src="src/main.js"></script>
+  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
 </body>
 </html>

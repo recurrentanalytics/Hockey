@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#0e0f1a" />
   <title>Anflug auf den Boni</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/app/icon-192.png" />
+  <link rel="apple-touch-icon" href="assets/app/icon-192.png" />
   <style>
     html, body { margin: 0; height: 100%; background: #0e0f1a; overflow: hidden; }
     #gl { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; }
@@ -23,6 +26,12 @@
           padding: .55em 1.4em; box-shadow: 0 4px 0 #16110d; cursor: pointer; }
     #go.on { opacity: 1; }
     #credit { position: absolute; right: 8px; bottom: 6px; font: 11px/1.2 Arial, sans-serif; color: rgba(255,255,255,.85); text-shadow: 0 1px 2px #000; }
+    #token { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92vw, 520px); display: none; pointer-events: auto;
+             background: rgba(14,15,26,.92); border: 3px solid #ffd23f; border-radius: 14px; padding: 18px 20px; font: 15px/1.4 Arial, sans-serif; color: #fff; }
+    #token h2 { margin: 0 0 8px; font: 20px "Arial Black", Arial, sans-serif; color: #ffd23f; }
+    #token input { width: 100%; box-sizing: border-box; margin: 10px 0; padding: 10px; font: 14px monospace; border-radius: 8px; border: 2px solid #ffd23f; background: #1b1c2b; color: #fff; }
+    #token button { font: 16px "Arial Black", Arial, sans-serif; padding: 9px 16px; border-radius: 999px; border: 3px solid #16110d; background: #ffd23f; color: #16110d; margin-right: 8px; cursor: pointer; }
+    #token button.alt { background: #3a3b4f; color: #fff; }
     #hint { position: absolute; left: 8px; bottom: 6px; font: 11px/1.2 Arial, sans-serif; color: rgba(255,255,255,.7); text-shadow: 0 1px 2px #000; }
   </style>
 </head>
@@ -35,8 +44,15 @@
     <button id="go" type="button">Spiel starten</button>
     <div id="hint">Tippen: überspringen · R: nochmal</div>
     <div id="status"></div>
+    <div id="token">
+      <h2>3D-Ansicht freischalten</h2>
+      <div>Für den echten Boni in 3D einmal den Cesium-ion-Token des Vereins einfügen. Er wird nur auf diesem Gerät gespeichert.</div>
+      <input id="tokenInput" type="password" autocomplete="off" placeholder="Token einfügen" />
+      <button id="tokenOk" type="button">Los</button><button id="tokenSkip" class="alt" type="button">Ohne 3D spielen</button>
+    </div>
     <div id="credit">Geodaten © GeoBasis-DE / LGLN, CC BY 4.0</div>
   </div>
   <script type="module" src="src/intro/main.js"></script>
+  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
 </body>
 </html>
