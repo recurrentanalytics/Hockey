@@ -6,6 +6,7 @@ export class TitleScene {
   constructor(app) {
     this.app = app;
     this.t = 0;
+    this.menuPad = true;
   }
 
   update(dt) {

@@ -9,6 +9,7 @@ export class PauseScene {
     this.app = app;
     this.under = under;
     this.transparent = true;
+    this.menuPad = true;
     this.menu = new Menu([
       { label: 'RESUME', onSelect: () => app.pop() },
       { label: 'SETTINGS', onSelect: () => app.push(new SettingsScene(app)) },

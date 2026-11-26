@@ -76,6 +76,7 @@ function frame(now) {
   let steps = 0;
   while (acc >= TIMING.step && steps < 10) {
     input.touch.enabled = !!app.top.wantsTouch?.();
+    input.menuPad.enabled = input.pointers.touchSeen && !!app.top.menuPad;
     input.poll(TIMING.step);
     for (const n of input.notices) app.toasts.push(n);
     input.notices.length = 0;
@@ -93,6 +94,7 @@ function frame(now) {
   for (let i = base; i < app.scenes.length; i++) {
     app.scenes[i].draw(i === app.scenes.length - 1);
   }
+  if (input.menuPad.enabled) input.menuPad.draw(display.uctx, display.width, display.height);
   if (canFullscreen()) drawFullscreenButton(display.uctx, display.width, isFullscreen());
   app.toasts.draw(display.uctx, display.width, display.height);
   drawPortraitHint();

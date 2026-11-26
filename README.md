@@ -11,17 +11,30 @@ python3 -m http.server 8000
 
 ES modules need HTTP; opening `index.html` straight from disk won't work.
 
-## Status: phase 1 (foundation)
+## Status
 
-- Angled pixel-art rink: boards with ads, crowd, see-through near boards, goals and markings
-- Low-resolution renderer with crisp scaling. The width adapts to the screen's aspect ratio, and there's an optional pixel-perfect mode.
-- Cameras: follow (1P), shared with zoom (2P), split screen (2P)
-- Input: two keyboard layouts, gamepads (standard and non-standard mappings), and on-screen touch controls
-- Remapping per device, saved in the browser, with a live input tester and raw button readout for odd controllers
-- Menus: title, main menu, vs-AI setup, 2-player lobby (join with your own device), settings, controls, pause
-- Free skate on the rink, to try out skating and the cameras
+**Phase 1 (foundation):**
+- Angled pixel-art rink and arena
+- Cameras: follow, shared with zoom, and split screen
+- Input: keyboard, gamepad and touch, with remapping
+- Menus, including on-screen d-pad / OK / BACK on touch devices
+- Fullscreen
 
-The puck, the AI, the rules and the full match engine come in phases 2–4.
+**Phase 2 (puck and goalies):**
+- Puck physics with height: lifted shots, bounces off boards, posts and the net, landing on the net roof
+- Carrying the puck on a live-drawn stick
+- Hold-to-charge shots with aim assist toward the posts, and one-timers
+- Passes that lead the receiver. Control switches automatically to whoever receives the pass.
+- Poke checks to strip the puck. Inline rules don't allow body checking.
+- Sprint stamina
+- Goalies that hold their angle, read shots with human-like reaction and error, make saves with rebounds, and cover loose pucks
+- Goals, face-offs and a score/shots board
+- Modes:
+  - Practice: you, a teammate and both goalies
+  - 2P versus: 1-on-1 with goalies
+  - 2P co-op: two players attacking one goalie
+
+**Next:** AI teammates and opponents (phase 3), then rulesets, penalties, clock and overtime (phase 4).
 
 ## Default controls
 
@@ -30,7 +43,7 @@ The puck, the AI, the rules and the full match engine come in phases 2–4.
 | Move | WASD | Arrows | Left stick / D-pad |
 | Shoot | J | Num1 / , | Left face button, right trigger |
 | Pass | K | Num2 / . | Bottom face button |
-| Check | I | Num5 / ; | Right face button |
+| Poke check | I | Num5 / ; | Right face button |
 | Switch player | L | Num3 / / | Left bumper |
 | Sprint | Left Shift / Space | Num0 / Right Shift | Right bumper, left trigger |
 | Pause | Esc | Backspace | Start |

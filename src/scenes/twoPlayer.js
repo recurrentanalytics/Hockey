@@ -66,11 +66,12 @@ export class TwoPlayerScene extends MenuScene {
   start() {
     const versus = settings.twoPlayerMode === 'versus';
     this.app.push(new RinkScene(this.app, {
-      title: versus ? '2P VERSUS PREVIEW' : '2P CO-OP PREVIEW',
+      title: versus ? '2P VERSUS' : '2P CO-OP',
+      mode: versus ? 'versus' : 'coop',
       camera: settings.twoPlayerCamera,
-      players: [
-        { controller: this.slots[0], team: 'blazers', tag: 'P1' },
-        { controller: this.slots[1], team: versus ? 'waves' : 'blazers', tag: 'P2' },
+      humans: [
+        { controller: this.slots[0], side: 'home' },
+        { controller: this.slots[1], side: versus ? 'away' : 'home' },
       ],
     }));
   }

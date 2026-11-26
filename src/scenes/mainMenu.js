@@ -14,7 +14,7 @@ export class MainMenuScene extends MenuScene {
       items: [
         { label: 'PLAY VS AI', onSelect: () => app.push(new MatchSetupScene(app)) },
         { label: '2 PLAYERS', onSelect: () => app.push(new TwoPlayerScene(app)) },
-        { label: 'FREE SKATE', onSelect: () => app.push(new RinkScene(app, { title: 'FREE SKATE', players: [{ controller: 'any', team: 'blazers', tag: 'P1' }], camera: 'single' })) },
+        { label: 'PRACTICE', onSelect: () => app.push(new RinkScene(app, { title: 'PRACTICE', mode: 'practice', humans: [{ controller: 'any', side: 'home' }] })) },
         { label: 'SETTINGS', onSelect: () => app.push(new SettingsScene(app)) },
       ],
     });

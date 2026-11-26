@@ -20,8 +20,8 @@ export class MatchSetupScene extends MenuScene {
           color: PAL.yellow,
           onSelect: () => app.push(new RinkScene(app, {
             title: 'VS AI PREVIEW',
-            players: [{ controller: 'any', team: 'blazers', tag: 'P1' }],
-            camera: 'single',
+            mode: 'ai',
+            humans: [{ controller: 'any', side: 'home' }],
           })),
         },
         { label: 'BACK', onSelect: () => app.pop() },
@@ -30,7 +30,7 @@ export class MatchSetupScene extends MenuScene {
   }
 
   drawExtra(ctx, W) {
-    drawText(ctx, 'OPPONENTS, PUCK AND RULES ARRIVE IN PHASES 2-4.', W / 2, 136, { color: PAL.mist, align: 'center', shadow: PAL.ink });
-    drawText(ctx, 'START OPENS THE RINK IN FREE SKATE FOR NOW.', W / 2, 144, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+    drawText(ctx, 'AI OPPONENTS AND RULES ARRIVE IN PHASES 3-4.', W / 2, 136, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+    drawText(ctx, 'START OPENS SHOOTING PRACTICE FOR NOW.', W / 2, 144, { color: PAL.mist, align: 'center', shadow: PAL.ink });
   }
 }

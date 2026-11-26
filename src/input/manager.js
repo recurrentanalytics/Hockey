@@ -8,6 +8,7 @@
 import { Keyboard } from './keyboard.js';
 import { Pointers } from './pointers.js';
 import { TouchController } from './touch.js';
+import { MenuPad } from './menuPad.js';
 import { ACTION_IDS, defaultProfile } from './actions.js';
 import { keyLabel, padBindingLabel, detectPadStyle, padName } from './labels.js';
 import { load, save } from '../engine/storage.js';
@@ -82,6 +83,7 @@ export class InputManager {
     this.keyboard = new Keyboard();
     this.pointers = new Pointers(canvas, display);
     this.touch = new TouchController();
+    this.menuPad = new MenuPad();
     this.bindings = load('bindings', {});
     this.controllers = new Map([
       ['kb1', new Controller('kb1', 'keyboard', 'KEYBOARD 1', 'kb1')],
@@ -247,6 +249,7 @@ export class InputManager {
       c.apply(down, moveFrom(val));
     }
 
+    this.menuPad.poll(this.pointers, this.display);
     this.touch.poll(this.pointers, this.display);
     this.controllers.get('touch').apply(this.touch.down, this.touch.move);
 
@@ -330,6 +333,10 @@ export class InputManager {
     };
     let confirm = kb.hit('Enter') || kb.hit('Space') || kb.hit('NumpadEnter');
     let back = kb.hit('Escape') || kb.hit('Backspace');
+    const mp = this.menuPad;
+    for (const d of DIRS) held[d] ||= mp.held[d];
+    confirm ||= mp.confirm;
+    back ||= mp.back;
     const ci = settings.confirmButton === 'east' ? 1 : 0;
     const bi = 1 - ci;
     for (const c of this.padControllers()) {

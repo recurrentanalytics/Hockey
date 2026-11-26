@@ -11,6 +11,7 @@ import { ACTIONS } from '../input/actions.js';
 export class BindingsScene {
   constructor(app, profileKey, title, controllerId) {
     this.app = app;
+    this.menuPad = true;
     this.profileKey = profileKey;
     this.title = title;
     this.controllerId = controllerId;

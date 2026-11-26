@@ -74,7 +74,7 @@ function paletteFor(team) {
   };
 }
 
-function bakeFrame(team, legs, stickDrop = 0) {
+function bakeFrame(team, legs) {
   const s = new Surface(SPRITE_W, SPRITE_H);
   const pal = paletteFor(team);
   const colors = Object.fromEntries(Object.entries(pal).map(([k, v]) => [k, rgba(v)]));
@@ -85,14 +85,7 @@ function bakeFrame(team, legs, stickDrop = 0) {
       if (c) s.set(x, y, c);
     }
   });
-  // Stick: from the glove down to the blade on the floor.
-  const shaft = rgba(PAL.wood), shaftDark = rgba(PAL.woodDark), blade = rgba(PAL.ink), tape = rgba(PAL.white);
-  s.line(12, 11, 16, 22 + stickDrop, shaftDark);
-  s.line(13, 11, 17, 22 + stickDrop, shaft);
-  s.line(17, 23, 17, 24, blade);
-  s.line(17, 25, 21, 25, blade);
-  s.set(19, 25, tape);
-  s.set(20, 25, tape);
+  // The stick is drawn live by the skater so it can aim, wind up and poke.
   // Re-draw the glove over the shaft so the hands hold it.
   s.set(11, 10, colors.G); s.set(12, 10, colors.G);
   return s.toCanvas();
@@ -132,4 +125,62 @@ export function shadowSprite() {
   }
   shadowCanvas = s.toCanvas();
   return shadowCanvas;
+}
+
+// ---------------------------------------------------------------- goalie
+// D = leg pad, d = pad stripe (team colour), B = blocker, G = catch glove, M = mask
+const GOALIE = [
+  '......oooo.......',
+  '.....oMMMMo......',
+  '....oMMMMMMo.....',
+  '....oMMMccco.....',
+  '....ohMMccco.....',
+  '...ooJJJJJoo.....',
+  '..oJJJJJJJJJo....',
+  '.oJJJJJJJJJJJo...',
+  'oBBoJJTTTTJoGGGo.',
+  'oBBoJjJJJJJoGGGGo',
+  'oBBoJjJJJJJoGGGo.',
+  '.oo.oJJJJJo..ooo.',
+  '...oPPPPPPPo.....',
+  '..oDDDoooDDDo....',
+  '..oDdDo.oDdDo....',
+  '.oDDdDo.oDdDDo...',
+  '.oDDdDo.oDdDDo...',
+  '.oDDdDo.oDdDDo...',
+  '.oDDDDo.oDDDDo...',
+  '.oKKKKo.oKKKKo...',
+  '.oooooo.oooooo...',
+  '..FFFF...FFFF....',
+  '..WWWW...WWWW....',
+];
+export const GOALIE_W = 18;
+export const GOALIE_ANCHOR_X = 7;
+export const GOALIE_ANCHOR_Y = 22;
+
+const goalieCache = new Map();
+
+export function goalieSprites(team) {
+  let s = goalieCache.get(team);
+  if (s) return s;
+  const pal = {
+    ...paletteFor(team),
+    M: PAL.white, D: PAL.white, d: team.main, B: PAL.cloud, G: team.shade,
+  };
+  const colors = Object.fromEntries(Object.entries(pal).map(([k, v]) => [k, rgba(v)]));
+  const surf = new Surface(GOALIE_W, 24);
+  GOALIE.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const c = colors[row[x]];
+      if (c) surf.set(x, y, c);
+    }
+  });
+  // Goalie stick: paddle down in front of the pads.
+  const shaft = rgba(PAL.wood), blade = rgba(PAL.ink);
+  surf.line(2, 11, 3, 19, shaft);
+  surf.rect(3, 20, 7, 2, blade);
+  const right = surf.toCanvas();
+  s = { right, left: mirror(right) };
+  goalieCache.set(team, s);
+  return s;
 }

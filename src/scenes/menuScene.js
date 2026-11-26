@@ -6,6 +6,7 @@ import { BACK_BUTTON, hit, drawBackButton } from '../ui/corner.js';
 export class MenuScene {
   constructor(app, { title, subtitle = null, items, width = 200, top = 56 }) {
     this.app = app;
+    this.menuPad = true;
     this.title = title;
     this.subtitle = subtitle;
     this.menu = new Menu(items, { width, top });
