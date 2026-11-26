@@ -347,3 +347,8 @@ Comic-Effekte bestehen aus **wenigen gezeichneten Phasen** (4–8 Bilder, abgesp
   - Beim Spiegeln muss die Rückennummer getrennt gezeichnet werden.
   - Das Brustwappen ist noch zu schlicht.
   - Ins Spiel eingebaut ist Bonny noch nicht (Schritt 3).
+
+**Nachtrag: Banden**
+Banden sind ausdrücklich erlaubt.
+- **Spiel:** Die Physik nutzt sie heute schon (Abpraller, Bandenspiel) und bleibt so.
+- **Optik:** Auf dem Boni wird daraus eine **mobile Inlinehockey-Bande**. Sie steht innerhalb des Stabmattenzauns auf dem Asphalt, mit abgerundeten Ecken, so wie Vereine sie für Turniere aufbauen. Sie wird realistisch dargestellt: helle Kunststoff-Elemente mit sichtbaren Verbindungsstellen, Vereins- und Sponsorenflächen im Borstentiere-Grün und leichten Gebrauchsspuren. Der Zaun bleibt dahinter sichtbar.
