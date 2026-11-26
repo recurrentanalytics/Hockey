@@ -13,6 +13,7 @@ export class MatchSetupScene extends MenuScene {
       items: [
         choice('YOUR TEAM', 'homeTeam', () => avoidSameTeam('awayTeam')),
         choice('OPPONENT', 'awayTeam', () => avoidSameTeam('homeTeam')),
+        choice('VENUE', 'venue'),
         choice('RULES', 'ruleset'),
         choice('PERIOD LENGTH', 'periodLength'),
         choice('DIFFICULTY', 'difficulty'),
@@ -32,6 +33,6 @@ export class MatchSetupScene extends MenuScene {
   }
 
   drawExtra(ctx, W) {
-    drawText(ctx, '4 ON 4 WITH GOALIES UNDER THE CHOSEN RULESET', W / 2, 136 + 20, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+    drawText(ctx, '4 ON 4 WITH GOALIES UNDER THE CHOSEN RULESET', W / 2, 170, { color: PAL.mist, align: 'center', shadow: PAL.ink });
   }
 }

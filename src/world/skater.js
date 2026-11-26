@@ -20,7 +20,7 @@ function turnToward(a, b, max) {
 }
 
 export class Skater {
-  constructor({ team, x = 0, y = 0, facing = 1, number = 0 }) {
+  constructor({ team, x = 0, y = 0, facing = 1, number = 0, look = {} }) {
     this.team = TEAMS[team];
     this.teamId = team;
     this.number = number;
@@ -42,7 +42,8 @@ export class Skater {
     this.noPickup = 0;
     this.human = null;  // set when a player controls this skater
     this.sideKey = null;
-    this.sprites = skaterSprites(this.team);
+    this.look = look;
+    this.sprites = skaterSprites(this.team, look);
   }
 
   get speed() {
@@ -234,6 +235,8 @@ export class Skater {
   }
 
   draw(ctx, ox, oy) {
+    // Jump for joy after a goal
+    if (this.happyT > 0 && this.downT <= 0) oy -= Math.round(Math.abs(Math.sin((2.6 - this.happyT) * 9)) * 3);
     const p = project(this.pos.x, this.pos.y);
     const frame = this.pushing ? Math.floor(this.anim) % 4 : 0;
     const right = this.facing >= 0;

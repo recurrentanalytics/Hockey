@@ -2,7 +2,7 @@
 import { load, save } from './engine/storage.js';
 import { TEAMS } from './config.js';
 
-const TEAM_OPTIONS = Object.entries(TEAMS).map(([value, t]) => ({ value, label: t.name }));
+const TEAM_OPTIONS = Object.entries(TEAMS).filter(([, t]) => !t.hidden).map(([value, t]) => ({ value, label: t.name }));
 
 const DEFAULTS = {
   ruleset: 'worldskate',
@@ -16,9 +16,10 @@ const DEFAULTS = {
   pixelPerfect: false,
   autoFullscreen: true,
   sound: 0.75,
+  venue: 'arena',
   rumble: true,
-  homeTeam: 'blazers',
-  awayTeam: 'waves',
+  homeTeam: 'borstentiere',
+  awayTeam: 'blazers',
 };
 
 export const settings = { ...DEFAULTS, ...load('settings', {}) };
@@ -80,6 +81,10 @@ export const OPTIONS = {
   rumble: [
     { value: true, label: 'ON' },
     { value: false, label: 'OFF' },
+  ],
+  venue: [
+    { value: 'arena', label: 'HALLE' },
+    { value: 'boni', label: 'BONIFATIUSPLATZ' },
   ],
   homeTeam: TEAM_OPTIONS,
   awayTeam: TEAM_OPTIONS,

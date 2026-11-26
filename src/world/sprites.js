@@ -52,8 +52,30 @@ function colorsFor(team) {
     main: c(team.main), shade: c(team.shade), trim: c(team.trim), helmet: c(team.helmet), helmetShade: c(team.helmetShade),
     pants: c(team.pants), boot: c(PAL.white), bootShade: c(PAL.cloud), wheel: c(team.wheel ?? PAL.yellow), frame: c(PAL.mist),
     highlight: c('#ffffff'),
+    stripe: c(team.stripe ?? team.trim),
+    fur: c('#8a5a34'), furDark: c('#5e3b20'), furLight: c('#b07a48'), snout: c('#e8b48f'), tusk: c('#fff3dc'),
   };
 }
+
+// ------------------------------------------------------------------ team animals
+
+/** 3×3 chest emblems: a tiny version of each team's animal. */
+const EMBLEMS = {
+  boar: { rows: ['a.a', 'aaa', '.b.'], a: '#8a5a34', b: '#e8b48f' },
+  boarGlasses: { rows: ['aaa', 'bab', '.a.'], a: '#8a5a34', b: '#2a1f3d' },
+  fox: { rows: ['a.a', 'aaa', '.b.'], a: '#ff9b52', b: '#fffaf4' },
+  seal: { rows: ['.a.', 'aba', 'a.a'], a: '#c9d4e6', b: '#2a1f3d' },
+  snake: { rows: ['aa.', '.a.', '.aa'], a: '#b6f07a', b: '#2a1f3d' },
+  owl: { rows: ['a.a', 'bab', '.a.'], a: '#c98b52', b: '#fffaf4' },
+};
+
+function emblem(s, team, x, y) {
+  const e = EMBLEMS[team.animal];
+  if (!e) return;
+  e.rows.forEach((row, j) => { for (let i = 0; i < 3; i++) if (row[i] !== '.') s.set(x + i, y + j, rgba(e[row[i]])); });
+}
+
+export const HAIR = ['#5a3b2e', '#2a1f3d', '#f2c14e', '#c4632e', '#8a5a44', '#ff9fc4'];
 
 // ------------------------------------------------------------------ face
 
@@ -102,13 +124,63 @@ function head(s, C, cx, cy, mood, { helmet = C.helmet, helmetShade = C.helmetSha
   }
 }
 
+/** Hair peeking out under the helmet: a fringe and a tuft at the back. */
+function hair(s, cx, cy, color) {
+  const c = rgba(color);
+  cx = Math.round(cx); cy = Math.round(cy);
+  for (const x of [cx - 3, cx - 2, cx, cx + 1]) s.set(x, cy + 1, c);
+  s.set(cx - 2, cy + 2, c);
+  for (const [x, y] of [[cx - 7, cy + 1], [cx - 7, cy + 2], [cx - 6, cy + 3], [cx - 7, cy + 3], [cx - 6, cy + 4]]) s.set(x, y, c);
+}
+
+/** Balding Borstis: shiny bald dome, a fringe of hair round the sides, round glasses. */
+function baldHead(s, C, cx, cy, mood, fringe) {
+  const r = 7.2, f = rgba(fringe);
+  ellipse(s, cx, cy, r, r * 0.95, (x, y, dx, dy) => {
+    if (dy > -0.15 && Math.abs(dx) > 0.78) return f;                 // side hair
+    if (dx > 0.2 && dy < -0.35 && dx * dx + dy * dy > 0.4) return C.highlight; // shine
+    return dx < -0.6 ? C.skinShade : C.skin;
+  });
+  face(s, C, Math.round(cx) - 2, Math.round(cy) + 1, mood);
+  // Glasses: thin rims around each eye and a bridge
+  const rim = rgba(PAL.slate);
+  const ex = Math.round(cx) - 3, ey = Math.round(cy);
+  for (const gx of [ex, ex + 4]) {
+    for (let i = 0; i < 4; i++) s.set(gx + i, ey, rim);
+    s.set(gx, ey + 1, rim); s.set(gx + 3, ey + 1, rim); s.set(gx, ey + 2, rim); s.set(gx + 3, ey + 2, rim);
+  }
+}
+
+/** Bonny: a little wild boar from the Eilenriede (no helmet, bristly crest, pig snout, tusks). */
+function boarHead(s, C, cx, cy, mood) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  const r = 7;
+  ellipse(s, cx, cy + 0.5, r, r * 0.9, (x, y, dx, dy) => {
+    if (dy > 0.15 && Math.abs(dx) < 0.62) return C.furLight;          // lighter muzzle
+    return dx < -0.5 ? C.furDark : C.fur;
+  });
+  // Pointy ears on top, a bristly crest between them
+  for (const [ex, dir] of [[cx - 5, -1], [cx + 4, 1]]) {
+    s.rect(ex, cy - 7, 2, 2, C.fur);
+    s.set(ex + (dir > 0 ? 1 : 0), cy - 8, C.furDark);
+    s.set(ex + (dir > 0 ? 0 : 1), cy - 6, C.snout);                  // pink inner ear
+  }
+  for (const x of [cx - 2, cx, cx + 2]) { s.set(x, cy - 7, C.furDark); s.set(x - 1, cy - 8, C.furDark); }
+  // Eyes higher up, then a big snout in the middle of the face
+  face(s, C, cx - 2, cy - 2, mood);
+  ellipse(s, cx + 1, cy + 3, 3.4, 2.1, C.snout);
+  s.set(cx, cy + 3, C.furDark); s.set(cx + 2, cy + 3, C.furDark);    // nostrils
+  s.set(cx - 3, cy + 4, C.tusk); s.set(cx - 3, cy + 3, C.tusk);       // tusks
+  s.set(cx + 5, cy + 4, C.tusk); s.set(cx + 5, cy + 3, C.tusk);
+}
+
 // ------------------------------------------------------------------ skater
 
 /**
  * One skater frame, facing right.
  * pose: { bob, back: {dx, lift}, front: {dx, lift} }
  */
-function bakeSkater(team, pose, mood) {
+function bakeSkater(team, pose, mood, look = {}) {
   const s = new Surface(SPRITE_W, SPRITE_H);
   const C = colorsFor(team);
   const bob = pose.bob ?? 0;
@@ -129,14 +201,22 @@ function bakeSkater(team, pose, mood) {
   skate(fx, pose.front?.lift ?? 0, true);
   // Back glove (behind the body)
   ellipse(s, 4.5, 15.5 + bob, 1.6, 1.6, C.shade);
-  // Body: round jersey with a trim stripe
+  // Body: round jersey with team stripes and the team animal on the chest
   ellipse(s, 10, 16 + bob, 5.2, 4.2, (x, y, dx, dy) => {
-    if (Math.abs(y + 0.5 - (18 + bob)) < 0.6) return C.trim;
+    const row = y + 0.5 - (18 + bob);
+    if (Math.abs(row) < 0.6) return C.trim;
+    if (Math.abs(row - 1) < 0.6 && team.stripe) return C.stripe;
     return dx < -0.45 || dy > 0.6 ? C.shade : C.main;
   });
+  emblem(s, team, 10, 13 + bob);
   // Front glove, holding the stick
   ellipse(s, 15.5, 16.5 + bob, 1.7, 1.7, C.shade);
-  head(s, C, 10, 7.5 + bob, mood);
+  if (look.kind === 'boar') boarHead(s, C, 10, 7.5 + bob, mood);
+  else if (look.kind === 'bald') baldHead(s, C, 10, 7.5 + bob, mood, look.hair ?? HAIR[0]);
+  else {
+    head(s, C, 10, 7.5 + bob, mood);
+    if (look.hair) hair(s, 10, 7.5 + bob, look.hair);
+  }
   outline(s, C.ink);
   return s.toCanvas();
 }
@@ -149,16 +229,17 @@ const POSES = {
 
 const cache = new Map();
 
-/** Frames: right/left[0..3] skating, plus happy, dizzy and blink variants. */
-export function skaterSprites(team) {
-  let s = cache.get(team);
+/**
+ * Frames: right/left[0..3] skating, plus happy, dizzy and blink variants.
+ * look: { kind: 'human' | 'boar' | 'bald', hair: '#rrggbb' }
+ */
+export function skaterSprites(team, look = {}) {
+  const key = `${team.key}|${look.kind ?? 'human'}|${look.hair ?? ''}`;
+  let s = cache.get(key);
   if (s) return s;
-  const right = [bakeSkater(team, POSES.glide, 'normal'), bakeSkater(team, POSES.pushA, 'normal'), bakeSkater(team, POSES.glide, 'normal'), bakeSkater(team, POSES.pushB, 'normal')];
-  const extra = {
-    happy: bakeSkater(team, POSES.glide, 'happy'),
-    dizzy: bakeSkater(team, POSES.glide, 'dizzy'),
-    blink: bakeSkater(team, POSES.glide, 'blink'),
-  };
+  const bake = (pose, mood) => bakeSkater(team, pose, mood, look);
+  const right = [bake(POSES.glide, 'normal'), bake(POSES.pushA, 'normal'), bake(POSES.glide, 'normal'), bake(POSES.pushB, 'normal')];
+  const extra = { happy: bake(POSES.glide, 'happy'), dizzy: bake(POSES.glide, 'dizzy'), blink: bake(POSES.glide, 'blink') };
   s = {
     right,
     left: right.map(mirror),
@@ -166,7 +247,7 @@ export function skaterSprites(team) {
     dizzyRight: extra.dizzy, dizzyLeft: mirror(extra.dizzy),
     blinkRight: extra.blink, blinkLeft: mirror(extra.blink),
   };
-  cache.set(team, s);
+  cache.set(key, s);
   return s;
 }
 
@@ -210,8 +291,19 @@ function bakeGoalie(team, down) {
   // Stick paddle in front of the pads
   rect(s, 5, down ? 21 : 25, 8, 1, rgba(PAL.woodDark));
   // White mask with a team stripe over the top only
-  head(s, C, 12, 6.5 + drop, 'normal', { helmet: rgba(PAL.white), helmetShade: rgba(PAL.cloud), cage: true });
-  for (let y = drop; y < 4 + drop; y++) rect(s, 11, y, 2, 1, C.main);
+  if (team.animal === 'boarGlasses') {
+    // Keiler mask: brown with tusks
+    head(s, C, 12, 6.5 + drop, 'normal', { helmet: C.fur, helmetShade: C.furDark, cage: true });
+    s.set(8, 11 + drop, C.tusk); s.set(16, 11 + drop, C.tusk);
+  } else {
+    head(s, C, 12, 6.5 + drop, 'normal', { helmet: rgba(PAL.white), helmetShade: rgba(PAL.cloud), cage: true });
+    for (let y = drop; y < 4 + drop; y++) rect(s, 11, y, 2, 1, C.main);
+  }
+  if (team.animal === 'boar') {
+    // little boar ears on the mask
+    rect(s, 6, drop, 2, 2, C.fur); rect(s, 16, drop, 2, 2, C.fur);
+  }
+  emblem(s, team, 11, 13 + drop);
   outline(s, C.ink);
   return s.toCanvas();
 }

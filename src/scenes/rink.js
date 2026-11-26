@@ -2,19 +2,23 @@
 import { PAL } from '../engine/palette.js';
 import { drawText, textWidth, drawTextOutlined } from '../engine/font.js';
 import { panel } from '../engine/draw.js';
-import { PLAYER_COLORS, TEAMS, RINK, GOAL } from '../config.js';
+import { PLAYER_COLORS, TEAMS, RINK, GOAL, isBoarTeam } from '../config.js';
 import { settings } from '../settings.js';
 import { Camera } from '../world/camera.js';
 import { BAKE } from '../world/rink.js';
 import { project } from '../world/projection.js';
 import { Match } from '../game/match.js';
 import { Particles } from '../world/particles.js';
+import { VideoWall } from '../ui/videoWall.js';
 import { resolveRules } from '../game/rules.js';
 import { hintBar } from '../ui/hud.js';
 import { PauseScene } from './pause.js';
 
 const SPLIT_ZOOM = 0.8;
-const otherTeam = (t) => Object.keys(TEAMS).find((k) => k !== t);
+const otherTeam = (t) => Object.keys(TEAMS).find((k) => k !== t && !TEAMS[k].hidden);
+const pick = (list) => list[Math.floor(Math.random() * list.length)];
+const m0 = (scene) => scene.match;
+const BOAR_TEAMS = { has: (key) => isBoarTeam(key) };
 const fmt = (sec) => { const s = Math.max(0, Math.ceil(sec)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 const LOOKAHEAD = 0.3;
 
@@ -39,11 +43,15 @@ export class RinkScene {
     this.cameraMode = humans.length > 1 ? camera : 'single';
     this.zoom = 1;
     this.rules = mode === 'practice' ? null : resolveRules(settings.ruleset, settings.periodLength);
+    const homeKey = teams?.home ?? settings.homeTeam;
+    let awayKey = teams?.away ?? (mode === 'practice' ? otherTeam(settings.homeTeam) : settings.awayTeam);
+    // Kit clash (same colours): the away side wears its cream away kit.
+    if (isBoarTeam(homeKey) && isBoarTeam(awayKey) && TEAMS[`${awayKey}_away`]) awayKey = `${awayKey}_away`;
     const lineup = MODES[mode];
     this.match = new Match({
       ...lineup,
-      home: { ...lineup.home, team: teams?.home ?? settings.homeTeam },
-      away: { ...lineup.away, team: teams?.away ?? (mode === 'practice' ? otherTeam(settings.homeTeam) : settings.awayTeam) },
+      home: { ...lineup.home, team: homeKey },
+      away: { ...lineup.away, team: awayKey },
       rules: this.rules,
       difficulty: settings.difficulty,
       humans: humans.map((h, i) => ({ ...h, tag: `P${i + 1}`, color: PLAYER_COLORS[i] })),
@@ -52,6 +60,9 @@ export class RinkScene {
     this.shared = new Camera();
     this.banner = null;
     this.fx = new Particles();
+    this.wall = new VideoWall();
+    const teamsInGame = [this.match.sides.home.team, this.match.sides.away.team];
+    app.world.configure({ venue: settings.venue, logo: teamsInGame.some((t) => BOAR_TEAMS.has(t)) ? 'boar' : 'puck' });
     this.snapCameras();
   }
 
@@ -113,6 +124,7 @@ export class RinkScene {
     if (m.state === 'final') {
       const pressed = input.menu.confirm || input.taps.length || m.humans.some((h) => input.controller(h.controller)?.pressed.shoot);
       if (pressed && (this.finalT = (this.finalT ?? 0) + dt) > 0.8) {
+        this.app.audio.stopSong();
         if (this.onFinish) this.onFinish({ score: { ...m.score }, how: m.ref?.result?.how ?? '', winner: m.ref?.result?.winner });
         else this.app.popTo((s) => s.isMainMenu);
         return;
@@ -149,20 +161,38 @@ export class RinkScene {
         case 'lineChange': if (m.humans.some((h) => h.side === e.side)) this.notice = { text: `LINE CHANGE - ${name(e.side)}`, t: 1.5 }; break;
         case 'timeoutRequested': this.notice = { text: `TIME-OUT REQUESTED - ${name(e.side)}`, t: 2 }; break;
       }
-      if (e.type === 'goal') this.banner = { text: e.shootout ? 'SCORES!' : 'GOAL!', sub: e.shootout ? name(e.side) : this.goalText(e), t: 2.4 };
+      if (e.type === 'goal') {
+        const boar = BOAR_TEAMS.has(m.sides[e.side].team);
+        this.banner = { text: e.shootout ? 'SCORES!' : boar ? 'TOOORRR!!!' : 'GOAL!', sub: e.shootout ? name(e.side) : this.goalText(e), t: 2.4 };
+        // The club hymn is the Borstentiere goal song.
+        if (boar && !e.shootout) this.app.audio.song('audio/hymne.mp3', 10);
+        if (!e.shootout) this.wall.start('goal', { team: m.sides[e.side].team, look: e.by?.sideKey === e.side ? e.by.look : {}, text: boar ? 'TOOORRR!' : 'GOAL!' }, 2.6, 2.2);
+      }
       if (e.type === 'save' && !this.banner) this.banner = { text: 'SAVE', t: 0.8, small: true };
       if (e.type === 'foul') this.notice = { text: `${e.name} - ${name(e.offender.sideKey)} #${e.offender.number}`, t: 2.5 };
       if (e.type === 'penalty') this.banner = { text: e.major ? 'MAJOR' : 'PENALTY', sub: `${name(e.side)} #${e.skater.number} - ${e.foul} - ${fmt(e.seconds)}`, t: 2.6, small2: true };
       if (e.type === 'penaltyShot') this.banner = { text: 'PENALTY SHOT', sub: `${e.name} ON #${e.shooter.number}`, t: 2.6, small2: true };
       if (e.type === 'attempt' && !e.scored) this.banner = { text: 'NO GOAL', t: 1.4, small: true };
       if (e.type === 'break') this.banner = { text: e.text, t: 3, small2: true };
-      if (e.type === 'final') this.banner = { text: 'FINAL', sub: this.finalText(e), t: Infinity, final: true };
+      // Stoppages: sometimes the video wall shows a kiss cam, Bonny or a dancing fan.
+      if ((e.type === 'whistle' || e.type === 'break' || e.type === 'timeout') && !this.wall.active && Math.random() < 0.5) {
+        const boarGame = [m.sides.home.team, m.sides.away.team].some((t) => BOAR_TEAMS.has(t));
+        const r = Math.random();
+        const kind = boarGame && r < 0.4 ? 'bonny' : r < 0.75 ? 'kiss' : 'dance';
+        this.wall.start(kind, { team: pick([m.sides.home.team, m.sides.away.team]) });
+        if (kind === 'kiss') this.app.audio.play('cheer', 0.5);
+      }
+      if (e.type === 'final') {
+        this.banner = { text: 'FINAL', sub: this.finalText(e), t: Infinity, final: true };
+        if (e.winner && BOAR_TEAMS.has(m.sides[e.winner].team)) { this.banner.sub += ' - ZUSAMMEN SIND WIR STARK!'; this.app.audio.song('audio/hymne.mp3', 20); }
+      }
       if (e.type === 'release') this.notice = { text: `${name(e.side)} BACK TO FULL STRENGTH`, t: 2 };
     }
     // Wheel sparkles on fast skaters, a glowing trail behind hard shots.
     for (const s of m.skaters) if (s.speed > 6 && Math.random() < 0.3) this.fx.spray(s);
     if (m.puck.loose && m.puck.speed > 14) this.fx.trail(m.puck);
     this.fx.update(dt);
+    this.wall.update(dt);
     this.shake = Math.max(0, (this.shake ?? 0) - dt);
     this.cheerT = Math.max(0, (this.cheerT ?? 0) - dt);
     if (this.banner && (this.banner.t -= dt) <= 0) this.banner = null;
@@ -237,7 +267,12 @@ export class RinkScene {
   }
 
   goalText(e) {
-    const team = TEAMS[this.match.sides[e.side].team].name;
+    const key = this.match.sides[e.side].team;
+    const team = TEAMS[key].name;
+    // Club chants from the Boni Borstentiere website and comic
+    if (e.by?.look?.kind === 'boar') return 'BONNY! BONNY! BONNY!';
+    if (key.startsWith('borstentiere')) return pick(['WAS SIND WIR? EIN BORSTENTIER!', 'LOS BORSTENTIERE!', 'ZUSAMMEN SIND WIR STARK!']);
+    if (key.startsWith('borstis')) return pick(['HAARE OPTIONAL!', 'WO BLADING AUF BALDING TRIFFT', 'ZU ALT FUER AUSREDEN!']);
     const by = e.by?.human ? e.by.human.tag : e.by ? `#${e.by.number}` : '';
     return by && e.by.sideKey === e.side ? `${team} - ${by}` : `${team}`;
   }
@@ -289,6 +324,7 @@ export class RinkScene {
     } else {
       drawText(ui, this.title, 4, 4, { color: PAL.cloud, shadow: PAL.ink });
     }
+    if (m0(this).state !== 'final') this.wall.draw(ui, W);
     this.drawBanner(ui, W, H);
 
     if (!isTop) return;

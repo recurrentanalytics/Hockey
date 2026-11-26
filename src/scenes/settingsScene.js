@@ -12,6 +12,7 @@ export class SettingsScene extends MenuScene {
       items: [
         { label: 'CONTROLS', value: () => '>', onSelect: () => app.push(new ControlsScene(app)) },
         choice('SOUND', 'sound'),
+        choice('VENUE', 'venue'),
         choice('RULES', 'ruleset'),
         choice('PERIOD LENGTH', 'periodLength'),
         choice('DIFFICULTY', 'difficulty'),

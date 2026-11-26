@@ -1,7 +1,8 @@
 // On-ice game state: skaters, goalies, the puck, possession, shots, passes and goals.
 // Skaters nobody controls are played by the team AI (game/ai.js) on sides where it
 // is switched on; elsewhere (practice) they stand still and take passes.
-import { RINK, GOAL, SHOT } from '../config.js';
+import { RINK, GOAL, SHOT, TEAMS } from '../config.js';
+import { HAIR } from '../world/sprites.js';
 import { AI } from './ai.js';
 import { Referee } from './referee.js';
 import { RINK_CORE } from '../world/rink.js';
@@ -40,7 +41,13 @@ export class Match {
     for (const [key, cfg] of [['home', home], ['away', away]]) {
       const lines = cfg.lines ?? 1;
       for (let i = 0; i < cfg.skaters * lines; i++) {
-        const s = new Skater({ team: cfg.team, number: NUMBERS[i] ?? 50 + i });
+        const t = TEAMS[cfg.team];
+        const number = (t.numbers ?? NUMBERS)[i] ?? 50 + i;
+        // Bonny (#61) plays for the Borstentiere; the Balding Borstis are... balding.
+        const look = cfg.team.startsWith('borstentiere') && number === 61 ? { kind: 'boar' }
+          : t.bald ? { kind: 'bald', hair: HAIR[(number * 7) % 3] }
+          : { hair: HAIR[(number * 5 + i) % HAIR.length] };
+        const s = new Skater({ team: cfg.team, number, look });
         s.sideKey = key;
         s.slot = i % cfg.skaters;              // role in the line: 0-1 forwards, 2-3 defence
         s.line = Math.floor(i / cfg.skaters);

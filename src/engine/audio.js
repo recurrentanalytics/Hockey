@@ -148,6 +148,34 @@ export class Audio {
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   }
 
+  /**
+   * Play part of a song file (e.g. the Borstentiere hymn as goal song), fading out after `seconds`.
+   */
+  song(src, seconds = 14, from = 0) {
+    if (!settings.sound) return;
+    try {
+      this.stopSong();
+      const a = new window.Audio(src);
+      a.volume = Math.min(1, settings.sound * 0.9);
+      a.currentTime = from;
+      a.play().catch(() => {});
+      this.songEl = a;
+      const start = performance.now();
+      this.songTimer = setInterval(() => {
+        const t = (performance.now() - start) / 1000;
+        if (t > seconds) a.volume = Math.max(0, a.volume - 0.05);
+        if (a.volume <= 0.01 || a.ended) this.stopSong();
+      }, 100);
+    } catch {
+      /* no audio element support */
+    }
+  }
+
+  stopSong() {
+    clearInterval(this.songTimer);
+    if (this.songEl) { this.songEl.pause(); this.songEl = null; }
+  }
+
   /** Low crowd murmur while a game is on. */
   setAmbient(on) {
     if (!this.ctx || !this.noiseBuf) return;

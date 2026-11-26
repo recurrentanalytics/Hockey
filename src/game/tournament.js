@@ -21,7 +21,10 @@ export function clearTournament() {
 }
 
 export function newTournament(userTeam) {
-  const others = Object.keys(TEAMS).filter((k) => k !== userTeam);
+  // Three opponents; the club teams always meet when one of them is picked.
+  let others = Object.keys(TEAMS).filter((k) => k !== userTeam && !TEAMS[k].hidden);
+  if (userTeam === 'borstentiere' || userTeam === 'borstis') others = [userTeam === 'borstentiere' ? 'borstis' : 'borstentiere', ...others.filter((k) => !k.startsWith('borst'))];
+  others = others.slice(0, 3);
   const teams = [userTeam, ...others];
   const games = [];
   ROUNDS.forEach((round, r) => round.forEach(([a, b]) => games.push({ round: r + 1, home: teams[a], away: teams[b], played: false })));

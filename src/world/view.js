@@ -4,11 +4,20 @@ import { bakeRink, bakeGoal } from './rink.js';
 
 export class WorldView {
   constructor() {
+    this.key = 'arena|puck';
     this.rink = bakeRink();
     this.goals = [bakeGoal(-1), bakeGoal(1)].map((g) => ({
       sortY: g.sortY,
       draw: (ctx, ox, oy) => ctx.drawImage(g.canvas, g.x + ox, g.y + oy),
     }));
+  }
+
+  /** Switch venue ('arena' | 'boni') and centre logo ('puck' | 'boar'); re-bakes only on change. */
+  configure({ venue = 'arena', logo = 'puck' } = {}) {
+    const key = `${venue}|${logo}`;
+    if (key === this.key) return;
+    this.key = key;
+    this.rink = bakeRink({ venue, logo });
   }
 
   /**

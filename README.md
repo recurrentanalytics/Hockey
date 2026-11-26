@@ -71,6 +71,17 @@ ES modules need HTTP; opening `index.html` straight from disk won't work.
 - **Line changes:** each team has two lines of 4 skaters (8 in all). A tired line swaps for the rested one at stoppages, and the bench recovers.
 - **Tournament:** 4 teams play a round robin, then the top two meet in the final. Scoring is 3 points for a regulation win, 2 for a win in OT or the shootout, and 1 for a loss in OT or the shootout. Games without you are simulated, and progress is saved in the browser.
 
+**Boni Borstentiere:** the club from Hannover-List is in the game ([website](https://recurrentanalytics.github.io/boni-borstentiere-website/)).
+- **BORSTENTIERE** play in green with orange and cream stripes. Their #61 is **Bonny**, the little wild boar from the Eilenriede, and their goalies have boar ears on the mask.
+- **BALDING BORSTIS** are the adults' section: bald heads, glasses, and a Keiler goalie mask ("Haare optional"). When the two meet, the away side wears a cream kit.
+- **Venue:** a second venue, **Bonifatiusplatz**, an outdoor asphalt pitch with wooden boards, Eilenriede trees, parents watching and the playground hippo. Bonny's face replaces the centre logo in club games.
+- **Hymn and chants:** the club hymn (`audio/hymne.mp3`, from the club website) is the club's goal song. Chants from the site and the Bonny comic: TOOORRR!!!, BONNY! BONNY! BONNY!, WAS SIND WIR? EIN BORSTENTIER!, ZUSAMMEN SIND WIR STARK!
+
+**Extras:**
+- Hair under the helmets, and team animals on the jerseys.
+- Players hop for joy after a goal.
+- A video wall at stoppages: kiss cam, Bonny cam, dance cam and a goal card.
+
 ## Default controls
 
 | Action | Keyboard 1 | Keyboard 2 | Gamepad (position) |
