@@ -54,7 +54,7 @@ export const RULESETS = {
     minSkaters: 2,                                 // 7.x: play continues with two field players + goalie
     bodyCheck: true,                               // 8.9.1: fair check on the ball carrier, from the front or side
     hitFoul: 'ILLEGAL CHECK',                      // 8.10.2: unerlaubter Körperangriff
-    ball: true,                                    // 2.2: orange ball
+    ball: true,                                    // 2.2: ball (used when no choice is made)
     minor: 2,                                      // 7.2
     major: 5,                                      // 7.4
     ppGoalEndsMinor: true,                         // 7.2.3

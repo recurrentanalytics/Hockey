@@ -19,6 +19,7 @@ const DEFAULTS = {
   venue: 'arena',
   rumble: true,
   replays: true,
+  gameBall: 'ball',
   homeTeam: 'borstentiere',
   awayTeam: 'blazers',
 };
@@ -82,6 +83,10 @@ export const OPTIONS = {
   rumble: [
     { value: true, label: 'ON' },
     { value: false, label: 'OFF' },
+  ],
+  gameBall: [
+    { value: 'ball', label: 'RED BALL' },
+    { value: 'puck', label: 'RED PUCK' },
   ],
   replays: [
     { value: true, label: 'ON' },

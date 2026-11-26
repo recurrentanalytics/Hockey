@@ -71,6 +71,7 @@ ES modules need HTTP; opening `index.html` straight from disk won't work.
 - **Line changes:** each team has two lines of 4 skaters (8 in all). A tired line swaps for the rested one at stoppages, and the bench recovers.
 - **Realistic animations:** an 8-phase stride with arm swing, crossovers in turns, hockey stops, shot wind-ups and follow-throughs, poke-check lunges, stickhandling, falls (stumble, sprawl, kneel, get up), face-off crouches, breathing and tired poses. Goalies breathe, shuffle, and make glove, blocker and butterfly saves. After goals there is a group hug and the beaten team hangs their heads. The net wobbles and the crowd does the wave.
 - **Goal replays:** a slow-motion replay with TV letterbox after every goal; skip with confirm/shoot. You can turn replays off in Settings → Goal replays.
+- **Ball or puck:** a red low-bounce inline hockey ball by default, or a red roller puck with white glide pegs (Settings → Ball or puck). The ball rolls further and pings off the boards a little more.
 - **Player stats:** goals, assists (from the passing chain) and shots on goal for every skater, saves for goalies. A scorer line shows after each goal, and the final screen names the three stars of the game.
 - **Tournament:** 4 teams play a round robin, then the top two meet in the final. Scoring is 3 points for a regulation win, 2 for a win in OT or the shootout, and 1 for a loss in OT or the shootout. Games without you are simulated, and progress is saved in the browser.
 

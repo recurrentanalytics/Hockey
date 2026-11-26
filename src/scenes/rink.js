@@ -54,6 +54,7 @@ export class RinkScene {
       home: { ...lineup.home, team: homeKey },
       away: { ...lineup.away, team: awayKey },
       rules: this.rules,
+      ball: settings.gameBall !== 'puck',
       difficulty: settings.difficulty,
       humans: humans.map((h, i) => ({ ...h, tag: `P${i + 1}`, color: PLAYER_COLORS[i] })),
     });

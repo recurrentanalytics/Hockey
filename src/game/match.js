@@ -30,12 +30,13 @@ export class Match {
    * @param ai         sides the AI plays for, e.g. ['home', 'away']
    * @param rules      resolved ruleset (game/rules.js), or null for endless practice
    */
-  constructor({ home, away, humans, difficulty = 'normal', ai = [], rules = null }) {
+  constructor({ home, away, humans, difficulty = 'normal', ai = [], rules = null, ball = null }) {
     this.sides = {
       home: { key: 'home', team: home.team, attack: 1 },
       away: { key: 'away', team: away.team, attack: -1 },
     };
-    this.puck = new Puck(!!rules?.ball);
+    // Ball or puck: the player's choice, else what the rulebook says.
+    this.puck = new Puck(ball ?? !!rules?.ball);
     this.skaters = [];
     this.goalies = [];
     for (const [key, cfg] of [['home', home], ['away', away]]) {

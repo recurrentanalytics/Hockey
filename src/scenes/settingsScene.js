@@ -14,6 +14,7 @@ export class SettingsScene extends MenuScene {
         choice('SOUND', 'sound'),
         choice('VENUE', 'venue'),
         choice('RULES', 'ruleset'),
+        choice('BALL OR PUCK', 'gameBall'),
         choice('PERIOD LENGTH', 'periodLength'),
         choice('DIFFICULTY', 'difficulty'),
         choice('GOAL REPLAYS', 'replays'),

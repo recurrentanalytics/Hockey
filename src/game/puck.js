@@ -14,17 +14,21 @@ export const PUCK = {
   groundBounce: 0.3,
 };
 
-// Inline-skaterhockey ball: rolls further and bounces more.
+// Red low-bounce inline hockey ball (hard plastic, ~7 cm): rolls further than a puck,
+// pings off the boards a little more, but is made not to bounce much on the floor.
 export const BALL = {
   ...PUCK,
   drag: 0.14,
   friction: 0.32,
-  boardBounce: 0.72,
-  postBounce: 0.65,
+  boardBounce: 0.68,
+  postBounce: 0.62,
   netBounce: 0.15,
-  bodyBounce: 0.35,
-  groundBounce: 0.5,
+  bodyBounce: 0.32,
+  groundBounce: 0.38,
 };
+
+// Bright "knallrot" like the real thing
+const RED = '#ff2a2a', RED_DARK = '#b3121d', RED_LIGHT = '#ff8a7a', PEG = '#fffaf4';
 
 export class Puck {
   constructor(ball = false) {
@@ -62,30 +66,43 @@ export class Puck {
   get sortY() { return this.pos.y; }
 
   drawShadow(ctx, ox, oy) {
-    if (this.z < 0.03) return;
+    if (this.z < 0.03 && !this.ball) return;
     const p = project(this.pos.x, this.pos.y);
     ctx.save();
     ctx.globalAlpha = 0.35;
     ctx.fillStyle = PAL.ink;
-    ctx.fillRect(Math.round(p.x + ox - 2), Math.round(p.y + oy - 1), 4, 2);
+    ctx.fillRect(Math.round(p.x + ox - 3), Math.round(p.y + oy - 1), 6, 2);
     ctx.restore();
   }
 
   draw(ctx, ox, oy) {
     const p = project(this.pos.x, this.pos.y, this.z);
     const x = Math.round(p.x + ox), y = Math.round(p.y + oy);
+    // Distance rolled, for the spinning seam and pegs.
+    const sp = this.speed;
+    this.roll = ((this.roll ?? 0) + sp / 60 / 0.035) % (Math.PI * 2);
+    const px = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, w, h); };
     if (this.ball) {
-      ctx.fillStyle = PAL.orange;
-      ctx.fillRect(x - 1, y - 4, 3, 4);
-      ctx.fillRect(x - 2, y - 3, 5, 2);
-      ctx.fillStyle = PAL.yellow;
-      ctx.fillRect(x - 1, y - 3, 1, 1);
+      // 5×5 ball with an ink outline, shading and a shine; a dark seam spot rolls round it.
+      px(-1, -6, 3, 1, PAL.ink); px(-1, 0, 3, 1, PAL.ink);
+      px(-2, -5, 1, 1, PAL.ink); px(2, -5, 1, 1, PAL.ink); px(-2, -1, 1, 1, PAL.ink); px(2, -1, 1, 1, PAL.ink);
+      px(-3, -4, 1, 3, PAL.ink); px(3, -4, 1, 3, PAL.ink);
+      px(-1, -5, 3, 5, RED); px(-2, -4, 5, 3, RED);
+      px(1, -2, 2, 1, RED_DARK); px(-1, -1, 3, 1, RED_DARK); px(2, -3, 1, 1, RED_DARK);
+      px(-1, -4, 1, 1, PEG); px(0, -5, 1, 1, RED_LIGHT);
+      if (sp > 0.3) {
+        const a = this.roll;
+        const sx = Math.round(Math.cos(a) * 1.5), sy = Math.round(Math.sin(a) * 1.5);
+        if (Math.sin(a) > -0.6) px(sx, -3 + sy, 1, 1, RED_DARK);
+      }
       return;
     }
-    ctx.fillStyle = PAL.ink;
-    ctx.fillRect(x - 2, y - 2, 5, 2);
-    ctx.fillRect(x - 1, y, 3, 1);
-    ctx.fillStyle = PAL.steel;
-    ctx.fillRect(x - 1, y - 3, 3, 1);
+    // Roller puck: red disc (top + rim) with white glide pegs along the edge.
+    px(-3, -4, 7, 1, PAL.ink); px(-3, 0, 7, 1, PAL.ink);
+    px(-4, -3, 1, 3, PAL.ink); px(4, -3, 1, 3, PAL.ink);
+    px(-3, -3, 7, 2, RED); px(-2, -3, 3, 1, RED_LIGHT);
+    px(-3, -1, 7, 1, RED_DARK);
+    const shift = Math.floor(this.roll * 2) % 2;
+    for (let i = -3 + shift; i <= 3; i += 2) px(i, -1, 1, 1, PEG);
   }
 }
