@@ -44,3 +44,13 @@ Bild: `docs/ort/boni_bolzplatz_grundriss.jpg` (Luftbild © GeoBasis-DE / LGLN, C
   - C Süd: 52.388862 / 9.744671
   - D West: 52.388939 / 9.744438
 - **Umgebung:** links (Nordwest) der Sandspielplatz mit Holz-Nilpferd, rechts (Südost) hinter Mulchstreifen die Metallschale, oben die Straße mit Schrägparkern und Altbauten, unten links Hecke und Straße.
+
+## Intro-Anflug (Experiment)
+
+`intro.html` zeigt einen Kameraflug: aus 1,2 km Höhe über Hannover-List hinab auf den Boni, Drehung, bis der Platz quer liegt, und Abkippen in den Blickwinkel der Spielkamera (Boden 2:1 gestaucht wie `PROJ`). Am Ende erscheinen der Zaun, der Vereinsname und „Spiel starten“.
+
+- **Bilder:** `assets/intro/boni_umgebung.jpg` (1,2 × 1,2 km, 0,5 m/Pixel), `boni_park.jpg` (Ausschnitt des Referenz-Luftbilds, 2× vergrößert), `boni_platz.jpg` (Platzumgebung, 4× vergrößert). Alle aus dem LGLN-Dienst `ni_dop20`, deckungsgleich.
+- **Glättung:** `tools/intro/enhance.py` (OpenCV): Entrauschen (entfernt JPEG-Blöcke), Lanczos-Vergrößerung, kantenerhaltende Glättung, leichtes Nachschärfen. Es wird nichts erfunden, nur interpoliert.
+- **Darstellung:** WebGL2 mit Mipmaps und anisotroper Filterung (`src/intro/intro.js`); die Ebenen werden an den Rändern weich überblendet.
+- **Vorschauvideo:** `node tools/intro/record.cjs <ordner> 1280 720 30` (Playwright und ffmpeg).
+- **Grenze:** Die Auflösung des Luftbilds ist 20 cm. Näher als etwa 50 m Bildbreite wird es weich; deshalb endet der Flug in dieser Entfernung.
