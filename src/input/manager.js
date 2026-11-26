@@ -72,6 +72,28 @@ function bindingValue(c, binding) {
   return axisValue(m[2] === '+' ? v : -v);
 }
 
+/**
+ * D-pad direction from wherever this pad reports it: standard buttons 12-15, or a hat
+ * axis (rests outside [-1, 1]; 8 positions from -1 = up, clockwise in steps of 2/7).
+ */
+function padDirection(c) {
+  if (c.standard) {
+    const B = c.buttons;
+    const x = ((B[15] ?? 0) > 0.5) - ((B[14] ?? 0) > 0.5), y = ((B[13] ?? 0) > 0.5) - ((B[12] ?? 0) > 0.5);
+    if (x || y) return { x, y };
+  }
+  for (const i of c.hatAxes ?? []) {
+    const v = c.axes[i];
+    if (v === undefined || Math.abs(v) > 1.05) continue;
+    const k = ((Math.round((v + 1) * 3.5) % 8) + 8) % 8; // 0 up, 1 up-right, … 7 up-left
+    const ang = (k * Math.PI) / 4;
+    const x = Math.round(Math.sin(ang)), y = -Math.round(Math.cos(ang));
+    const len = Math.hypot(x, y) || 1;
+    return { x: x / len, y: y / len };
+  }
+  return { x: 0, y: 0 };
+}
+
 function moveFrom(val) {
   let x = val('right') - val('left'), y = val('down') - val('up');
   const len = Math.hypot(x, y);
@@ -300,7 +322,10 @@ export class InputManager {
       const val = (a) => Math.max(0, ...(prof[a] || []).map((b) => bindingValue(c, b)));
       const down = {};
       for (const a of ACTION_IDS) down[a] = val(a) > 0.5;
-      c.apply(down, moveFrom(val));
+      let move = moveFrom(val);
+      const pad = padDirection(c);
+      if (Math.hypot(move.x, move.y) < 0.2 && (pad.x || pad.y)) move = pad;
+      c.apply(down, move);
     }
 
     this.menuPad.poll(this.pointers, this.display);
@@ -346,6 +371,9 @@ export class InputManager {
       c.prevAxes = c.axes;
       c.buttons = Array.from(gp.buttons, (b) => (typeof b === 'number' ? b : b.pressed ? Math.max(1, b.value) : b.value));
       c.axes = Array.from(gp.axes);
+      c.standard = gp.mapping === 'standard';
+      c.hatAxes ??= new Set();
+      c.axes.forEach((v, i) => { if (Math.abs(v) > 1.05) c.hatAxes.add(i); });
     }
     for (const c of this.controllers.values()) {
       if (c.kind === 'gamepad' && c.connected && !seen.has(c.id)) {
@@ -399,10 +427,13 @@ export class InputManager {
       const prof = this.profile(c.profileKey);
       const L = LAYOUTS[c.info?.layout ?? 'standard'];
       const val = (d) => Math.max(0, ...(prof[d] || []).map((b) => bindingValue(c, b)));
-      held.up ||= val('up') > 0.5;
-      held.down ||= val('down') > 0.5;
-      held.left ||= val('left') > 0.5;
-      held.right ||= val('right') > 0.5;
+      // Menus accept the configured directions, any d-pad (buttons 12-15 or a hat) and the left stick.
+      const pad = padDirection(c);
+      const A = c.axes;
+      held.up ||= val('up') > 0.5 || pad.y < 0 || (A[1] ?? 0) < -0.5;
+      held.down ||= val('down') > 0.5 || pad.y > 0 || (A[1] ?? 0) > 0.5;
+      held.left ||= val('left') > 0.5 || pad.x < 0 || (A[0] ?? 0) < -0.5;
+      held.right ||= val('right') > 0.5 || pad.x > 0 || (A[0] ?? 0) > 0.5;
       const menu = prof.menu ?? { south: L.south, east: L.east, start: L.start };
       const edge = (b) => b?.startsWith('b:') && c.buttonEdge(+b.slice(2));
       confirm ||= edge(menu[confirmKey]) || edge(menu.start);
