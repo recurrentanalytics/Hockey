@@ -15,7 +15,9 @@ import { hintBar } from '../ui/hud.js';
 import { PauseScene } from './pause.js';
 import { Recorder, Replay } from '../game/replay.js';
 
-const SPLIT_ZOOM = 0.8;
+const SPLIT_ZOOM = 0.9;
+// Closer than the whole-rink view: detailed players read better, like TV hockey.
+const CLOSE_ZOOM = 1.35;
 const otherTeam = (t) => Object.keys(TEAMS).find((k) => k !== t && !TEAMS[k].hidden);
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 const m0 = (scene) => scene.match;
@@ -42,7 +44,7 @@ export class RinkScene {
     this.title = title;
     this.mode = mode;
     this.cameraMode = humans.length > 1 ? camera : 'single';
-    this.zoom = 1;
+    this.zoom = CLOSE_ZOOM;
     this.rules = mode === 'practice' ? null : resolveRules(settings.ruleset, settings.periodLength);
     const homeKey = teams?.home ?? settings.homeTeam;
     let awayKey = teams?.away ?? (mode === 'practice' ? otherTeam(settings.homeTeam) : settings.awayTeam);
@@ -136,6 +138,12 @@ export class RinkScene {
         return;
       }
       else this.finalT = (this.finalT ?? 0) + dt;
+    }
+    // Finish baking the less common player frames a few at a time.
+    if (!this.warmed) {
+      let left = false;
+      for (const sk of this.match.roster) if (sk.sprites.warmStep(1)) { left = true; break; }
+      this.warmed = !left;
     }
     if (this.replay) return this.updateReplay(dt, input);
     // Start the replay at the end of the goal celebration, before the next face-off.
@@ -296,7 +304,7 @@ export class RinkScene {
     if (m.puck.speed > 14 && m.puck.z >= 0) this.fx.trail(m.puck);
     this.fx.update(dt * r.speed);
     const v = this.viewSize(), p = project(m.puck.pos.x, m.puck.pos.y);
-    this.zoom = 1;
+    this.zoom = CLOSE_ZOOM;
     this.replayCam.follow(p.x, p.y - 12, dt, v.w, v.h, 3);
     if (r.done || skip) {
       r.restore();
@@ -425,13 +433,13 @@ export class RinkScene {
       const ts = this.match.humans.map((h) => this.target(h));
       const spanX = Math.abs(ts[0].x - ts[1].x) + 150, spanY = Math.abs(ts[0].y - ts[1].y) + 100;
       const minZoom = height / (BAKE.h - 8);
-      const want = Math.max(minZoom, Math.min(1, width / spanX, height / spanY));
+      const want = Math.max(minZoom, Math.min(CLOSE_ZOOM, width / spanX, height / spanY));
       this.zoom += (want - this.zoom) * (1 - Math.exp(-3 * dt));
       const v = this.viewSize();
       const m = this.midpoint();
       this.shared.follow(m.x, m.y, dt, v.w, v.h, 4);
     } else {
-      this.zoom = this.cameraMode === 'split' ? SPLIT_ZOOM : 1;
+      this.zoom = this.cameraMode === 'split' ? SPLIT_ZOOM : CLOSE_ZOOM;
       const v = this.viewSize();
       this.match.humans.forEach((h, i) => { const t = this.target(h); this.cams[i].follow(t.x, t.y, dt, v.w, v.h, 5); });
     }
@@ -492,7 +500,7 @@ export class RinkScene {
 
   drawReplay() {
     const { display, world } = this.app;
-    display.setZoom(1);
+    display.setZoom(CLOSE_ZOOM);
     world.cheer = false;
     const ctx = display.wctx;
     const ents = [...this.replay.entities, ...this.fx.entities(), this.ballGhost()];

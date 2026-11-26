@@ -1,5 +1,6 @@
 // The puck: position on the floor plus height (z) so shots can be lifted.
 import { PAL } from '../engine/palette.js';
+import { RES } from '../config.js';
 import { project } from '../world/projection.js';
 
 export const PUCK = {
@@ -71,38 +72,37 @@ export class Puck {
     ctx.save();
     ctx.globalAlpha = 0.35;
     ctx.fillStyle = PAL.ink;
-    ctx.fillRect(Math.round(p.x + ox - 3), Math.round(p.y + oy - 1), 6, 2);
+    ctx.fillRect(Math.round(p.x + ox - 2.5), Math.round(p.y + oy - 1), 5, 1.5);
     ctx.restore();
   }
 
   draw(ctx, ox, oy, ghost = false) {
     const p = project(this.pos.x, this.pos.y, this.z);
-    const x = Math.round(p.x + ox), y = Math.round(p.y + oy);
     // Distance rolled, for the spinning seam and pegs.
     const sp = this.speed;
     if (!ghost) this.roll = ((this.roll ?? 0) + sp / 60 / 0.035) % (Math.PI * 2);
+    ctx.save();
+    ctx.scale(1 / RES, 1 / RES);
+    const x = Math.round((p.x + ox) * RES), y = Math.round((p.y + oy) * RES);
     const px = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, w, h); };
     if (this.ball) {
-      // 5×5 ball with an ink outline, shading and a shine; a dark seam spot rolls round it.
-      px(-1, -6, 3, 1, PAL.ink); px(-1, 0, 3, 1, PAL.ink);
-      px(-2, -5, 1, 1, PAL.ink); px(2, -5, 1, 1, PAL.ink); px(-2, -1, 1, 1, PAL.ink); px(2, -1, 1, 1, PAL.ink);
-      px(-3, -4, 1, 3, PAL.ink); px(3, -4, 1, 3, PAL.ink);
-      px(-1, -5, 3, 5, RED); px(-2, -4, 5, 3, RED);
-      px(1, -2, 2, 1, RED_DARK); px(-1, -1, 3, 1, RED_DARK); px(2, -3, 1, 1, RED_DARK);
-      px(-1, -4, 1, 1, PEG); px(0, -5, 1, 1, RED_LIGHT);
+      // 7 px ball: outline, red body, darker lower half, a bright shine; a seam spot rolls round.
+      for (const [dy, x0, w] of [[-8, -2, 5], [-7, -3, 7], [-6, -4, 9], [-5, -4, 9], [-4, -4, 9], [-3, -4, 9], [-2, -4, 9], [-1, -3, 7], [0, -2, 5]]) px(x0, dy, w, 1, PAL.ink);
+      for (const [dy, x0, w] of [[-7, -2, 5], [-6, -3, 7], [-5, -3, 7], [-4, -3, 7], [-3, -3, 7], [-2, -3, 7], [-1, -2, 5]]) px(x0, dy, w, 1, RED);
+      px(-1, -2, 4, 1, RED_DARK); px(1, -3, 2, 1, RED_DARK); px(2, -4, 1, 1, RED_DARK); px(-2, -1, 5, 1, RED_DARK);
+      px(-2, -6, 2, 1, RED_LIGHT); px(-2, -5, 1, 1, PEG);
       if (sp > 0.3) {
         const a = this.roll;
-        const sx = Math.round(Math.cos(a) * 1.5), sy = Math.round(Math.sin(a) * 1.5);
-        if (Math.sin(a) > -0.6) px(sx, -3 + sy, 1, 1, RED_DARK);
+        if (Math.sin(a) > -0.5) px(Math.round(Math.cos(a) * 2.2), -4 + Math.round(Math.sin(a) * 2.2), 1, 1, RED_DARK);
       }
-      return;
+    } else {
+      // Roller puck: red disc (top + rim) with white glide pegs along the edge.
+      px(-5, -6, 11, 1, PAL.ink); px(-6, -5, 1, 4, PAL.ink); px(6, -5, 1, 4, PAL.ink); px(-5, -1, 11, 1, PAL.ink);
+      px(-5, -5, 11, 2, RED); px(-3, -5, 5, 1, RED_LIGHT);
+      px(-5, -3, 11, 2, RED_DARK);
+      const shift = Math.floor(this.roll * 2) % 2;
+      for (let i = -5 + shift; i <= 5; i += 2) px(i, -2, 1, 1, PEG);
     }
-    // Roller puck: red disc (top + rim) with white glide pegs along the edge.
-    px(-3, -4, 7, 1, PAL.ink); px(-3, 0, 7, 1, PAL.ink);
-    px(-4, -3, 1, 3, PAL.ink); px(4, -3, 1, 3, PAL.ink);
-    px(-3, -3, 7, 2, RED); px(-2, -3, 3, 1, RED_LIGHT);
-    px(-3, -1, 7, 1, RED_DARK);
-    const shift = Math.floor(this.roll * 2) % 2;
-    for (let i = -3 + shift; i <= 3; i += 2) px(i, -1, 1, 1, PEG);
+    ctx.restore();
   }
 }

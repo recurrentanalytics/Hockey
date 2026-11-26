@@ -1,6 +1,6 @@
 // Draws the arena + entities into a viewport of the world layer.
 import { PAL } from '../engine/palette.js';
-import { bakeRink, bakeGoal } from './rink.js';
+import { bakeRink, bakeGoal, BAKE } from './rink.js';
 
 export class WorldView {
   constructor() {
@@ -17,7 +17,7 @@ export class WorldView {
           const t = performance.now() / 1000;
           const dx = a > 0 ? Math.round(Math.sin(t * 38) * a * 2.2) : 0;
           const dy = a > 0.4 ? Math.round(Math.sin(t * 29) * a) : 0;
-          ctx.drawImage(g.canvas, g.x + ox + dx, g.y + oy + dy);
+          ctx.drawImage(g.canvas, g.x + ox + dx / 2, g.y + oy + dy / 2, g.w, g.h);
         },
       };
     });
@@ -41,8 +41,9 @@ export class WorldView {
     const cr = this.rink.crowd;
     const img = cr.frames[f];
     const x0 = cr.x0 + ox, y0 = cr.y0 + oy;
-    if (!this.wave) { ctx.drawImage(img, x0, y0); return; }
-    const W = img.width, H = img.height, COL = 6, span = 46;
+    const W = cr.w, H = cr.h, S = img.width / W;  // frames are baked at full resolution
+    if (!this.wave) { ctx.drawImage(img, x0, y0, W, H); return; }
+    const COL = 6, span = 46;
     const lap = 4.2;
     const u = (this.wave.t % lap) / lap;
     // The crest runs across everything the camera can see, then a bit beyond.
@@ -53,9 +54,9 @@ export class WorldView {
       const d = Math.abs(sx + COL / 2 - crest);
       const k = d < span ? 1 - d / span : 0;
       const src = k > 0.35 ? cr.frames[cheerFrame] : img;
-      const lift = Math.round(Math.sin(k * Math.PI / 2) * 3);
+      const lift = Math.round(Math.sin(k * Math.PI / 2) * 6) / 2;
       const w = Math.min(COL, W - sx);
-      ctx.drawImage(src, sx, 0, w, H, x0 + sx, y0 - lift, w, H);
+      ctx.drawImage(src, sx * S, 0, w * S, H * S, x0 + sx, y0 - lift, w, H);
     }
   }
 
@@ -84,7 +85,7 @@ export class WorldView {
     ctx.clip();
     ctx.fillStyle = PAL.night;
     ctx.fillRect(vp.x, vp.y, vp.w, vp.h);
-    ctx.drawImage(this.rink.background, this.rink.x0 + ox, this.rink.y0 + oy);
+    ctx.drawImage(this.rink.background, this.rink.x0 + ox, this.rink.y0 + oy, BAKE.w, BAKE.h);
     // Crowd: gentle bobbing, or jumping and waving while `cheer` is set.
     const t = performance.now() / 1000;
     const dt = Math.min(0.1, Math.max(0, t - this.lastT));
@@ -98,7 +99,7 @@ export class WorldView {
     const sorted = [...entities, ...this.goals].sort((a, b) => a.sortY - b.sortY);
     for (const e of sorted) e.draw(ctx, ox, oy);
 
-    ctx.drawImage(this.rink.foreground, this.rink.x0 + ox, this.rink.y0 + oy);
+    ctx.drawImage(this.rink.foreground, this.rink.x0 + ox, this.rink.y0 + oy, BAKE.w, BAKE.h);
     ctx.restore();
   }
 }

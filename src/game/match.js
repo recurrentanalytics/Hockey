@@ -47,7 +47,7 @@ export class Match {
         // Bonny (#61) plays for the Borstentiere; the Balding Borstis are... balding.
         const look = cfg.team.startsWith('borstentiere') && number === 61 ? { kind: 'boar' }
           : t.bald ? { kind: 'bald', hair: HAIR[(number * 7) % 3] }
-          : { hair: HAIR[(number * 5 + i) % HAIR.length] };
+          : { hair: HAIR[(number * 5 + i) % HAIR.length], skin: (number * 3 + i) % 5 === 0 ? 2 : (number + i) % 3 === 0 ? 1 : 0 };
         const s = new Skater({ team: cfg.team, number, look });
         s.sideKey = key;
         s.slot = i % cfg.skaters;              // role in the line: 0-1 forwards, 2-3 defence

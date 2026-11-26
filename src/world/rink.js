@@ -1,7 +1,7 @@
 // Rink geometry and the one-time bake of the rink art into canvases.
 //  background: floor, markings, far boards, stands (drawn under everything)
 //  foreground: near boards (drawn over skaters, partly see-through)
-import { RINK, GOAL, PROJ } from '../config.js';
+import { RINK, GOAL, PROJ, RES } from '../config.js';
 import { PAL } from '../engine/palette.js';
 import { Surface, rgba, hash2 } from '../engine/raster.js';
 import { project } from './projection.js';
@@ -158,12 +158,14 @@ function stands(bx, sy) {
   return bg;
 }
 
-function plotEllipse(s, cx, cy, r, color, from = 0, to = Math.PI * 2) {
-  const steps = 900;
+/** Circle on the floor, plotted at full resolution with a line as thick as one world pixel. */
+function plotEllipse(s, cx, cy, r, color, from = 0, to = Math.PI * 2, S = 1) {
+  const steps = 2400;
   for (let i = 0; i <= steps; i++) {
     const t = from + ((to - from) * i) / steps;
     const p = project(cx + Math.cos(t) * r, cy + Math.sin(t) * r);
-    s.set(p.x - BAKE.x0, p.y - BAKE.y0, color);
+    const x = (p.x - BAKE.x0) * S, y = (p.y - BAKE.y0) * S;
+    for (let k = 0; k < S; k++) s.set(x, y + k - (S - 1) / 2, color);
   }
 }
 
@@ -260,39 +262,47 @@ function boarMascot(s) {
 export function bakeRink({ venue: v = 'arena', logo = 'puck' } = {}) {
   venue = v;
   const { w, h, x0, y0 } = BAKE;
-  const bg = new Surface(w, h);
-  const fg = new Surface(w, h);
+  // Floor, boards and glass are worked out per pixel from world coordinates, so they are
+  // baked at the full world-layer resolution. Hand-drawn decorations go on a 1× layer on top.
+  const S = RES, W = w * S, H = h * S;
+  const bg = new Surface(W, H);
+  const fg = new Surface(W, H);
+  const deco = new Surface(w, h);
 
-  const tops = new Float32Array(w), bots = new Float32Array(w), has = new Uint8Array(w);
-  for (let bx = 0; bx < w; bx++) {
-    const ext = rinkExtentAt((bx + x0 + 0.5) / PROJ.x);
+  const tops = new Float32Array(W), bots = new Float32Array(W), has = new Uint8Array(W);
+  for (let bx = 0; bx < W; bx++) {
+    const ext = rinkExtentAt(((bx + 0.5) / S + x0) / PROJ.x);
     if (ext) { has[bx] = 1; tops[bx] = ext.top * PROJ.y; bots[bx] = ext.bottom * PROJ.y; }
   }
 
-  for (let by = 0; by < h; by++) {
-    const sy = by + y0 + 0.5;
-    for (let bx = 0; bx < w; bx++) {
-      const sx = bx + x0 + 0.5;
+  for (let by = 0; by < H; by++) {
+    const sy = (by + 0.5) / S + y0;
+    for (let bx = 0; bx < W; bx++) {
+      const sx = (bx + 0.5) / S + x0;
       const wx = sx / PROJ.x;
       let c;
       if (has[bx] && sy >= tops[bx] && sy <= bots[bx]) c = floorColor(wx, sy / PROJ.y, sx, sy, bx, by);
       else if (has[bx] && sy < tops[bx] && sy >= tops[bx] - WALL) c = farWall(wx, tops[bx] - sy, bx);
-      else if (venue === 'boni') c = grass(bx, by);
-      else if (sy < STANDS_TOP) c = stands(bx, sy);
-      else c = ((bx >> 2) + (by >> 2)) & 1 ? C.concourseA : C.concourseB;
-      bg.px[by * w + bx] = c;
+      else if (venue === 'boni') c = grass(bx >> 1, by >> 1);
+      else if (sy < STANDS_TOP) c = stands(bx >> 1, sy);
+      else c = ((bx >> 3) + (by >> 3)) & 1 ? C.concourseA : C.concourseB;
+      bg.px[by * W + bx] = c;
 
       // Near boards: see-through glass with a bright rail.
       if (has[bx] && sy <= bots[bx] && sy > bots[bx] - WALL) {
         const hh = bots[bx] - sy;
         let f;
-        if (hh > WALL - 1) f = C.outline;
+        if (hh > WALL - 0.5) f = C.outline;
         else if (venue === 'boni') f = hh > WALL - 3 ? BONI.plankTop : rgba('#c08a55', Math.floor(hh) % 4 === 0 ? 200 : 140);
-        else if (hh > WALL - 2) f = C.railLight;
+        else if (hh > WALL - 1.5) f = C.railLight;
         else if (hh > WALL - 4) f = C.rail;
         else if (hh < 2) f = rgba(PAL.yellow, 190);
-        else f = (bx + by) % 7 === 0 ? rgba('#ffffff', 170) : rgba('#f3eeff', 95);
-        fg.px[by * w + bx] = f;
+        else {
+          // glass: faint diagonal reflections
+          const r = ((bx - by * 2) % 23 + 23) % 23;
+          f = r < 2 ? rgba('#ffffff', 150) : r < 3 ? rgba('#ffffff', 110) : rgba('#f3eeff', 85);
+        }
+        fg.px[by * W + bx] = f;
       }
     }
   }
@@ -305,7 +315,7 @@ export function bakeRink({ venue: v = 'arena', logo = 'puck' } = {}) {
     const ext = rinkExtentAt(wx);
     if (!ext || ext.top > -HW + 0.01) continue;
     const sx = Math.round(wx * PROJ.x) - x0 - 3, sy = Math.round(ext.top * PROJ.y - WALL / 2) - y0 - 3;
-    stamp(bg, ICONS[ad.icon], sx, sy, C.white);
+    stamp(deco, ICONS[ad.icon], sx, sy, C.white);
   }
 
   // End boards are seen edge-on: draw them as a thin strip.
@@ -313,34 +323,40 @@ export function bakeRink({ venue: v = 'arena', logo = 'puck' } = {}) {
     const sx = side * HL * PROJ.x;
     const top = -(HW - R) * PROJ.y - WALL, bottom = (HW - R) * PROJ.y;
     for (let sy = Math.floor(top); sy <= bottom; sy++) {
-      bg.set(sx - x0 - (side > 0 ? 1 : 0), sy - y0, C.rail);
-      bg.set(sx - x0 - (side > 0 ? 0 : 1), sy - y0, C.outline);
+      deco.set(sx - x0 - (side > 0 ? 1 : 0), sy - y0, C.rail);
+      deco.set(sx - x0 - (side > 0 ? 0 : 1), sy - y0, C.outline);
     }
   }
 
   // Lines and markings.
-  plotEllipse(bg, 0, 0, RINK.centerCircleRadius, C.blue);
+  plotEllipse(bg, 0, 0, RINK.centerCircleRadius, C.blue, 0, Math.PI * 2, S);
   const e = RINK.endCircle;
-  for (const cx of [-e.x, e.x]) for (const cy of [-e.y, e.y]) plotEllipse(bg, cx, cy, e.r, C.red);
-  plotEllipse(bg, -RINK.goalLineX, 0, RINK.creaseRadius, C.creaseEdge, -Math.PI / 2, Math.PI / 2);
-  plotEllipse(bg, RINK.goalLineX, 0, RINK.creaseRadius, C.creaseEdge, Math.PI / 2, Math.PI * 1.5);
-  if (logo === 'boar') boarMascot(bg); else mascot(bg);
+  for (const cx of [-e.x, e.x]) for (const cy of [-e.y, e.y]) plotEllipse(bg, cx, cy, e.r, C.red, 0, Math.PI * 2, S);
+  plotEllipse(bg, -RINK.goalLineX, 0, RINK.creaseRadius, C.creaseEdge, -Math.PI / 2, Math.PI / 2, S);
+  plotEllipse(bg, RINK.goalLineX, 0, RINK.creaseRadius, C.creaseEdge, Math.PI / 2, Math.PI * 1.5, S);
+  if (logo === 'boar') boarMascot(deco); else mascot(deco);
 
   if (venue === 'boni') {
     // Eilenriede trees behind the pitch and around the corners, the playground hippo top right.
     for (let i = 0; i < 26; i++) {
       const x = i * 44 + Math.floor(hash2(i, 1) * 20);
       if (x > 830 && x < 930) continue; // room for the playground
-      tree(bg, x, 34 + Math.floor(hash2(i, 2) * 22), 13 + Math.floor(hash2(i, 3) * 8));
+      tree(deco, x, 34 + Math.floor(hash2(i, 2) * 22), 13 + Math.floor(hash2(i, 3) * 8));
     }
-    for (const [x, y, r] of [[40, 150, 16], [70, 300, 18], [1010, 140, 15], [990, 310, 17], [20, 360, 14], [1040, 360, 13]]) tree(bg, x, y, r);
-    hippo(bg, 880, 58);
+    for (const [x, y, r] of [[40, 150, 16], [70, 300, 18], [1010, 140, 15], [990, 310, 17], [20, 360, 14], [1040, 360, 13]]) tree(deco, x, y, r);
+    hippo(deco, 880, 58);
   }
 
   const canvas = bg.toCanvas();
+  {
+    const g = canvas.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.drawImage(deco.toCanvas(), 0, 0, W, H);
+  }
   if (venue === 'boni') {
     // A sign on the boards
     const g = canvas.getContext('2d');
+    g.setTransform(S, 0, 0, S, 0, 0);
     const sx = -x0 - 40, sy = Math.round(-HW * PROJ.y - WALL) - y0 + 3;
     g.fillStyle = PAL.ink; g.fillRect(sx - 1, sy - 1, 82, 9);
     g.fillStyle = '#2d4a2b'; g.fillRect(sx, sy, 80, 7);
@@ -356,38 +372,73 @@ export function bakeRink({ venue: v = 'arena', logo = 'puck' } = {}) {
 function bakeCrowd(density = 1) {
   const { w, x0, y0 } = BAKE;
   const h = Math.ceil(STANDS_TOP - y0);
-  const hair = ['#5a3b2e', '#2a1f3d', '#f2c14e', '#c4632e', '#8a5a44', '#e8e2d8', '#ff9fc4'].map((c) => rgba(c));
-  const shirts = [PAL.red, PAL.blue, PAL.white, PAL.yellow, PAL.green, PAL.orange, PAL.purple, PAL.sky, PAL.pink].map((c) => rgba(c));
+  // Fans are drawn at full resolution: 8×12 pixels each, with faces, hair, caps and arms.
+  const S = RES, W = w * S, H = h * S;
+  const hair = ['#5a3b2e', '#2a1f3d', '#f2c14e', '#c4632e', '#8a5a44', '#e8e2d8', '#ff9fc4', '#3b2a22'].map((c) => rgba(c));
+  const skins = ['#f6c9a4', '#e0a77f', '#a86f4c', '#ffd8bd'].map((c) => rgba(c));
+  const skinShade = ['#d89a78', '#b97a57', '#7f4f33', '#e8b49a'].map((c) => rgba(c));
+  const shirtHex = [PAL.red, PAL.blue, PAL.white, PAL.yellow, PAL.green, PAL.orange, PAL.purple, PAL.sky, PAL.pink, '#3f7d47'];
+  const shirts = shirtHex.map((c) => rgba(c));
+  const shirtShade = shirtHex.map((c) => rgba(c, 255)).map((v, i) => {
+    const n = parseInt(shirtHex[i].slice(1), 16);
+    const r = ((n >> 16) & 255) * 0.72, g = ((n >> 8) & 255) * 0.66, b = (n & 255) * 0.8;
+    return rgba('#' + [r, g, b].map((x) => Math.round(x).toString(16).padStart(2, '0')).join(''));
+  });
+  const eye = rgba('#2a1f3d');
   const frames = [];
   for (let f = 0; f < 4; f++) {
-    const s = new Surface(w, h);
+    const s = new Surface(W, H);
     const cheering = f >= 2;
     for (let row = 0; row * 6 + 6 <= h; row++) {
-      const base = Math.floor(STANDS_TOP - y0) - row * 6;   // row baseline (bake coords)
+      const base = (Math.floor(STANDS_TOP - y0) - row * 6) * S;   // row baseline (full-res bake coords)
       for (let cell = 0; cell * 4 < w; cell++) {
         const seed = hash2(cell, row);
         if (seed > (0.8 - row * 0.02) * density || (density < 1 && row > 1)) continue; // empty seat / no stands outdoors
-        const x = cell * 4 + (row & 1) * 2;
-        const bob = (f % 2 === 1 && (cell + row) % 2 === 0) || (cheering && (cell + row + f) % 2 === 0) ? 1 : 0;
-        const y = base - 5 - bob;
-        const shirt = shirts[Math.floor(hash2(cell + 9, row) * shirts.length)];
+        const x = (cell * 4 + (row & 1) * 2) * S;
+        const up = (f % 2 === 1 && (cell + row) % 2 === 0) ? 1 : cheering && (cell + row + f) % 2 === 0 ? 3 : 0;
+        const y = base - 11 - up;
+        const si = Math.floor(hash2(cell + 9, row) * shirts.length);
+        const shirt = shirts[si], shade = shirtShade[si];
         const hc = hair[Math.floor(hash2(cell + 3, row) * hair.length)];
-        // body, head (hair on top), face
-        s.rect(x, y + 3, 3, 2, shirt);
-        s.rect(x, y, 3, 1, hc);
-        s.rect(x, y + 1, 3, 2, C.skin);
-        s.set(x, y + 1, hc);
-        if (cheering && (cell + f) % 3 !== 0) { s.set(x - 1, y - 1, C.skin); s.set(x + 3, y - 1, C.skin); }
-        if (cheering && hash2(cell, row + 50) < 0.12) s.rect(x - 1, y - 3, 5, 1, shirts[(cell + f) % shirts.length]); // scarf
+        const ki = Math.floor(hash2(cell + 5, row) * skins.length);
+        const skin = skins[ki], sk2 = skinShade[ki];
+        const style = hash2(cell + 7, row);
+        // body: shoulders and shirt, shaded on one side
+        s.rect(x, y + 7, 7, 5, shirt);
+        s.rect(x + 5, y + 7, 2, 5, shade);
+        s.rect(x + 2, y + 7, 3, 1, sk2);                 // neck
+        // head
+        s.rect(x + 1, y + 1, 5, 6, skin);
+        s.rect(x + 5, y + 2, 1, 5, sk2);
+        s.set(x + 2, y + 4, eye); s.set(x + 4, y + 4, eye);
+        if (cheering) s.rect(x + 3, y + 5, 1, 1, rgba('#c0506a'));
+        // hair or a cap
+        if (style < 0.18) {
+          s.rect(x + 1, y, 6, 2, shirt); s.rect(x + 5, y + 2, 3, 1, shade);   // cap with peak
+        } else {
+          s.rect(x + 1, y, 5, 2, hc);
+          s.set(x + 1, y + 2, hc);
+          if (style > 0.7) { s.rect(x, y + 1, 1, 5, hc); s.rect(x + 6, y + 1, 1, 4, hc); } // long hair
+        }
+        if (cheering && (cell + f) % 3 !== 0) {
+          // arms up
+          s.rect(x - 1, y - 2, 2, 9, shirt); s.rect(x - 1, y - 3, 2, 2, skin);
+          s.rect(x + 6, y - 2, 2, 9, shade); s.rect(x + 6, y - 3, 2, 2, skin);
+          if (hash2(cell, row + 50) < 0.16) {
+            // scarf held up between the hands, in stripes
+            for (let i = 0; i < 10; i++) s.rect(x - 2 + i, y - 4, 1, 2, i % 3 === 0 ? rgba(PAL.white) : shirts[(cell + f) % shirts.length]);
+          }
+        }
       }
     }
     frames.push(s.toCanvas());
   }
-  return { frames, y0, x0 };
+  return { frames, y0, x0, w, h };
 }
 
 /** Bake one goal as a sprite. side = -1 (left) or +1 (right); the net opens toward centre. */
 export function bakeGoal(side) {
+  const S = RES;
   const gx = side * RINK.goalLineX;
   const bx = gx + side * GOAL.depth;
   const tx = gx + side * GOAL.depth * 0.45;
@@ -404,29 +455,33 @@ export function bakeGoal(side) {
   const w = Math.ceil(Math.max(...all.map((p) => p.x))) - ox + 3;
   const h = Math.ceil(Math.max(...all.map((p) => p.y))) - oy + 3;
   const L = {};
-  for (const [k, p] of Object.entries(P)) L[k] = { x: p.x - ox, y: p.y - oy };
+  for (const [k, p] of Object.entries(P)) L[k] = { x: Math.round((p.x - ox) * S), y: Math.round((p.y - oy) * S) };
 
-  const s = new Surface(w, h);
-  const meshDark = rgba(PAL.mist, 200), meshLight = rgba(PAL.white, 210), frame = rgba(PAL.red), frameDark = rgba(PAL.redDark);
-  const mesh = (c) => (x, y) => ((x + y) % 3 === 0 || ((x - y) % 3 + 3) % 3 === 0 ? c : 0);
-  const dark = rgba(PAL.shadow, 110);
+  // Drawn at full resolution: a fine net mesh and round red posts with a highlight.
+  const s = new Surface(w * S, h * S);
+  const meshDark = rgba(PAL.mist, 190), meshLight = rgba(PAL.white, 200), frame = rgba(PAL.red), frameDark = rgba(PAL.redDark), frameLight = rgba('#ffb3c1');
+  const mesh = (c) => (x, y) => ((x + y) % 4 === 0 || ((x - y) % 4 + 4) % 4 === 0 ? c : 0);
+  const dark = rgba(PAL.shadow, 95);
+  const thick = (a, b, c, d) => {
+    s.line(a.x, a.y, b.x, b.y, c);
+    s.line(a.x + 1, a.y, b.x + 1, b.y, c);
+    s.line(a.x - 1, a.y, b.x - 1, b.y, d);
+  };
 
   s.poly([L.TF, L.TN, L.BN, L.BF], (x, y) => mesh(meshDark)(x, y) || dark);  // back
   s.poly([L.FB, L.FT, L.TF, L.BF], mesh(meshDark));                            // far side
   s.poly([L.FT, L.NT, L.TN, L.TF], mesh(meshLight));                           // top
   // Base frame on the floor
-  s.line(L.FB.x, L.FB.y, L.BF.x, L.BF.y, frameDark);
-  s.line(L.BF.x, L.BF.y, L.BN.x, L.BN.y, frameDark);
-  s.line(L.BN.x, L.BN.y, L.NB.x, L.NB.y, frameDark);
+  for (const [a, b] of [[L.FB, L.BF], [L.BF, L.BN], [L.BN, L.NB]]) { s.line(a.x, a.y, b.x, b.y, frameDark); s.line(a.x, a.y - 1, b.x, b.y - 1, frameDark); }
   // Far post + crossbar
-  s.line(L.FB.x, L.FB.y, L.FT.x, L.FT.y, frame);
-  s.line(L.FB.x + side * -1, L.FB.y, L.FT.x + side * -1, L.FT.y, frameDark);
+  thick(L.FB, L.FT, frame, frameDark);
   s.line(L.FT.x, L.FT.y, L.NT.x, L.NT.y, frame);
-  s.line(L.FT.x, L.FT.y - 1, L.NT.x, L.NT.y - 1, frame);
+  s.line(L.FT.x, L.FT.y - 1, L.NT.x, L.NT.y - 1, frameLight);
+  s.line(L.FT.x, L.FT.y + 1, L.NT.x, L.NT.y + 1, frameDark);
   s.poly([L.NB, L.NT, L.TN, L.BN], mesh(meshLight));                           // near side
   // Near post
-  s.line(L.NB.x, L.NB.y, L.NT.x, L.NT.y, frame);
-  s.line(L.NB.x + side * -1, L.NB.y, L.NT.x + side * -1, L.NT.y, frame);
+  thick(L.NB, L.NT, frame, frameDark);
+  s.line(L.NB.x + 1, L.NB.y, L.NT.x + 1, L.NT.y, frameLight);
 
-  return { canvas: s.toCanvas(), x: ox, y: oy, sortY: 0 };
+  return { canvas: s.toCanvas(), x: ox, y: oy, w, h, sortY: 0 };
 }

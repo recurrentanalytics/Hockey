@@ -1,7 +1,7 @@
 // Goalie: holds an arc in front of the net, tracks the puck, reacts to shots.
-import { RINK, GOAL, TEAMS } from '../config.js';
+import { RINK, GOAL, TEAMS, RES } from '../config.js';
 import { project } from '../world/projection.js';
-import { goalieSprites, shadowSprite, GOALIE_W, GOALIE_ANCHOR_X, GOALIE_ANCHOR_Y } from '../world/sprites.js';
+import { goalieFigures, shadowSprite, GK_W, GK_AX, GK_AY } from '../world/sprites.js';
 
 // react: seconds before moving on a shot · err: how far off the read can be (m)
 const SKILL = {
@@ -19,7 +19,7 @@ export class Goalie {
     this.setSide(side);
     this.radius = 0.5;                   // body vs skaters
     this.skill = SKILL[difficulty] ?? SKILL.normal;
-    this.sprites = goalieSprites(this.team);
+    this.sprites = goalieFigures(this.team);
     this.pos = { x: 0, y: 0 };
     this.vel = { x: 0, y: 0 };
     this.reset();
@@ -126,7 +126,10 @@ export class Goalie {
     const right = this.out > 0;
     const f = this.frame();
     const img = right ? f.right : f.left;
-    const ax = right ? GOALIE_ANCHOR_X : GOALIE_W - 1 - GOALIE_ANCHOR_X;
-    ctx.drawImage(img, Math.round(p.x + ox - ax), Math.round(p.y + oy - GOALIE_ANCHOR_Y));
+    const ax = right ? GK_AX : GK_W - 1 - GK_AX;
+    ctx.save();
+    ctx.scale(1 / RES, 1 / RES);
+    ctx.drawImage(img, Math.round((p.x + ox) * RES) - ax, Math.round((p.y + oy) * RES) - GK_AY);
+    ctx.restore();
   }
 }

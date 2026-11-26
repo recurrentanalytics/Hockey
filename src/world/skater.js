@@ -1,12 +1,12 @@
 // A skater: movement, aiming, stamina, and the live-drawn stick.
 // Gameplay decisions (shooting, passing, pickups) live in game/match.js.
-import { SKATE, TEAMS } from '../config.js';
+import { SKATE, TEAMS, RES } from '../config.js';
 import { PAL } from '../engine/palette.js';
 import { pixelLine } from '../engine/draw.js';
 import { drawText } from '../engine/font.js';
 import { RINK_CORE, goalBox } from './rink.js';
 import { project } from './projection.js';
-import { skaterSprites, shadowSprite, ANCHOR_X, ANCHOR_Y, SPRITE_W } from './sprites.js';
+import { skaterFigures, SK_W, SK_AX, SK_AY } from './sprites.js';
 
 export const REACH = 0.72;      // body centre → blade, metres
 export const POKE_TIME = 0.24;
@@ -17,6 +17,31 @@ function turnToward(a, b, max) {
   const TAU = Math.PI * 2;
   const d = ((((b - a + Math.PI) % TAU) + TAU) % TAU) - Math.PI;
   return a + Math.max(-max, Math.min(max, d));
+}
+
+/** Draw in full world-layer resolution (undoes the layer's RES scale). */
+function hd(ctx, fn) {
+  ctx.save();
+  ctx.scale(1 / RES, 1 / RES);
+  fn();
+  ctx.restore();
+}
+
+let shadowCanvas = null;
+/** Soft oval shadow under the skates, full resolution. */
+function softShadow() {
+  if (shadowCanvas) return shadowCanvas;
+  const c = document.createElement('canvas');
+  c.width = 30; c.height = 8;
+  const g = c.getContext('2d');
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 30; x++) {
+    const dx = (x + 0.5 - 15) / 15, dy = (y + 0.5 - 4) / 4, r = dx * dx + dy * dy;
+    if (r > 1) continue;
+    g.fillStyle = `rgba(42,31,61,${r < 0.45 ? 0.38 : 0.24})`;
+    g.fillRect(x, y, 1, 1);
+  }
+  shadowCanvas = c;
+  return c;
 }
 
 const rings = new Map();
@@ -66,7 +91,7 @@ export class Skater {
     this.human = null;  // set when a player controls this skater
     this.sideKey = null;
     this.look = look;
-    this.sprites = skaterSprites(this.team, look);
+    this.sprites = skaterFigures(this.team, look);
   }
 
   get speed() {
@@ -291,27 +316,53 @@ export class Skater {
 
   drawShadow(ctx, ox, oy) {
     const p = project(this.pos.x, this.pos.y);
-    ctx.drawImage(shadowSprite(), Math.round(p.x + ox - 7), Math.round(p.y + oy - 2));
+    hd(ctx, () => ctx.drawImage(softShadow(), Math.round((p.x + ox) * RES) - 15, Math.round((p.y + oy) * RES) - 4));
     // Controlled player: a ring in the player's colour round the skates.
     if (this.human) ctx.drawImage(ringSprite(this.human.color), Math.round(p.x + ox - 9), Math.round(p.y + oy - 3));
   }
 
-  drawStick(ctx, p, ox, oy, hand) {
-    const hx = Math.round(p.x + ox + this.facing * hand.x), hy = Math.round(p.y + oy + hand.y);
+  /** Stick in full resolution: shaft from the top hand through the bottom hand to a taped blade. */
+  drawStick(ctx, X, Y, fr) {
+    const f = this.facing;
+    const hx = X + f * fr.hand.x, hy = Y + fr.hand.y;
     const b = this.stickPoint();
     const bp = project(b.x, b.y, b.z);
-    const bx = Math.round(bp.x + ox), by = Math.round(bp.y + oy);
-    ctx.fillStyle = PAL.woodDark;
-    pixelLine(ctx, hx - this.facing, hy, bx - this.facing, by - 1);
-    ctx.fillStyle = PAL.wood;
+    const bx = Math.round((bp.x + this.ox) * RES), by = Math.round((bp.y + this.oy) * RES);
+    const wood = PAL.wood, dark = PAL.woodDark;
+    if (fr.top) {
+      const tx = X + f * fr.top.x, ty = Y + fr.top.y;
+      // butt end sticks out a little past the top hand
+      const dx = tx - hx, dy = ty - hy, d = Math.hypot(dx, dy) || 1;
+      ctx.fillStyle = dark;
+      pixelLine(ctx, hx, hy + 1, Math.round(tx + (dx / d) * 3), Math.round(ty + (dy / d) * 3) + 1);
+      ctx.fillStyle = wood;
+      pixelLine(ctx, hx, hy, Math.round(tx + (dx / d) * 3), Math.round(ty + (dy / d) * 3));
+      ctx.fillStyle = PAL.ink;
+      ctx.fillRect(Math.round(tx + (dx / d) * 3) - 1, Math.round(ty + (dy / d) * 3) - 1, 2, 2);
+    }
+    ctx.fillStyle = dark;
+    pixelLine(ctx, hx, hy + 1, bx, by);
+    ctx.fillStyle = wood;
     pixelLine(ctx, hx, hy, bx, by - 1);
     // The blade points the way the stick swings: back during a wind-up.
-    let toward = Math.abs(Math.cos(this.dir)) > 0.15 ? Math.sign(Math.cos(this.dir)) : this.facing;
+    let toward = Math.abs(Math.cos(this.dir)) > 0.15 ? Math.sign(Math.cos(this.dir)) : f;
     if (bx * toward < hx * toward) toward = -toward;
+    const x0 = toward > 0 ? bx - 1 : bx - 8;
     ctx.fillStyle = PAL.ink;
-    ctx.fillRect(toward > 0 ? bx : bx - 3, by, 4, 1);
-    ctx.fillStyle = PAL.white;
-    ctx.fillRect(toward > 0 ? bx + 1 : bx - 2, by, 2, 1);
+    ctx.fillRect(x0 - 1, by - 2, 11, 4);
+    ctx.fillStyle = '#2a2438';
+    ctx.fillRect(x0, by - 1, 9, 2);
+    ctx.fillStyle = PAL.white;               // white tape on the blade
+    ctx.fillRect(x0 + (toward > 0 ? 2 : 3), by - 1, 4, 2);
+  }
+
+  /** Jersey number on the back, drawn upright after mirroring so it always reads right. */
+  drawNumber(ctx, X, Y, fr) {
+    if (this.number == null || !fr.num) return;
+    const text = String(this.number);
+    const w = text.length * 4 - 1;
+    const nx = X + this.facing * fr.num.x - Math.floor(w / 2), ny = Y + Math.round(fr.num.y) - 2;
+    drawText(ctx, text, nx, ny, { color: this.team.stripe ?? this.team.trim });
   }
 
   /** Which pose to show, from what the skater is doing right now. */
@@ -352,41 +403,44 @@ export class Skater {
   draw(ctx, ox, oy) {
     const st = this.pose();
     // Jump for joy after a goal
-    if (st.hop) oy -= Math.round(Math.abs(Math.sin((this.t ?? 0) * 9)) * 3);
+    if (st.hop) oy -= Math.abs(Math.sin((this.t ?? 0) * 9)) * 3;
     const p = project(this.pos.x, this.pos.y);
+    this.ox = ox; this.oy = oy;
     const right = this.facing >= 0;
     const fr = this.sprites.frame(st.pose, st.mood);
     const img = right ? fr.right : fr.left;
-    const ax = right ? ANCHOR_X : SPRITE_W - 1 - ANCHOR_X;
-    const x = Math.round(p.x + ox - ax), y = Math.round(p.y + oy - ANCHOR_Y);
-    if (st.lying) {
-      // On the floor: the sprawled sprite turned 90° (exact quarter turns stay pixel-crisp).
-      ctx.save();
-      ctx.translate(Math.round(p.x + ox), Math.round(p.y + oy));
-      ctx.rotate(right ? Math.PI / 2 : -Math.PI / 2);
-      ctx.drawImage(img, -ax, -ANCHOR_Y + 5);
-      ctx.restore();
-      // Little stars circling over the dizzy head
-      const tt = performance.now() / 180;
-      const hx = Math.round(p.x + ox + (right ? 12 : -12)), hy = Math.round(p.y + oy - 8);
-      for (let i = 0; i < 3; i++) {
-        const a = tt + (i * Math.PI * 2) / 3;
-        ctx.fillStyle = i === 1 ? PAL.white : PAL.yellow;
-        ctx.fillRect(hx + Math.round(Math.cos(a) * 5), hy + Math.round(Math.sin(a) * 2), 1, 1);
+    const X = Math.round((p.x + ox) * RES), Y = Math.round((p.y + oy) * RES);
+    const ax = right ? SK_AX : SK_W - 1 - SK_AX;
+    hd(ctx, () => {
+      if (st.lying) {
+        // On the floor: the sprawled figure turned 90° (exact quarter turns stay pixel-crisp).
+        ctx.save();
+        ctx.translate(X, Y);
+        ctx.rotate(right ? Math.PI / 2 : -Math.PI / 2);
+        ctx.drawImage(img, -ax, -SK_AY + 8);
+        ctx.restore();
+        const tt = performance.now() / 180;
+        const hx = X + (right ? 40 : -40), hy = Y - 14;
+        for (let i = 0; i < 3; i++) {
+          const a = tt + (i * Math.PI * 2) / 3;
+          ctx.fillStyle = i === 1 ? PAL.white : PAL.yellow;
+          ctx.fillRect(hx + Math.round(Math.cos(a) * 9), hy + Math.round(Math.sin(a) * 4), 2, 2);
+        }
+      } else if (this.downT > 0) {
+        ctx.drawImage(img, X - ax, Y - SK_AY);
+      } else {
+        const behind = this.stickPoint().y < this.pos.y - 0.05;
+        if (behind) this.drawStick(ctx, X, Y, fr);
+        ctx.drawImage(img, X - ax, Y - SK_AY);
+        this.drawNumber(ctx, X, Y, fr);
+        if (!behind) this.drawStick(ctx, X, Y, fr);
       }
-    } else if (this.downT > 0) {
-      // Stumbling, kneeling, getting up: the stick is dropped on the floor.
-      ctx.drawImage(img, x, y);
-    } else {
-      const behind = this.stickPoint().y < this.pos.y - 0.05;
-      if (behind) this.drawStick(ctx, p, ox, oy, fr.hand);
-      ctx.drawImage(img, x, y);
-      if (!behind) this.drawStick(ctx, p, ox, oy, fr.hand);
-    }
+    });
+    const y = (Y + fr.headTop) / RES - 6;
 
     const h = this.human;
     if (!h) return;
-    const tx = Math.round(p.x + ox), ty = y - 5;
+    const tx = Math.round(p.x + ox), ty = Math.round(y);
     drawText(ctx, h.tag, tx, ty, { color: h.color, align: 'center', shadow: PAL.ink });
     ctx.fillStyle = h.color;
     ctx.fillRect(tx - 1, ty + 6, 3, 1);

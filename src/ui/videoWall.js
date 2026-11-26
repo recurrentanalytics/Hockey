@@ -4,7 +4,7 @@ import { PAL } from '../engine/palette.js';
 import { drawText, drawTextOutlined } from '../engine/font.js';
 import { panel, fillCircle } from '../engine/draw.js';
 import { TEAMS } from '../config.js';
-import { skaterSprites, HAIR } from '../world/sprites.js';
+import { skaterFigures as skaterSprites, HAIR } from '../world/sprites.js';
 
 const W = 100, H = 60;
 const SHIRTS = [PAL.red, PAL.blue, PAL.yellow, PAL.green, PAL.purple, PAL.orange, PAL.pink, PAL.sky];
@@ -92,7 +92,7 @@ export class VideoWall {
       const img = frame ? sp.happyRight : sp.happyLeft;
       const hop = Math.round(Math.abs(Math.sin(t * 7)) * 6);
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(img, cx - 20, y + 10 - hop, 40, 52);
+      ctx.drawImage(img, 0, 16, 72, 62, cx - 36, y - 2 - hop, 72, 62);
       // little musical notes
       ctx.fillStyle = PAL.purple;
       for (let i = 0; i < 3; i++) {
@@ -104,7 +104,7 @@ export class VideoWall {
       const sp = skaterSprites(team, s.data.look ?? {});
       ctx.imageSmoothingEnabled = false;
       const hop = Math.round(Math.abs(Math.sin(t * 8)) * 5);
-      ctx.drawImage(sp.happyRight, cx - 20, y + 12 - hop, 40, 52);
+      ctx.drawImage(sp.happyRight, 0, 16, 72, 62, cx - 36, y - hop, 72, 62);
       // starburst
       ctx.fillStyle = PAL.yellow;
       for (let i = 0; i < 8; i++) {

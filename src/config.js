@@ -10,6 +10,9 @@ export const VIEW = {
 
 // Oblique "broadcast camera" projection, in pixels per metre.
 export const PROJ = { x: 16, y: 8, z: 14 };
+// The world layer is rendered at RES× its logical resolution: rink art keeps its size,
+// while players, goalies, sticks and the ball are drawn with RES× the detail.
+export const RES = 2;
 
 export const RINK = {
   length: 60,
