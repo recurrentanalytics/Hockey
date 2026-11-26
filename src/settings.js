@@ -34,10 +34,10 @@ export const OPTIONS = {
   ruleset: [
     { value: 'worldskate', label: 'WORLD SKATE' },
     { value: 'usars', label: 'USARS / NARCH' },
-    { value: 'ishd', label: 'ISHD GERMANY' },
+    { value: 'ishd', label: 'ISHD DEUTSCHLAND' },
   ],
   periodLength: [
-    { value: 'rulebook', label: 'RULEBOOK' },
+    { value: 'rulebook', label: 'REGELBUCH' },
     { value: 3, label: '3 MIN' },
     { value: 5, label: '5 MIN' },
     { value: 10, label: '10 MIN' },
@@ -45,52 +45,52 @@ export const OPTIONS = {
     { value: 20, label: '20 MIN' },
   ],
   difficulty: [
-    { value: 'easy', label: 'EASY' },
+    { value: 'easy', label: 'LEICHT' },
     { value: 'normal', label: 'NORMAL' },
-    { value: 'hard', label: 'HARD' },
+    { value: 'hard', label: 'SCHWER' },
   ],
   twoPlayerMode: [
-    { value: 'versus', label: 'VERSUS' },
-    { value: 'coop', label: 'CO-OP VS AI' },
+    { value: 'versus', label: 'GEGENEINANDER' },
+    { value: 'coop', label: 'ZUSAMMEN GEGEN KI' },
   ],
   twoPlayerCamera: [
-    { value: 'shared', label: 'SHARED' },
-    { value: 'split', label: 'SPLIT SCREEN' },
+    { value: 'shared', label: 'GEMEINSAM' },
+    { value: 'split', label: 'GETEILT' },
   ],
   touchControls: [
     { value: 'auto', label: 'AUTO' },
-    { value: 'on', label: 'ON' },
-    { value: 'off', label: 'OFF' },
+    { value: 'on', label: 'AN' },
+    { value: 'off', label: 'AUS' },
   ],
   buttonLabels: [
     { value: 'auto', label: 'AUTO' },
     { value: 'xbox', label: 'XBOX' },
-    { value: 'nintendo', label: 'NINTENDO (A PASS)' },
+    { value: 'nintendo', label: 'NINTENDO (A = PASS)' },
     { value: 'playstation', label: 'PLAYSTATION' },
   ],
   padConfirm: [
-    { value: 'auto', label: 'AUTO (A ON 8BITDO)' },
-    { value: 'south', label: 'BOTTOM BUTTON' },
-    { value: 'east', label: 'RIGHT BUTTON' },
+    { value: 'auto', label: 'AUTO (A BEI 8BITDO)' },
+    { value: 'south', label: 'UNTERE TASTE' },
+    { value: 'east', label: 'RECHTE TASTE' },
   ],
   sound: [
-    { value: 0, label: 'OFF' },
+    { value: 0, label: 'AUS' },
     { value: 0.25, label: '25%' },
     { value: 0.5, label: '50%' },
     { value: 0.75, label: '75%' },
     { value: 1, label: '100%' },
   ],
   rumble: [
-    { value: true, label: 'ON' },
-    { value: false, label: 'OFF' },
+    { value: true, label: 'AN' },
+    { value: false, label: 'AUS' },
   ],
   gameBall: [
-    { value: 'ball', label: 'RED BALL' },
-    { value: 'puck', label: 'RED PUCK' },
+    { value: 'ball', label: 'ROTER BALL' },
+    { value: 'puck', label: 'ROTER PUCK' },
   ],
   replays: [
-    { value: true, label: 'ON' },
-    { value: false, label: 'OFF' },
+    { value: true, label: 'AN' },
+    { value: false, label: 'AUS' },
   ],
   venue: [
     { value: 'arena', label: 'HALLE' },
@@ -99,12 +99,12 @@ export const OPTIONS = {
   homeTeam: TEAM_OPTIONS,
   awayTeam: TEAM_OPTIONS,
   autoFullscreen: [
-    { value: true, label: 'ON' },
-    { value: false, label: 'OFF' },
+    { value: true, label: 'AN' },
+    { value: false, label: 'AUS' },
   ],
   pixelPerfect: [
-    { value: false, label: 'OFF' },
-    { value: true, label: 'ON' },
+    { value: false, label: 'AUS' },
+    { value: true, label: 'AN' },
   ],
 };
 

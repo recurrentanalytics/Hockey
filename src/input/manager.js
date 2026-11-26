@@ -111,10 +111,10 @@ export class InputManager {
     this.menuPad = new MenuPad();
     this.bindings = load('bindings', {});
     this.controllers = new Map([
-      ['kb1', new Controller('kb1', 'keyboard', 'KEYBOARD 1', 'kb1')],
-      ['kb2', new Controller('kb2', 'keyboard', 'KEYBOARD 2', 'kb2')],
+      ['kb1', new Controller('kb1', 'keyboard', 'TASTATUR 1', 'kb1')],
+      ['kb2', new Controller('kb2', 'keyboard', 'TASTATUR 2', 'kb2')],
       ['touch', new Controller('touch', 'touch', 'TOUCH', 'touch')],
-      ['any', new Controller('any', 'any', 'ANY DEVICE', 'any')],
+      ['any', new Controller('any', 'any', 'JEDES GERÄT', 'any')],
     ]);
     this.lastKind = 'keyboard';
     this.lastId = 'kb1';
@@ -237,7 +237,7 @@ export class InputManager {
     const first = DIRS.map((d) => p[d]?.[0]);
     if (c.kind === 'keyboard') {
       if (first.join() === 'KeyW,KeyS,KeyA,KeyD') return 'WASD';
-      if (first.join() === 'ArrowUp,ArrowDown,ArrowLeft,ArrowRight') return 'ARROWS';
+      if (first.join() === 'ArrowUp,ArrowDown,ArrowLeft,ArrowRight') return 'PFEILE';
       return first.map((b) => (b ? keyLabel(b) : '-')).join('/');
     }
     if (p.up?.some((b) => b === 'a:1-')) return 'STICK';
@@ -246,7 +246,7 @@ export class InputManager {
   }
 
   confirmLabel() {
-    if (this.lastKind === 'touch') return 'TAP';
+    if (this.lastKind === 'touch') return 'TIPPEN';
     const c = this.promptController();
     if (c?.kind === 'gamepad') return PRINTED[this.padStyle(c)]?.[this.confirmSide(c)] ?? 'A';
     return 'ENTER';

@@ -68,7 +68,7 @@ function poisson(lambda) {
 export function simulate(g) {
   let home = poisson(2.8), away = poisson(2.8), how = '';
   if (home === away) {
-    how = Math.random() < 0.5 ? 'OT' : 'SO';
+    how = Math.random() < 0.5 ? 'N.V.' : 'N.P.';
     if (Math.random() < 0.5) home++; else away++;
   }
   g.played = true;

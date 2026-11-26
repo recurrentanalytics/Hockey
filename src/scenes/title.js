@@ -39,10 +39,10 @@ export class TitleScene {
     word('INLINE', 30, PAL.white, PAL.slate);
     word('HOCKEY', 70, PAL.yellow, PAL.redDark);
     // Taglines, including the Boni Borstentiere's own
-    const lines = ['4 ON 4 ROLLER HOCKEY', 'WAS SIND WIR? EIN BORSTENTIER!', 'HAARE OPTIONAL', 'ZUSAMMEN SIND WIR STARK!', 'FEAT. BONNY FROM THE EILENRIEDE'];
+    const lines = ['4 GEGEN 4 INLINEHOCKEY', 'WAS SIND WIR? EIN BORSTENTIER!', 'HAARE OPTIONAL', 'ZUSAMMEN SIND WIR STARK!', 'MIT BONNY AUS DER EILENRIEDE'];
     drawTextOutlined(ctx, lines[Math.floor(this.t / 3) % lines.length], W / 2, 112, { color: PAL.pink, align: 'center' });
     if (Math.floor(this.t * 2) % 2 === 0) {
-      const prompt = input.lastKind === 'touch' || input.pointers.touchSeen ? 'TAP TO START' : 'PRESS START';
+      const prompt = input.lastKind === 'touch' || input.pointers.touchSeen ? 'TIPPEN ZUM STARTEN' : 'DRÜCK START';
       drawTextOutlined(ctx, prompt, W / 2, 146, { color: PAL.white, scale: 2, align: 'center', big: true });
     }
   }

@@ -8,12 +8,12 @@ export const RULESETS = {
   worldskate: {
     name: 'WORLD SKATE',
     periods: 2, periodMinutes: 20,                 // 1.2 A: two periods of 20 min, change ends
-    periodName: 'PERIOD',
+    periodName: 'HALBZEIT',
     clock: 'stop',                                 // 6.1: penalties and play are actual playing time
     skaters: 4,
     minSkaters: 2,                                 // 6.2.1 A: never below 3 players incl. goalkeeper
     bodyCheck: false,
-    hitFoul: 'CHARGING',                           // 6.4.12 / 6.4.13
+    hitFoul: 'UNKORREKTER KÖRPERANGRIFF',                           // 6.4.12 / 6.4.13
     ball: false,
     minor: 1.5,                                    // 6.1.2 A: minor = 90 seconds
     major: 4,                                      // 6.1.3 A: four-minute time penalty
@@ -28,12 +28,12 @@ export const RULESETS = {
   usars: {
     name: 'USARS',
     periods: 2, periodMinutes: 16,                 // 74.1: two 16-minute periods, 1-min intermission
-    periodName: 'PERIOD',
+    periodName: 'HALBZEIT',
     clock: 'stop',                                 // 73: time stops on the whistle (leagues may run a running clock)
     skaters: 4,
     minSkaters: 2,                                 // 27.1: on-rink strength no less than two skaters
     bodyCheck: false,
-    hitFoul: 'ROUGHING',                           // 48.2: body checking is a roughing minor
+    hitFoul: 'ROHES SPIEL',                           // 48.2: body checking is a roughing minor
     ball: false,
     minor: 2,                                      // 16.1
     major: 5,                                      // 20
@@ -53,7 +53,7 @@ export const RULESETS = {
     skaters: 4,
     minSkaters: 2,                                 // 7.x: play continues with two field players + goalie
     bodyCheck: true,                               // 8.9.1: fair check on the ball carrier, from the front or side
-    hitFoul: 'ILLEGAL CHECK',                      // 8.10.2: unerlaubter Körperangriff
+    hitFoul: 'UNERLAUBTER CHECK',                      // 8.10.2: unerlaubter Körperangriff
     ball: true,                                    // 2.2: ball (used when no choice is made)
     minor: 2,                                      // 7.2
     major: 5,                                      // 7.4

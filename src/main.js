@@ -69,8 +69,8 @@ function drawPortraitHint() {
   if (!(display.portrait && input.pointers.touchSeen)) return;
   const ctx = display.uctx, W = display.width, H = display.height;
   panel(ctx, 20, H / 2 - 16, W - 40, 32, { fill: PAL.ink, border: PAL.yellow, alpha: 0.95 });
-  drawText(ctx, 'ROTATE YOUR DEVICE', W / 2, H / 2 - 9, { color: PAL.yellow, align: 'center', scale: 2 });
-  drawText(ctx, 'THE RINK PLAYS BEST IN LANDSCAPE', W / 2, H / 2 + 6, { color: PAL.white, align: 'center' });
+  drawText(ctx, 'GERÄT DREHEN', W / 2, H / 2 - 9, { color: PAL.yellow, align: 'center', scale: 2 });
+  drawText(ctx, 'IM QUERFORMAT SPIELT ES SICH AM BESTEN', W / 2, H / 2 + 6, { color: PAL.white, align: 'center' });
 }
 
 let last = performance.now();
@@ -89,7 +89,7 @@ function frame(now) {
   if (lastError) {
     const ctx = display.uctx;
     panel(ctx, 4, display.height - 22, display.width - 8, 12, { fill: PAL.ink, border: PAL.red, alpha: 0.95 });
-    drawText(ctx, `ERROR: ${lastError}`.slice(0, 90), 8, display.height - 19, { color: PAL.red });
+    drawText(ctx, `FEHLER: ${lastError}`.slice(0, 90), 8, display.height - 19, { color: PAL.red });
     display.present();
   }
   requestAnimationFrame(frame);

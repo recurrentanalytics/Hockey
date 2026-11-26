@@ -113,7 +113,7 @@ export class VideoWall {
       }
     }
     ctx.restore();
-    const label = { kiss: 'KISS CAM', bonny: 'BONNY CAM', dance: 'DANCE CAM', goal: s.data.text ?? 'TOR!' }[s.kind];
+    const label = { kiss: 'KUSS-CAM', bonny: 'BONNY-CAM', dance: 'TANZ-CAM', goal: s.data.text ?? 'TOR!' }[s.kind];
     drawTextOutlined(ctx, label, ox + W / 2, y + H + 3, { color: s.kind === 'kiss' ? PAL.pink : PAL.yellow, align: 'center' });
   }
 }

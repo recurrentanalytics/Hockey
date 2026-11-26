@@ -22,11 +22,11 @@ export class TouchController {
       stickHome: { x: EDGE + 38, y: b - 36 },
       pause: { x: W - 35, y: 13, r: 9 },
       buttons: [
-        { action: 'shoot', label: 'SHOOT', x: r - 22, y: b - 26, r: 19, color: PAL.red },
+        { action: 'shoot', label: 'SCHUSS', x: r - 22, y: b - 26, r: 19, color: PAL.red },
         { action: 'pass', label: 'PASS', x: r - 62, y: b - 14, r: 14, color: PAL.blue },
         { action: 'check', label: 'CHECK', x: r - 58, y: b - 52, r: 14, color: PAL.orange },
-        { action: 'switch', label: 'SWAP', x: r - 18, y: b - 70, r: 12, color: PAL.green },
-        { action: 'sprint', label: 'BOOST', x: r - 98, y: b - 34, r: 14, color: PAL.purple },
+        { action: 'switch', label: 'TAUSCH', x: r - 18, y: b - 70, r: 12, color: PAL.green },
+        { action: 'sprint', label: 'TURBO', x: r - 98, y: b - 34, r: 14, color: PAL.purple },
       ],
     };
   }

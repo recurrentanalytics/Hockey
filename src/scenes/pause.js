@@ -14,21 +14,21 @@ export class PauseScene {
     this.menuPad = true;
     const m = under.match;
     const ref = m?.ref;
-    const items = [{ label: 'RESUME', onSelect: () => app.pop() }];
+    const items = [{ label: 'WEITER', onSelect: () => app.pop() }];
     // One time-out item per side with a human player. It is taken at the next stoppage.
     for (const side of [...new Set((m?.humans ?? []).map((h) => h.side))]) {
       if (!ref?.r.timeouts) break;
       const team = TEAMS[m.sides[side].team].name;
       items.push({
-        label: `TIME-OUT ${team}`,
-        value: () => (ref.timeoutRequest[side] ? 'REQUESTED' : `${ref.timeoutsLeft[side]} LEFT`),
+        label: `AUSZEIT ${team}`,
+        value: () => (ref.timeoutRequest[side] ? 'BEANTRAGT' : `NOCH ${ref.timeoutsLeft[side]}`),
         disabled: () => !ref.timeoutAllowed(side) || ref.timeoutRequest[side],
-        onSelect: () => { ref.requestTimeout(side); app.toasts.push('TIME-OUT AT THE NEXT STOPPAGE'); app.pop(); },
+        onSelect: () => { ref.requestTimeout(side); app.toasts.push('AUSZEIT BEI DER NÄCHSTEN UNTERBRECHUNG'); app.pop(); },
       });
     }
     items.push(
-      { label: 'SETTINGS', onSelect: () => app.push(new SettingsScene(app)) },
-      { label: 'QUIT TO MENU', color: PAL.red, onSelect: () => { app.audio.stopSong(); app.popTo((s) => s.isTournament || s.isMainMenu); } },
+      { label: 'EINSTELLUNGEN', onSelect: () => app.push(new SettingsScene(app)) },
+      { label: 'ZUM MENÜ', color: PAL.red, onSelect: () => { app.audio.stopSong(); app.popTo((s) => s.isTournament || s.isMainMenu); } },
     );
     this.menu = new Menu(items, { width: 190, top: 70 });
   }
@@ -44,7 +44,7 @@ export class PauseScene {
     const { display, input } = this.app;
     const ctx = display.uctx;
     dim(ctx, display.width, display.height, 0.6);
-    header(ctx, display.width, 'PAUSED');
+    header(ctx, display.width, 'PAUSE');
     this.menu.draw(ctx, display.width);
     const m = this.under.match;
     if (m?.ref) {
@@ -52,9 +52,9 @@ export class PauseScene {
         const team = m.roster.filter((s) => s.sideKey === side);
         return Math.round(100 * (1 - team.reduce((a, s) => a + (s.fatigue ?? 0), 0) / team.length));
       };
-      const text = `ENERGY  ${TEAMS[m.sides.home.team].name} ${energy('home')}%   ${TEAMS[m.sides.away.team].name} ${energy('away')}%`;
+      const text = `KRAFT  ${TEAMS[m.sides.home.team].name} ${energy('home')}%   ${TEAMS[m.sides.away.team].name} ${energy('away')}%`;
       drawText(ctx, text, display.width / 2, 70 + this.menu.items.length * 11 + 8, { color: PAL.cloud, align: 'center', shadow: PAL.ink });
     }
-    hintBar(ctx, display.width, display.height, [[input.confirmLabel(), 'SELECT'], [input.backLabel(), 'RESUME']]);
+    hintBar(ctx, display.width, display.height, [[input.confirmLabel(), 'AUSWÄHLEN'], [input.backLabel(), 'WEITER']]);
   }
 }

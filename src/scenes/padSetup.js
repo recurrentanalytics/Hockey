@@ -9,23 +9,25 @@ import { header, hintBar } from '../ui/hud.js';
 import { drawPad } from '../ui/padDiagram.js';
 import { PRINTED, actionsFor } from '../input/pads.js';
 
+const DIR_DE = { up: 'HOCH', down: 'RUNTER', left: 'LINKS', right: 'RECHTS' };
+
 const STEPS = [
-  { key: 'south', where: 'BOTTOM FACE BUTTON' },
-  { key: 'east', where: 'RIGHT FACE BUTTON' },
-  { key: 'west', where: 'LEFT FACE BUTTON' },
-  { key: 'north', where: 'TOP FACE BUTTON' },
-  { key: 'up', name: 'D-PAD UP' },
-  { key: 'down', name: 'D-PAD DOWN' },
-  { key: 'left', name: 'D-PAD LEFT' },
-  { key: 'right', name: 'D-PAD RIGHT' },
-  { key: 'l', where: 'LEFT SHOULDER' },
-  { key: 'r', where: 'RIGHT SHOULDER' },
-  { key: 'zl', where: 'LEFT TRIGGER', optional: true },
-  { key: 'zr', where: 'RIGHT TRIGGER', optional: true },
-  { key: 'select', where: 'SMALL LEFT BUTTON', optional: true },
-  { key: 'start', where: 'SMALL RIGHT BUTTON' },
-  { key: 'stickUp', name: 'LEFT STICK UP', optional: true },
-  { key: 'stickLeft', name: 'LEFT STICK LEFT', optional: true },
+  { key: 'south', where: 'UNTERE TASTE' },
+  { key: 'east', where: 'RECHTE TASTE' },
+  { key: 'west', where: 'LINKE TASTE' },
+  { key: 'north', where: 'OBERE TASTE' },
+  { key: 'up', name: 'STEUERKREUZ HOCH' },
+  { key: 'down', name: 'STEUERKREUZ RUNTER' },
+  { key: 'left', name: 'STEUERKREUZ LINKS' },
+  { key: 'right', name: 'STEUERKREUZ RECHTS' },
+  { key: 'l', where: 'LINKE SCHULTERTASTE' },
+  { key: 'r', where: 'RECHTE SCHULTERTASTE' },
+  { key: 'zl', where: 'LINKER TRIGGER', optional: true },
+  { key: 'zr', where: 'RECHTER TRIGGER', optional: true },
+  { key: 'select', where: 'KLEINE LINKE TASTE', optional: true },
+  { key: 'start', where: 'KLEINE RECHTE TASTE' },
+  { key: 'stickUp', name: 'LINKER STICK HOCH', optional: true },
+  { key: 'stickLeft', name: 'LINKER STICK LINKS', optional: true },
 ];
 const OPTIONAL_WAIT = 6;
 
@@ -77,7 +79,7 @@ export class PadSetupScene {
       return this.next(); // optional step skipped
     }
     if (Object.values(this.map).includes(binding)) {
-      this.app.toasts.push('ALREADY USED - PRESS ANOTHER');
+      this.app.toasts.push('SCHON BELEGT - ANDERE TASTE');
       return this.capture();
     }
     this.map[st.key] = binding;
@@ -92,16 +94,16 @@ export class PadSetupScene {
   }
 
   cancel() {
-    this.app.toasts.push('PAD SETUP CANCELLED');
+    this.app.toasts.push('PAD-EINRICHTUNG ABGEBROCHEN');
     this.app.pop();
   }
 
   finish() {
     const P = this.map, names = {};
     for (const k of ['south', 'east', 'west', 'north', 'l', 'r', 'zl', 'zr', 'select', 'start']) if (P[k]) names[P[k]] = this.printed[k];
-    for (const k of ['up', 'down', 'left', 'right']) if (P[k]) names[P[k]] = `D-${k.toUpperCase()}`;
+    for (const k of ['up', 'down', 'left', 'right']) if (P[k]) names[P[k]] = `D-${DIR_DE[k]}`;
     const stick = { up: P.stickUp, down: flip(P.stickUp), left: P.stickLeft, right: flip(P.stickLeft) };
-    for (const [d, b] of Object.entries(stick)) if (b) names[b] = `STICK ${d.toUpperCase()}`;
+    for (const [d, b] of Object.entries(stick)) if (b) names[b] = `STICK ${DIR_DE[d] ?? d.toUpperCase()}`;
     const list = (...b) => b.filter(Boolean);
     const base = actionsFor({ ...P, up: [], down: [], left: [], right: [] }, this.style);
     const clean = (a) => list(...a);
@@ -141,17 +143,17 @@ export class PadSetupScene {
     const { display, input } = this.app;
     this.app.backdrop.draw(0.75);
     const ctx = display.uctx, W = display.width, H = display.height;
-    header(ctx, W, 'PAD SETUP', fitText(this.pad.name, W - 20));
+    header(ctx, W, 'PAD EINRICHTEN', fitText(this.pad.name, W - 20));
     const cx = Math.round(W / 2), cy = 82;
     const done = new Set(Object.keys(this.map));
 
     if (this.phase === 'style') {
       drawPad(ctx, cx, cy, { letters: PRINTED.nintendo });
-      drawText(ctx, 'WHICH LETTERS ARE PRINTED ON YOUR PAD?', W / 2, 108, { color: PAL.white, align: 'center', shadow: PAL.ink });
+      drawText(ctx, 'WELCHE BUCHSTABEN STEHEN AUF DEINEM PAD?', W / 2, 108, { color: PAL.white, align: 'center', shadow: PAL.ink });
       this.styleMenu.draw(ctx, W);
-      const mode = this.pad.info?.mode ? `DETECTED: ${this.pad.info.mode} MODE` : '';
+      const mode = this.pad.info?.mode ? `ERKANNT: MODUS ${this.pad.info.mode}` : '';
       drawText(ctx, mode, W / 2, 158, { color: PAL.mist, align: 'center', shadow: PAL.ink });
-      hintBar(ctx, W, H, [[input.confirmLabel(), 'SELECT'], [input.backLabel(), 'BACK']]);
+      hintBar(ctx, W, H, [[input.confirmLabel(), 'AUSWÄHLEN'], [input.backLabel(), 'ZURÜCK']]);
       return;
     }
 
@@ -160,10 +162,10 @@ export class PadSetupScene {
       drawPad(ctx, cx, cy, { letters: this.printed, highlight: st.key, done });
       const y = 116;
       panel(ctx, 20, y, W - 40, 34, { fill: PAL.ink, border: PAL.yellow, alpha: 0.9 });
-      drawText(ctx, `STEP ${this.step + 1} OF ${STEPS.length}`, W / 2, y + 5, { color: PAL.mist, align: 'center' });
-      drawText(ctx, fitText(`PRESS ${this.stepName(st)}`, W - 50), W / 2, y + 14, { color: PAL.yellow, align: 'center' });
+      drawText(ctx, `SCHRITT ${this.step + 1} VON ${STEPS.length}`, W / 2, y + 5, { color: PAL.mist, align: 'center' });
+      drawText(ctx, fitText(`DRÜCK ${this.stepName(st)}`, W - 50), W / 2, y + 14, { color: PAL.yellow, align: 'center' });
       const left = Math.max(0, Math.ceil(OPTIONAL_WAIT - this.waited));
-      drawText(ctx, st.optional ? `NOT ON YOUR PAD? WAIT ${left} S TO SKIP` : 'ESC OR TAP TO CANCEL', W / 2, y + 24, { color: PAL.cloud, align: 'center' });
+      drawText(ctx, st.optional ? `NICHT AUF DEINEM PAD? ${left} S WARTEN ZUM ÜBERSPRINGEN` : 'ESC ODER TIPPEN ZUM ABBRECHEN', W / 2, y + 24, { color: PAL.cloud, align: 'center' });
       return;
     }
 
@@ -172,12 +174,12 @@ export class PadSetupScene {
     const name = (bs) => bs.map((b) => this.profile.names[b]).filter(Boolean).join(' / ') || '-';
     const pr = this.profile;
     const lines = [
-      `${name(pr.pass)} PASS    ${name(pr.shoot)} SHOOT    ${name(pr.check)} POKE CHECK`,
-      `${name(pr.switch)} SWITCH    ${name(pr.sprint)} SPRINT    ${name(pr.pause)} PAUSE`,
-      'MOVE WITH THE D-PAD OR LEFT STICK',
+      `${name(pr.pass)} PASS    ${name(pr.shoot)} SCHUSS    ${name(pr.check)} CHECK`,
+      `${name(pr.switch)} WECHSEL    ${name(pr.sprint)} SPRINT    ${name(pr.pause)} PAUSE`,
+      'LAUFEN MIT STEUERKREUZ ODER LINKEM STICK',
     ];
     lines.forEach((l, i) => drawText(ctx, fitText(l, W - 16), W / 2, 116 + i * 9, { color: i < 2 ? PAL.white : PAL.mist, align: 'center', shadow: PAL.ink }));
-    drawText(ctx, 'SAVED. CHANGE SINGLE BUTTONS UNDER CONTROLS.', W / 2, 150, { color: PAL.green, align: 'center', shadow: PAL.ink });
-    hintBar(ctx, W, H, [[input.confirmLabel(), 'DONE']]);
+    drawText(ctx, 'GESPEICHERT. EINZELNE TASTEN UNTER STEUERUNG ÄNDERN.', W / 2, 150, { color: PAL.green, align: 'center', shadow: PAL.ink });
+    hintBar(ctx, W, H, [[input.confirmLabel(), 'FERTIG']]);
   }
 }

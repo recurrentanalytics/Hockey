@@ -123,7 +123,7 @@ export class RinkScene {
     for (const h of this.match.humans) {
       const c = input.controller(h.controller);
       if (!c || c.connected === false) {
-        this.app.toasts.push(`${h.tag} CONTROLLER LOST`);
+        this.app.toasts.push(`${h.tag} CONTROLLER GETRENNT`);
         return this.pause();
       }
       if (c.pressed.pause) return this.pause();
@@ -179,24 +179,24 @@ export class RinkScene {
         case 'goal': for (const h of m.humans) rumble(h, h.side === e.side ? 0.6 : 1, 0.8, h.side === e.side ? 300 : 450); break;
         case 'steal': rumble(e.from.human, 0.3, 0.3, 80); break;
         case 'faceoffWon': sfx.play('stick', 0.9); this.fx.stars(m.puck.pos.x, m.puck.pos.y, 0.3, 4); break;
-        case 'faceoffEarly': this.notice = { text: 'TOO EARLY - DRAW LOST', t: 1.5 }; break;
-        case 'lineChange': if (m.humans.some((h) => h.side === e.side)) this.notice = { text: `LINE CHANGE - ${name(e.side)}`, t: 1.5 }; break;
-        case 'timeoutRequested': this.notice = { text: `TIME-OUT REQUESTED - ${name(e.side)}`, t: 2 }; break;
+        case 'faceoffEarly': this.notice = { text: 'ZU FRÜH - BULLY VERLOREN', t: 1.5 }; break;
+        case 'lineChange': if (m.humans.some((h) => h.side === e.side)) this.notice = { text: `LINIENWECHSEL - ${name(e.side)}`, t: 1.5 }; break;
+        case 'timeoutRequested': this.notice = { text: `AUSZEIT BEANTRAGT - ${name(e.side)}`, t: 2 }; break;
       }
       if (e.type === 'goal') {
         const boar = BOAR_TEAMS.has(m.sides[e.side].team);
-        this.banner = { text: e.shootout ? 'SCORES!' : boar ? 'TOOORRR!!!' : 'GOAL!', sub: e.shootout ? name(e.side) : this.goalText(e), t: 2.4 };
+        this.banner = { text: e.shootout ? 'TRIFFT!' : boar ? 'TOOORRR!!!' : 'TOR!', sub: e.shootout ? name(e.side) : this.goalText(e), t: 2.4 };
         // The club hymn is the Borstentiere goal song.
         if (boar && !e.shootout) this.app.audio.song('audio/hymne.mp3', 10);
         if (!e.shootout) this.notice = { text: this.creditText(e), t: 3 };
         if (!e.shootout && settings.replays) this.replayAt = this.recorder.last;
-        if (!e.shootout) this.wall.start('goal', { team: m.sides[e.side].team, look: e.by?.sideKey === e.side ? e.by.look : {}, text: boar ? 'TOOORRR!' : 'GOAL!' }, 2.6, 2.2);
+        if (!e.shootout) this.wall.start('goal', { team: m.sides[e.side].team, look: e.by?.sideKey === e.side ? e.by.look : {}, text: boar ? 'TOOORRR!' : 'TOR!' }, 2.6, 2.2);
       }
-      if (e.type === 'save' && !this.banner) this.banner = { text: 'SAVE', t: 0.8, small: true };
+      if (e.type === 'save' && !this.banner) this.banner = { text: 'GEHALTEN!', t: 0.8, small: true };
       if (e.type === 'foul') this.notice = { text: `${e.name} - ${name(e.offender.sideKey)} #${e.offender.number}`, t: 2.5 };
-      if (e.type === 'penalty') this.banner = { text: e.major ? 'MAJOR' : 'PENALTY', sub: `${name(e.side)} #${e.skater.number} - ${e.foul} - ${fmt(e.seconds)}`, t: 2.6, small2: true };
-      if (e.type === 'penaltyShot') this.banner = { text: 'PENALTY SHOT', sub: `${e.name} ON #${e.shooter.number}`, t: 2.6, small2: true };
-      if (e.type === 'attempt' && !e.scored) this.banner = { text: 'NO GOAL', t: 1.4, small: true };
+      if (e.type === 'penalty') this.banner = { text: e.major ? 'GROSSE STRAFE' : 'STRAFE', sub: `${name(e.side)} #${e.skater.number} - ${e.foul} - ${fmt(e.seconds)}`, t: 2.6, small2: true };
+      if (e.type === 'penaltyShot') this.banner = { text: 'PENALTY', sub: `${e.name} AN #${e.shooter.number}`, t: 2.6, small2: true };
+      if (e.type === 'attempt' && !e.scored) this.banner = { text: 'KEIN TOR', t: 1.4, small: true };
       if (e.type === 'break') this.banner = { text: e.text, t: 3, small2: true };
       // Stoppages: sometimes the video wall shows a kiss cam, Bonny or a dancing fan.
       if ((e.type === 'whistle' || e.type === 'break' || e.type === 'timeout') && !this.wall.active && Math.random() < 0.5) {
@@ -207,10 +207,10 @@ export class RinkScene {
         if (kind === 'kiss') this.app.audio.play('cheer', 0.5);
       }
       if (e.type === 'final') {
-        this.banner = { text: 'FINAL', sub: this.finalText(e), t: Infinity, final: true };
+        this.banner = { text: 'ENDSTAND', sub: this.finalText(e), t: Infinity, final: true };
         if (e.winner && BOAR_TEAMS.has(m.sides[e.winner].team)) { this.banner.sub += ' - ZUSAMMEN SIND WIR STARK!'; this.app.audio.song('audio/hymne.mp3', 20); }
       }
-      if (e.type === 'release') this.notice = { text: `${name(e.side)} BACK TO FULL STRENGTH`, t: 2 };
+      if (e.type === 'release') this.notice = { text: `${name(e.side)} WIEDER VOLLZÄHLIG`, t: 2 };
     }
     // Wheel sparkles on fast skaters, a glowing trail behind hard shots.
     for (const s of m.skaters) {
@@ -313,12 +313,12 @@ export class RinkScene {
     }
   }
 
-  /** "GOAL #61  ASSISTS #7 #10" */
+  /** "TOR #61  VORLAGEN #7 #10" */
   creditText(e) {
     const who = (s) => (s.human ? `${s.human.tag} #${s.number}` : `#${s.number}`);
-    if (!e.by || e.by.sideKey !== e.side) return 'OWN GOAL';
+    if (!e.by || e.by.sideKey !== e.side) return 'EIGENTOR';
     const a = e.assists ?? [];
-    return `GOAL ${who(e.by)}${a.length ? `  ASSIST${a.length > 1 ? 'S' : ''} ${a.map(who).join(' ')}` : '  UNASSISTED'}`;
+    return `TOR ${who(e.by)}${a.length ? `  VORLAGE${a.length > 1 ? 'N' : ''} ${a.map(who).join(' ')}` : '  OHNE VORLAGE'}`;
   }
 
   /** Three stars of the game: points for goals, assists, shots, saves; a bonus for winning. */
@@ -327,12 +327,12 @@ export class RinkScene {
     const list = [];
     for (const s of m.roster) {
       const score = (s.g ?? 0) * 3 + (s.a ?? 0) * 2 + (s.sog ?? 0) * 0.4 + (s.sideKey === win ? 0.5 : 0);
-      if (score > 0.6) list.push({ who: `#${s.number}${s.human ? ' ' + s.human.tag : ''}`, side: s.sideKey, line: `${s.g ?? 0}G ${s.a ?? 0}A ${s.sog ?? 0} SOG`, score, look: s.look });
+      if (score > 0.6) list.push({ who: `#${s.number}${s.human ? ' ' + s.human.tag : ''}`, side: s.sideKey, line: `${s.g ?? 0} TORE ${s.a ?? 0} VORL. ${s.sog ?? 0} SCH.`, score, look: s.look });
     }
     for (const g of m.goalies) {
       const sv = g.saves ?? 0, ga = g.ga ?? 0;
       const score = sv * 0.35 - ga * 0.8 + (ga === 0 && sv > 0 ? 2 : 0) + (g.sideKey === win ? 0.5 : 0);
-      if (sv > 0) list.push({ who: 'GOALIE', side: g.sideKey, line: `${sv} SAVES ${sv + ga ? Math.round((sv / (sv + ga)) * 1000) / 1000 : 0} SV%`.replace(' 0.', ' .'), score });
+      if (sv > 0) list.push({ who: 'TORHÜTER', side: g.sideKey, line: `${sv} PARADEN  ${sv + ga ? Math.round((sv / (sv + ga)) * 100) : 0}% GEHALTEN`, score });
     }
     return list.sort((a, b) => b.score - a.score).slice(0, 3);
   }
@@ -342,7 +342,7 @@ export class RinkScene {
     if (!top.length) return;
     const w = 200, x = Math.round(W / 2 - w / 2), h = 11 + top.length * 8;
     panel(ctx, x, y, w, h, { fill: PAL.ink, border: PAL.yellow, alpha: 0.85 });
-    drawText(ctx, 'THREE STARS', W / 2, y + 3, { color: PAL.yellow, align: 'center' });
+    drawText(ctx, 'DREI STERNE', W / 2, y + 3, { color: PAL.yellow, align: 'center' });
     top.forEach((st, i) => {
       const ry = y + 11 + i * 8;
       for (let k = 0; k <= 2 - i; k++) drawText(ctx, '*', x + 6 + k * 4, ry, { color: PAL.yellow });
@@ -390,11 +390,11 @@ export class RinkScene {
     const m = this.match, st = m.stats;
     const a = TEAMS[m.sides.home.team].name, b = TEAMS[m.sides.away.team].name;
     const rows = [
-      ['SHOTS ON GOAL', m.shots.home, m.shots.away],
-      ['POWER PLAY', `${st.home.ppGoals}/${st.home.ppOpp}`, `${st.away.ppGoals}/${st.away.ppOpp}`],
-      ['PENALTY TIME', fmt(st.home.pim), fmt(st.away.pim)],
-      ['FACE-OFFS WON', st.home.faceoffs, st.away.faceoffs],
-      ['HITS', st.home.hits, st.away.hits],
+      ['TORSCHÜSSE', m.shots.home, m.shots.away],
+      ['ÜBERZAHL', `${st.home.ppGoals}/${st.home.ppOpp}`, `${st.away.ppGoals}/${st.away.ppOpp}`],
+      ['STRAFZEIT', fmt(st.home.pim), fmt(st.away.pim)],
+      ['BULLYS GEWONNEN', st.home.faceoffs, st.away.faceoffs],
+      ['CHECKS', st.home.hits, st.away.hits],
     ];
     const w = 200, x = Math.round(W / 2 - w / 2), h = 12 + rows.length * 8;
     panel(ctx, x, y, w, h, { fill: PAL.ink, border: PAL.slate, alpha: 0.85 });
@@ -412,8 +412,8 @@ export class RinkScene {
     const m = this.match;
     const a = TEAMS[m.sides.home.team].name, b = TEAMS[m.sides.away.team].name;
     const score = `${m.score.home}-${m.score.away}`;
-    if (!e.winner) return `DRAW ${score}`;
-    return `${e.winner === 'home' ? a : b} WIN ${score}${e.how ? ' ' + e.how : ''}`;
+    if (!e.winner) return `UNENTSCHIEDEN ${score}`;
+    return `${e.winner === 'home' ? a : b} GEWINNEN ${score}${e.how ? ' ' + e.how : ''}`;
   }
 
   goalText(e) {
@@ -485,12 +485,12 @@ export class RinkScene {
     } else if (this.match.humans.length === 1 && this.match.state !== 'final') {
       const id = this.match.humans[0].controller;
       const pairs = [
-        [input.moveLabel(id), 'SKATE'],
-        [input.actionLabel('shoot', id), 'SHOOT'],
+        [input.moveLabel(id), 'LAUFEN'],
+        [input.actionLabel('shoot', id), 'SCHUSS'],
         [input.actionLabel('pass', id), 'PASS'],
-        [input.actionLabel('check', id), 'POKE'],
+        [input.actionLabel('check', id), 'CHECK'],
       ];
-      if (W >= 360) pairs.push([input.actionLabel('sprint', id), 'SPRINT'], [input.actionLabel('switch', id), 'SWAP']);
+      if (W >= 360) pairs.push([input.actionLabel('sprint', id), 'SPRINT'], [input.actionLabel('switch', id), 'WECHSEL']);
       // Fades out once you've played a while; comes back during stoppages.
       const a = Math.max(0, Math.min(1, 1 - ((this.playT ?? 0) - 25) / 2));
       const show = this.match.state !== 'play' ? 1 : a;
@@ -511,7 +511,7 @@ export class RinkScene {
     ui.fillRect(0, 0, W, 14);
     ui.fillRect(0, H - 14, W, 14);
     if (Math.floor(performance.now() / 400) % 2 === 0) { ui.fillStyle = PAL.red; ui.fillRect(6, 4, 5, 5); }
-    drawText(ui, 'REPLAY', 14, 4, { color: PAL.white, big: true });
+    drawText(ui, 'WIEDERHOLUNG', 14, 4, { color: PAL.white, big: true });
     const m = this.match;
     const a = TEAMS[m.sides.home.team].name, b = TEAMS[m.sides.away.team].name;
     drawText(ui, `${a} ${m.score.home} - ${m.score.away} ${b}`, W - 30, 5, { color: PAL.cloud, align: 'right' });
@@ -519,7 +519,7 @@ export class RinkScene {
     ui.fillRect(6, H - 9, W - 12, 2);
     ui.fillStyle = PAL.yellow;
     ui.fillRect(6, H - 9, Math.round((W - 12) * Math.min(1, this.replay.progress)), 2);
-    drawText(ui, `${this.app.input.confirmLabel()} TO SKIP`, W - 6, H - 7, { color: PAL.mist, align: 'right' });
+    drawText(ui, `${this.app.input.confirmLabel()}: ÜBERSPRINGEN`, W - 6, H - 7, { color: PAL.mist, align: 'right' });
     if (this.notice) drawText(ui, this.notice.text, 6, H - 7, { color: PAL.white });
   }
 
@@ -527,7 +527,7 @@ export class RinkScene {
     const m = this.match, ref = m.ref;
     let text;
     if (this.mode === 'practice') {
-      text = `GOALS ${m.score.home}   SHOTS ${m.shots.home}`;
+      text = `TORE ${m.score.home}   SCHÜSSE ${m.shots.home}`;
     } else {
       const a = TEAMS[m.sides.home.team], b = TEAMS[m.sides.away.team];
       text = `${a.name} ${m.score.home} - ${m.score.away} ${b.name}`;
@@ -543,9 +543,9 @@ export class RinkScene {
         const pens = ref.penaltiesOf(side);
         if (!pens.length) continue;
         const other = side === 'home' ? 'away' : 'home';
-        lines.push({ text: `POWER PLAY ${TEAMS[m.sides[other].team].name} ${fmt(Math.min(...pens.map((p) => p.t)))}`, color: PAL.yellow });
+        lines.push({ text: `ÜBERZAHL ${TEAMS[m.sides[other].team].name} ${fmt(Math.min(...pens.map((p) => p.t)))}`, color: PAL.yellow });
       }
-      if (ref.pending) lines.push({ text: 'DELAYED PENALTY', color: PAL.orange });
+      if (ref.pending) lines.push({ text: 'VERZÖGERTE STRAFE', color: PAL.orange });
       if (ref.so) {
         const mark = (log) => log.map((g) => (g ? 'O' : 'X')).join(' ') || '-';
         lines.push({ text: `${TEAMS[m.sides.home.team].name} ${mark(ref.so.log.home)}  |  ${TEAMS[m.sides.away.team].name} ${mark(ref.so.log.away)}`, color: PAL.white });
@@ -554,7 +554,7 @@ export class RinkScene {
     if (m.state === 'faceoff' && !ref?.attempt) {
       const humanCenter = m.draw && Object.values(m.draw.centers).some((c) => c?.human);
       const key = this.app.input.actionLabel('shoot', m.humans[0]?.controller);
-      lines.push({ text: humanCenter ? `FACE-OFF - PRESS ${key ?? 'SHOOT'} ON THE DROP` : 'FACE-OFF', color: PAL.yellow });
+      lines.push({ text: humanCenter ? `BULLY - ${key ?? 'SCHUSS'} BEIM EINWURF DRÜCKEN` : 'BULLY', color: PAL.yellow });
     }
     if (this.notice) lines.push({ text: this.notice.text, color: PAL.cloud });
     lines.forEach((l, i) => drawText(ctx, l.text, W / 2, 17 + i * 7, { color: l.color, align: 'center', shadow: PAL.ink }));
@@ -576,7 +576,7 @@ export class RinkScene {
     drawTextOutlined(ctx, b.text, W / 2, y, { color: PAL.yellow, scale, align: 'center', shadow: PAL.redDark, big: true });
     if (b.sub) drawText(ctx, b.sub, W / 2, y + th + 5, { color: PAL.white, align: 'center', big: true });
     if (b.final) {
-      drawText(ctx, `${this.app.input.confirmLabel()} TO CONTINUE`, W / 2, y + th + 15, { color: PAL.mist, align: 'center' });
+      drawText(ctx, `${this.app.input.confirmLabel()}: WEITER`, W / 2, y + th + 15, { color: PAL.mist, align: 'center' });
       this.drawStats(ctx, W, y + h + 2);
       if (this.mode !== 'practice') this.drawStars(ctx, W, y + h + 2 + 12 + 5 * 8 + 3);
     }

@@ -53,7 +53,7 @@ export class Referee {
       for (const s of m.roster) if (s.sideKey === side) s.fatigue = (s.fatigue ?? 0) * 0.3;
       m.events.push({ type: 'timeout', side, seconds: this.r.timeouts.seconds });
       const spot = m.nextSpot;
-      this.breakThen(`TIME-OUT ${TEAM_NAME(m, side)}`, () => m.faceoff(spot ?? undefined));
+      this.breakThen(`AUSZEIT ${TEAM_NAME(m, side)}`, () => m.faceoff(spot ?? undefined));
       return true;
     }
     return false;
@@ -73,9 +73,9 @@ export class Referee {
   // ------------------------------------------------------------------ labels for the HUD
 
   get periodLabel() {
-    if (this.phase === 'shootout') return 'SHOOTOUT';
-    if (this.phase === 'overtime') return 'OT';
-    if (this.phase === 'final') return 'FINAL';
+    if (this.phase === 'shootout') return 'PENALTYS';
+    if (this.phase === 'overtime') return 'VERL.';
+    if (this.phase === 'final') return 'ENDE';
     return `${this.period}/${this.r.periods}`;
   }
 
@@ -112,7 +112,7 @@ export class Referee {
     if (this.pending && m.state === 'play') {
       const p = m.puck;
       const owner = p.carrier?.sideKey ?? p.holder?.sideKey;
-      if (owner === this.pending.side) this.whistle('PENALTY');
+      if (owner === this.pending.side) this.whistle('STRAFE');
     }
 
     if (this.attempt && m.state === 'play') this.watchAttempt(dt);
@@ -168,7 +168,7 @@ export class Referee {
   covered(goalie) {
     const x = Math.sign(goalie.pos.x) * END_SPOT.x;
     const y = (this.m.puck.pos.y >= 0 ? 1 : -1) * END_SPOT.y;
-    this.whistle('COVERED', { x, y });
+    this.whistle('GEHALTEN', { x, y });
   }
 
   /** Skaters a side may have on the ice right now (overtime can be 3 on 3). */
@@ -196,7 +196,7 @@ export class Referee {
     }
     this.pending = { offender, side: offender.sideKey, foul: name, major: severity === 'major' };
     const owner = m.puck.carrier?.sideKey ?? m.puck.holder?.sideKey;
-    if (owner === offender.sideKey || !owner) this.whistle('PENALTY');
+    if (owner === offender.sideKey || !owner) this.whistle('STRAFE');
   }
 
   assess(pen) {
@@ -231,7 +231,7 @@ export class Referee {
       if (pen && mine > theirs) this.release(pen);
     }
     if (this.phase === 'overtime' && this.r.overtime?.suddenDeath) {
-      this.finish(scorer, 'OT');
+      this.finish(scorer, 'N.V.');
       return true;
     }
     return false;
@@ -244,7 +244,7 @@ export class Referee {
     this.pending = null;
     const tied = m.score.home === m.score.away;
     if (this.phase === 'regulation' && this.period < this.r.periods) {
-      this.breakThen(`END OF ${this.r.periodName} ${this.period}`, () => {
+      this.breakThen(`ENDE ${this.period}. ${this.r.periodName}`, () => {
         this.period += 1;
         this.clock = this.r.periodSeconds;
         if (this.r.timeouts?.per === 'period') this.timeoutsLeft = { home: 1, away: 1 };
@@ -254,9 +254,9 @@ export class Referee {
       });
       return;
     }
-    if (!tied) return this.finish(m.score.home > m.score.away ? 'home' : 'away', this.phase === 'overtime' ? 'OT' : '');
+    if (!tied) return this.finish(m.score.home > m.score.away ? 'home' : 'away', this.phase === 'overtime' ? 'N.V.' : '');
     if (this.phase === 'regulation' && this.r.overtime) {
-      this.breakThen('OVERTIME', () => {
+      this.breakThen('VERLÄNGERUNG', () => {
         this.phase = 'overtime';
         if (this.r.timeouts?.per === 'period') this.timeoutsLeft = { home: 1, away: 1 };
         this.clock = this.r.overtimeSeconds;
@@ -266,7 +266,7 @@ export class Referee {
       return;
     }
     if (this.r.shootout) {
-      this.breakThen('SHOOTOUT', () => this.startShootout());
+      this.breakThen('PENALTYSCHIESSEN', () => this.startShootout());
       return;
     }
     this.finish(null, '');
@@ -296,7 +296,7 @@ export class Referee {
     m.timer = 1.4;
     m.nextSpot = null;
     m.afterWhistle = () => this.startAttempt(shooter, 'penaltyShot');
-    m.events.push({ type: 'whistle', reason: 'PENALTY SHOT' });
+    m.events.push({ type: 'whistle', reason: 'PENALTY' });
   }
 
   startAttempt(shooter, kind) {
@@ -363,7 +363,7 @@ export class Referee {
     const winner = this.decided();
     if (winner) {
       m.score[winner] += 1; // the shootout winner is credited one goal
-      this.finish(winner, 'SO');
+      this.finish(winner, 'N.P.');
       return;
     }
     const other = (s) => (s === 'home' ? 'away' : 'home');

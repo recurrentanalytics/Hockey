@@ -24,7 +24,7 @@ export class MenuPad {
       pad: { x: cx, y: cy, r: 29 },
       arms: { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] },
       ok: { x: W - EDGE - 22, y: H - EDGE - 22, r: 16, label: 'OK' },
-      back: { x: W - EDGE - 60, y: H - EDGE - 12, r: 12, label: 'BACK' },
+      back: { x: W - EDGE - 60, y: H - EDGE - 12, r: 12, label: 'ZURÜCK' },
     };
   }
 

@@ -267,7 +267,7 @@ export class Match {
     // Racing for a loose puck is a puck battle, not a penalty.
     if (p.loose && Math.hypot(p.pos.x - victim.pos.x, p.pos.y - victim.pos.y) < 2.5) return;
     const chance = Math.min(0.7, (approach - 6) / 4 + 0.15);
-    if (fromBehind) this.ref.foul(hitter, victim, 'CHECKING FROM BEHIND', this.ref.r.fromBehind);
+    if (fromBehind) this.ref.foul(hitter, victim, 'CHECK VON HINTEN', this.ref.r.fromBehind);
     else if (Math.random() < chance) this.ref.foul(hitter, victim, this.ref.r.hitFoul);
   }
 
@@ -476,7 +476,7 @@ export class Match {
         const body = this.skaters.find((o) => o.sideKey !== s.sideKey && Math.hypot(tip.x - o.pos.x, tip.y - o.pos.y) < 0.42);
         if (body) {
           s.pokeChecked = true;
-          if (Math.random() < 0.3) this.ref.foul(s, body, Math.random() < 0.5 ? 'TRIPPING' : 'SLASHING');
+          if (Math.random() < 0.3) this.ref.foul(s, body, Math.random() < 0.5 ? 'BEINSTELLEN' : 'STOCKSCHLAG');
         }
       }
       if (!p.carrier || p.carrier.sideKey === s.sideKey || p.carrier.protectT > 0) continue;
