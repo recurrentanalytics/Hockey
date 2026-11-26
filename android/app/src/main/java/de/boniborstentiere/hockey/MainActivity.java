@@ -112,10 +112,14 @@ public class MainActivity extends Activity {
     }
 
     private boolean online() {
-        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        if (cm == null) return false;
-        android.net.NetworkCapabilities nc = cm.getNetworkCapabilities(cm.getActiveNetwork());
-        return nc != null && nc.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        try {
+            android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            if (cm == null) return false;
+            android.net.NetworkCapabilities nc = cm.getNetworkCapabilities(cm.getActiveNetwork());
+            return nc != null && nc.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        } catch (RuntimeException e) {
+            return false; // never let the check stop the app from starting
+        }
     }
 
     /** The live version could not be loaded: run the copy inside the APK. */
@@ -273,7 +277,7 @@ public class MainActivity extends Activity {
 
     /** Lets the page know it runs inside the Android app; keeps the Cesium token for both origins. */
     private final class Bridge {
-        @JavascriptInterface public String version() { return "0.2"; }
+        @JavascriptInterface public String version() { return "0.3"; }
         @JavascriptInterface public String token() { return getPreferences(MODE_PRIVATE).getString("cesiumToken", ""); }
         @JavascriptInterface public void saveToken(String t) { getPreferences(MODE_PRIVATE).edit().putString("cesiumToken", t == null ? "" : t).apply(); }
     }
