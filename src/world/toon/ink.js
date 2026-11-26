@@ -3,7 +3,9 @@
 //   2. parts back to front: thin ink line, flat colour, one hard shadow tone, details
 // Units are "figure units" (≈ old sprite pixels); the caller scales the context.
 
-export const INK = '#1a120c';
+import { STYLE } from '../../art/bible.js';
+
+export const INK = STYLE.line.ink;
 
 /** A filled shape. shadeDir: offset of the lit area (light from the upper left). */
 export function shape(build, fill, { shade = null, shadeOffset = 1.6, lw = 0.6, details = null, noOutline = false } = {}) {
@@ -37,7 +39,9 @@ function tubePath(points) {
 }
 
 /** Render a list of parts. outer: silhouette line width (figure units). */
-export function render(ctx, parts, { outer = 1.3 } = {}) {
+export function render(ctx, parts, { outer = 1.3, uniform = null, flat = false } = {}) {
+  // Ligne claire: one line weight everywhere and flat colour (no cel shadows).
+  if (uniform != null) outer = uniform / 2;
   ctx.save();
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
@@ -60,12 +64,12 @@ export function render(ctx, parts, { outer = 1.3 } = {}) {
     if (p.kind === 'shape') {
       if (!p.noOutline) {
         ctx.strokeStyle = INK;
-        ctx.lineWidth = p.lw * 2;
+        ctx.lineWidth = uniform ?? p.lw * 2;
         ctx.stroke(p.path);
       }
       ctx.fillStyle = p.fill;
       ctx.fill(p.path);
-      if (p.shade) {
+      if (p.shade && !flat) {
         // hard cel shadow: shade everything, then the lit copy shifted up-left
         ctx.save();
         ctx.clip(p.path);
@@ -80,12 +84,12 @@ export function render(ctx, parts, { outer = 1.3 } = {}) {
     } else if (p.kind === 'tube') {
       const tp = p.tp ??= tubePath(p.points);
       ctx.strokeStyle = INK;
-      ctx.lineWidth = p.width + p.lw * 2;
+      ctx.lineWidth = p.width + (uniform ?? p.lw * 2);
       ctx.stroke(tp);
       ctx.strokeStyle = p.fill;
       ctx.lineWidth = p.width;
       ctx.stroke(tp);
-      if (p.shade) {
+      if (p.shade && !flat) {
         // shadow line along the lower right inside of the tube
         ctx.save();
         ctx.translate(p.width * 0.22, p.width * 0.26);

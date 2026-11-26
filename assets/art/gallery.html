@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boni Art-Galerie</title>
+<style>
+  :root { --paper:#f4ecd8; --ink:#16110d; --green:#1f5a33; --orange:#d2642a; --ok:#2e7d32; --bad:#c62828; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 system-ui, sans-serif; }
+  header.top { padding:24px 16px 8px; max-width:1200px; margin:0 auto; }
+  h1 { margin:0; color:var(--green); font-size:30px; letter-spacing:.5px; }
+  .sub { color:#5a4a3a; }
+  .summary { display:inline-block; margin-top:8px; padding:4px 12px; border-radius:20px; color:#fff; background:var(--ok); font-weight:700; }
+  main { max-width:1200px; margin:0 auto; padding:8px 16px 40px; display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+  .card { background:#fffaf0; border:2px solid var(--ink); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .card.wide { grid-column:1/-1; }
+  .card header { display:flex; justify-content:space-between; gap:8px; align-items:center; }
+  .card h3 { margin:0; font-size:16px; }
+  .badge { font-size:12px; padding:2px 8px; border-radius:12px; color:#fff; white-space:nowrap; }
+  .badge.ok { background:var(--ok); } .badge.bad { background:var(--bad); }
+  .media { display:flex; flex-direction:column; align-items:center; gap:6px; border-radius:6px; overflow:hidden; }
+  .checker .media { background:repeating-conic-gradient(#e9e2cf 0% 25%, #fbf6ea 0% 50%) 0 0/20px 20px; }
+  .media img { max-width:100%; height:auto; display:block; }
+  .strip { border-top:1px dashed #b9ab8c; }
+  .meta { margin:0; font-size:12px; color:#5a4a3a; word-break:break-all; }
+  ul { margin:6px 0 0; padding-left:18px; font-size:13px; } li.ok { color:var(--ok); } li.bad { color:var(--bad); } small { color:#6b5d4d; }
+  .palette { max-width:1200px; margin:0 auto; padding:0 16px 8px; display:flex; flex-wrap:wrap; gap:6px; }
+  .sw { display:flex; align-items:center; gap:4px; font-size:11px; } .sw i { width:16px; height:16px; border:1px solid var(--ink); border-radius:3px; display:inline-block; }
+  .anim { image-rendering:auto; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper:#1d1915; --ink:#efe6d2; } :root:not([data-theme="light"]) .card { background:#2a241e; } }
+</style></head>
+<body>
+<header class="top">
+  <h1>Boni Art-Galerie</h1>
+  <div class="sub">Boni Ligne claire · Stil-Version 1 · Pipeline 1.0.0 · erzeugt 2026-11-26T21:34:17.015Z</div>
+  <div class="summary">Qualitätskontrolle bestanden · 10/10 Assets</div>
+</header>
+<section class="palette"><div class="sw"><i style="background:#16110d"></i><span>ink</span></div><div class="sw"><i style="background:#f4ecd8"></i><span>paper</span></div><div class="sw"><i style="background:#8a4b22"></i><span>fur</span></div><div class="sw"><i style="background:#5c3015"></i><span>furDark</span></div><div class="sw"><i style="background:#e0a37c"></i><span>muzzle</span></div><div class="sw"><i style="background:#f0a8a0"></i><span>snout</span></div><div class="sw"><i style="background:#f29a9a"></i><span>pink</span></div><div class="sw"><i style="background:#fff6e4"></i><span>tusk</span></div><div class="sw"><i style="background:#ffffff"></i><span>eyeWhite</span></div><div class="sw"><i style="background:#2a160c"></i><span>pupil</span></div><div class="sw"><i style="background:#1f5a33"></i><span>jersey</span></div><div class="sw"><i style="background:#f3e3b5"></i><span>cream</span></div><div class="sw"><i style="background:#d2642a"></i><span>orange</span></div><div class="sw"><i style="background:#2b2018"></i><span>pants</span></div><div class="sw"><i style="background:#1d4a2c"></i><span>helmet</span></div><div class="sw"><i style="background:#1f5a33"></i><span>glove</span></div><div class="sw"><i style="background:#25222c"></i><span>boot</span></div><div class="sw"><i style="background:#b8bfcc"></i><span>frame</span></div><div class="sw"><i style="background:#e8763a"></i><span>wheel</span></div><div class="sw"><i style="background:#c99a5b"></i><span>wood</span></div><div class="sw"><i style="background:#1c1c22"></i><span>tape</span></div><div class="sw"><i style="background:#6b6e72"></i><span>asphalt</span></div><div class="sw"><i style="background:#8c8e8f"></i><span>asphaltLight</span></div><div class="sw"><i style="background:#eeece4"></i><span>line</span></div><div class="sw"><i style="background:#f2f0ea"></i><span>board</span></div><div class="sw"><i style="background:#1f5a33"></i><span>boardTrim</span></div><div class="sw"><i style="background:#d8303c"></i><span>goalRed</span></div><div class="sw"><i style="background:#ffffff"></i><span>net</span></div><div class="sw"><i style="background:#5f6b62"></i><span>fence</span></div><div class="sw"><i style="background:#7fae4a"></i><span>leaf</span></div><div class="sw"><i style="background:#4f7d32"></i><span>leafDark</span></div><div class="sw"><i style="background:#6b5442"></i><span>trunk</span></div><div class="sw"><i style="background:#efe6d3"></i><span>wall</span></div><div class="sw"><i style="background:#d8ccb3"></i><span>wallShade</span></div><div class="sw"><i style="background:#b8502e"></i><span>roof</span></div><div class="sw"><i style="background:#8e3a22"></i><span>roofDark</span></div><div class="sw"><i style="background:#a9c4cf"></i><span>window</span></div><div class="sw"><i style="background:#bfe0f0"></i><span>sky</span></div><div class="sw"><i style="background:#c63b3b"></i><span>car</span></div><div class="sw"><i style="background:#8a9099"></i><span>carGrey</span></div><div class="sw"><i style="background:#8a5a34"></i><span>bench</span></div><div class="sw"><i style="background:#143d22"></i><span>jerseyFar</span></div><div class="sw"><i style="background:#b8a983"></i><span>creamFar</span></div><div class="sw"><i style="background:#a8481a"></i><span>orangeFar</span></div><div class="sw"><i style="background:#141219"></i><span>bootFar</span></div><div class="sw"><i style="background:#b0541f"></i><span>wheelFar</span></div><div class="sw"><i style="background:#10301b"></i><span>helmetDark</span></div><div class="sw"><i style="background:#c4835f"></i><span>muzzleDark</span></div><div class="sw"><i style="background:#d98479"></i><span>snoutDark</span></div><div class="sw"><i style="background:#5a2a20"></i><span>nostril</span></div><div class="sw"><i style="background:#7a2a2a"></i><span>mouth</span></div><div class="sw"><i style="background:#4a4a55"></i><span>tapeLine</span></div><div class="sw"><i style="background:#ffd84a"></i><span>star</span></div><div class="sw"><i style="background:#8d8a80"></i><span>trimFar</span></div></section>
+<main>
+<article class="card  checker">
+      <header><h3>Bonny – Vorderansicht</h3><span class="badge ok">QA bestanden</span></header>
+      <div class="media"><img src="v1/characters/bonny/bonny_front.png" alt="Bonny – Vorderansicht"></div>
+      <p class="meta">512×640 px · PNG 66 KB · WebP 23 KB · 1 Versuch(e) · <code>v1/characters/bonny/bonny_front.png</code></p>
+      <details><summary>Prüfergebnisse</summary><ul><li class="ok">✔ Nicht abgeschnitten (Rand frei) <small>0 (Grenze 0)</small></li><li class="ok">✔ Saubere Freistellung (wenig Halbtransparenz) <small>0.0303 (Grenze 0.22)</small></li><li class="ok">✔ Motiv vorhanden <small>0.2142 (Grenze &gt; 0.02)</small></li><li class="ok">✔ Geschlossene Tuschekontur <small>1 (Grenze 0.85)</small></li><li class="ok">✔ Farben aus der Palette <small>0.9917 (Grenze 0.95)</small></li><li class="ok">✔ Pflichtfarbe jersey <small>0.2464 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe fur <small>0.0971 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe helmet <small>0.12 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Farbkonsistenz zur Referenz <small>0.8963 (Grenze 0.75)</small></li><li class="ok">✔ Gleiche Figurengröße wie Referenz <small>0.0339 (Grenze 0.15)</small></li></ul></details>
+    </article>
+<article class="card  checker">
+      <header><h3>Bonny – Seitenansicht</h3><span class="badge ok">QA bestanden</span></header>
+      <div class="media"><img src="v1/characters/bonny/bonny_side.png" alt="Bonny – Seitenansicht"></div>
+      <p class="meta">512×640 px · PNG 73 KB · WebP 24 KB · 1 Versuch(e) · <code>v1/characters/bonny/bonny_side.png</code></p>
+      <details><summary>Prüfergebnisse</summary><ul><li class="ok">✔ Nicht abgeschnitten (Rand frei) <small>0 (Grenze 0)</small></li><li class="ok">✔ Saubere Freistellung (wenig Halbtransparenz) <small>0.0338 (Grenze 0.22)</small></li><li class="ok">✔ Motiv vorhanden <small>0.2339 (Grenze &gt; 0.02)</small></li><li class="ok">✔ Geschlossene Tuschekontur <small>1 (Grenze 0.85)</small></li><li class="ok">✔ Farben aus der Palette <small>0.997 (Grenze 0.95)</small></li><li class="ok">✔ Pflichtfarbe jersey <small>0.1507 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe fur <small>0.0723 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe helmet <small>0.1655 (Grenze &gt; 0.01)</small></li></ul></details>
+    </article>
+<article class="card  checker">
+      <header><h3>Bonny – Rückansicht</h3><span class="badge ok">QA bestanden</span></header>
+      <div class="media"><img src="v1/characters/bonny/bonny_back.png" alt="Bonny – Rückansicht"></div>
+      <p class="meta">512×640 px · PNG 57 KB · WebP 19 KB · 1 Versuch(e) · <code>v1/characters/bonny/bonny_back.png</code></p>
+      <details><summary>Prüfergebnisse</summary><ul><li class="ok">✔ Nicht abgeschnitten (Rand frei) <small>0 (Grenze 0)</small></li><li class="ok">✔ Saubere Freistellung (wenig Halbtransparenz) <small>0.0291 (Grenze 0.22)</small></li><li class="ok">✔ Motiv vorhanden <small>0.2299 (Grenze &gt; 0.02)</small></li><li class="ok">✔ Geschlossene Tuschekontur <small>1 (Grenze 0.85)</small></li><li class="ok">✔ Farben aus der Palette <small>0.9893 (Grenze 0.95)</small></li><li class="ok">✔ Pflichtfarbe jersey <small>0.2855 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe fur <small>0.0429 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe helmet <small>0.2406 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Farbkonsistenz zur Referenz <small>0.9156 (Grenze 0.75)</small></li><li class="ok">✔ Gleiche Figurengröße wie Referenz <small>0.0299 (Grenze 0.15)</small></li></ul></details>
+    </article>
+<article class="card  checker">
+      <header><h3>Bonny – Laufen</h3><span class="badge ok">QA bestanden</span></header>
+      <div class="media"><img src="v1/characters/bonny/poses/bonny_pose_skate.png" alt="Bonny – Laufen"></div>
+      <p class="meta">640×640 px · PNG 82 KB · WebP 27 KB · 1 Versuch(e) · <code>v1/characters/bonny/poses/bonny_pose_skate.png</code></p>
+      <details><summary>Prüfergebnisse</summary><ul><li class="ok">✔ Nicht abgeschnitten (Rand frei) <small>0 (Grenze 0)</small></li><li class="ok">✔ Saubere Freistellung (wenig Halbtransparenz) <small>0.0347 (Grenze 0.22)</small></li><li class="ok">✔ Motiv vorhanden <small>0.2012 (Grenze &gt; 0.02)</small></li><li class="ok">✔ Geschlossene Tuschekontur <small>0.9883 (Grenze 0.85)</small></li><li class="ok">✔ Farben aus der Palette <small>0.9962 (Grenze 0.95)</small></li><li class="ok">✔ Pflichtfarbe jersey <small>0.1457 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe fur <small>0.0705 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe helmet <small>0.1548 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Farbkonsistenz zur Referenz <small>0.9997 (Grenze 0.75)</small></li></ul></details>
+    </article>
+<article class="card  checker">
+      <header><h3>Bonny – Schuss</h3><span class="badge ok">QA bestanden</span></header>
+      <div class="media"><img src="v1/characters/bonny/poses/bonny_pose_shot.png" alt="Bonny – Schuss"></div>
+      <p class="meta">640×640 px · PNG 75 KB · WebP 24 KB · 1 Versuch(e) · <code>v1/characters/bonny/poses/bonny_pose_shot.png</code></p>
+      <details><summary>Prüfergebnisse</summary><ul><li class="ok">✔ Nicht abgeschnitten (Rand frei) <small>0 (Grenze 0)</small></li><li class="ok">✔ Saubere Freistellung (wenig Halbtransparenz) <small>0.033 (Grenze 0.22)</small></li><li class="ok">✔ Motiv vorhanden <small>0.1812 (Grenze &gt; 0.02)</small></li><li class="ok">✔ Geschlossene Tuschekontur <small>0.9924 (Grenze 0.85)</small></li><li class="ok">✔ Farben aus der Palette <small>0.9958 (Grenze 0.95)</small></li><li class="ok">✔ Pflichtfarbe jersey <small>0.1584 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe fur <small>0.0486 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe helmet <small>0.163 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Farbkonsistenz zur Referenz <small>0.9927 (Grenze 0.75)</small></li></ul></details>
+    </article>
+<article class="card  checker">
+      <header><h3>Bonny – Jubel</h3><span class="badge ok">QA bestanden</span></header>
+      <div class="media"><img src="v1/characters/bonny/poses/bonny_pose_cheer.png" alt="Bonny – Jubel"></div>
+      <p class="meta">640×640 px · PNG 71 KB · WebP 23 KB · 2 Versuch(e) · <code>v1/characters/bonny/poses/bonny_pose_cheer.png</code></p>
+      <details><summary>Prüfergebnisse</summary><ul><li class="ok">✔ Nicht abgeschnitten (Rand frei) <small>0 (Grenze 0)</small></li><li class="ok">✔ Saubere Freistellung (wenig Halbtransparenz) <small>0.0395 (Grenze 0.22)</small></li><li class="ok">✔ Motiv vorhanden <small>0.1518 (Grenze &gt; 0.02)</small></li><li class="ok">✔ Geschlossene Tuschekontur <small>0.9977 (Grenze 0.85)</small></li><li class="ok">✔ Farben aus der Palette <small>0.9957 (Grenze 0.95)</small></li><li class="ok">✔ Pflichtfarbe jersey <small>0.1689 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe fur <small>0.0622 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Pflichtfarbe helmet <small>0.1661 (Grenze &gt; 0.01)</small></li><li class="ok">✔ Farbkonsistenz zur Referenz <small>0.995 (Grenze 0.75)</small></li></ul></details>
+    </article>
+<article class="card  checker">
+      <header><h3>Inlinehockey-Schläger</h3><span class="badge ok">QA bestanden</span></header>
+      <div class="media"><img src="v1/props/stick.png" alt="Inlinehockey-Schläger"></div>
+      <p class="meta">640×400 px · PNG 25 KB · WebP 9 KB · 1 Versuch(e) · <code>v1/props/stick.png</code></p>
+      <details><summary>Prüfergebnisse</summary><ul><li class="ok">✔ Nicht abgeschnitten (Rand frei) <small>0 (Grenze 0)</small></li><li class="ok">✔ Saubere Freistellung (wenig Halbtransparenz) <small>0.0884 (Grenze 0.22)</small></li><li class="ok">✔ Motiv vorhanden <small>0.0516 (Grenze &gt; 0.02)</small></li><li class="ok">✔ Geschlossene Tuschekontur <small>1 (Grenze 0.85)</small></li><li class="ok">✔ Farben aus der Palette <small>1 (Grenze 0.95)</small></li></ul></details>
+    </article>
+<article class="card  checker">
+      <header><h3>Bonny – Laufzyklus (8 Bilder)</h3><span class="badge ok">QA bestanden</span></header>
+      <div class="media"><div class="anim" data-sheet="v1/sprites/bonny_skate_cycle.png" data-w="256" data-h="256" data-n="8" data-fps="12"></div><img class="strip" src="v1/sprites/bonny_skate_cycle.png" alt="Bonny – Laufzyklus (8 Bilder)"></div>
+      <p class="meta">2048×256 px · PNG 119 KB · WebP 66 KB · 1 Versuch(e) · <code>v1/sprites/bonny_skate_cycle.png</code></p>
+      <details><summary>Prüfergebnisse</summary><ul><li class="ok">✔ Nicht abgeschnitten (Rand frei) <small>0 (Grenze 0)</small></li><li class="ok">✔ Saubere Freistellung (wenig Halbtransparenz) <small>0.0714 (Grenze 0.22)</small></li><li class="ok">✔ Motiv vorhanden <small>0.2336 (Grenze &gt; 0.02)</small></li><li class="ok">✔ Geschlossene Tuschekontur <small>0.9959 (Grenze 0.85)</small></li><li class="ok">✔ Farben aus der Palette <small>0.9917 (Grenze 0.95)</small></li><li class="ok">✔ Alle Frames vollständig <small>ok (Grenze ok)</small></li><li class="ok">✔ Bodenkontakt stabil <small>2 (Grenze 4)</small></li><li class="ok">✔ Kein Springen zwischen Frames <small>0.838 (Grenze 0.5)</small></li><li class="ok">✔ Echte Bewegung <small>0.8975 (Grenze 0.995)</small></li></ul></details>
+    </article>
+<article class="card wide ">
+      <header><h3>Spielfeld am Bonifatiusplatz</h3><span class="badge ok">QA bestanden</span></header>
+      <div class="media"><img src="v1/scenes/boni_court.png" alt="Spielfeld am Bonifatiusplatz"></div>
+      <p class="meta">2160×1000 px · PNG 448 KB · WebP 208 KB · 1 Versuch(e) · <code>v1/scenes/boni_court.png</code></p>
+      <details><summary>Prüfergebnisse</summary><ul><li class="ok">✔ Deckend (Hintergrund) <small>1 (Grenze 1)</small></li><li class="ok">✔ Farben aus der Palette <small>0.9988 (Grenze 0.88)</small></li><li class="ok">✔ Detailreichtum <small>0.0903 (Grenze 0.02)</small></li></ul></details>
+    </article>
+<article class="card wide ">
+      <header><h3>Bonny auf dem Boni-Platz (Vorschau)</h3><span class="badge ok">QA bestanden</span></header>
+      <div class="media"><img src="v1/scenes/boni_court_bonny.png" alt="Bonny auf dem Boni-Platz (Vorschau)"></div>
+      <p class="meta">2160×1000 px · PNG 493 KB · WebP 215 KB · 1 Versuch(e) · <code>v1/scenes/boni_court_bonny.png</code></p>
+      <details><summary>Prüfergebnisse</summary><ul><li class="ok">✔ Deckend (Hintergrund) <small>1 (Grenze 1)</small></li><li class="ok">✔ Farben aus der Palette <small>0.9987 (Grenze 0.88)</small></li><li class="ok">✔ Detailreichtum <small>0.0931 (Grenze 0.02)</small></li></ul></details>
+    </article>
+</main>
+<script>
+  // sprite sheet player
+  for (const el of document.querySelectorAll('.anim')) {
+    const img = new Image(); img.src = el.dataset.sheet;
+    const w = +el.dataset.w, h = +el.dataset.h, n = +el.dataset.n, fps = +el.dataset.fps;
+    const c = document.createElement('canvas'); c.width = w; c.height = h; c.style.width = Math.min(w * 1.4, 320) + 'px';
+    el.appendChild(c);
+    const g = c.getContext('2d'); let i = 0;
+    img.onload = () => setInterval(() => { g.clearRect(0, 0, w, h); g.drawImage(img, i * w, 0, w, h, 0, 0, w, h); i = (i + 1) % n; }, 1000 / fps);
+  }
+</script>
+</body></html>

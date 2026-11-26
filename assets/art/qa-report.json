@@ -1,0 +1,627 @@
+{
+  "built": "2026-11-26T21:34:17.015Z",
+  "thresholds": {
+    "maxPartialRatio": 0.22,
+    "minOutlineDark": 0.85,
+    "minPalette": 0.95,
+    "minPaletteScene": 0.88,
+    "minDetail": 0.02,
+    "maxGroundSpread": 4,
+    "minFrameIoU": 0.5,
+    "maxFrameIoU": 0.995,
+    "heightTolerance": 0.15,
+    "minColorSimilarity": 0.75
+  },
+  "results": [
+    {
+      "id": "bonny_front",
+      "title": "Bonny – Vorderansicht",
+      "pass": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "scale": 6.6,
+          "pass": true,
+          "failed": []
+        }
+      ],
+      "checks": [
+        {
+          "name": "Nicht abgeschnitten (Rand frei)",
+          "pass": true,
+          "value": 0,
+          "limit": 0
+        },
+        {
+          "name": "Saubere Freistellung (wenig Halbtransparenz)",
+          "pass": true,
+          "value": 0.0303,
+          "limit": 0.22
+        },
+        {
+          "name": "Motiv vorhanden",
+          "pass": true,
+          "value": 0.2142,
+          "limit": "> 0.02"
+        },
+        {
+          "name": "Geschlossene Tuschekontur",
+          "pass": true,
+          "value": 1,
+          "limit": 0.85
+        },
+        {
+          "name": "Farben aus der Palette",
+          "pass": true,
+          "value": 0.9917,
+          "limit": 0.95
+        },
+        {
+          "name": "Pflichtfarbe jersey",
+          "pass": true,
+          "value": 0.2464,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe fur",
+          "pass": true,
+          "value": 0.0971,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe helmet",
+          "pass": true,
+          "value": 0.12,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Farbkonsistenz zur Referenz",
+          "pass": true,
+          "value": 0.8963,
+          "limit": 0.75
+        },
+        {
+          "name": "Gleiche Figurengröße wie Referenz",
+          "pass": true,
+          "value": 0.0339,
+          "limit": 0.15
+        }
+      ]
+    },
+    {
+      "id": "bonny_side",
+      "title": "Bonny – Seitenansicht",
+      "pass": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "scale": 6.6,
+          "pass": true,
+          "failed": []
+        }
+      ],
+      "checks": [
+        {
+          "name": "Nicht abgeschnitten (Rand frei)",
+          "pass": true,
+          "value": 0,
+          "limit": 0
+        },
+        {
+          "name": "Saubere Freistellung (wenig Halbtransparenz)",
+          "pass": true,
+          "value": 0.0338,
+          "limit": 0.22
+        },
+        {
+          "name": "Motiv vorhanden",
+          "pass": true,
+          "value": 0.2339,
+          "limit": "> 0.02"
+        },
+        {
+          "name": "Geschlossene Tuschekontur",
+          "pass": true,
+          "value": 1,
+          "limit": 0.85
+        },
+        {
+          "name": "Farben aus der Palette",
+          "pass": true,
+          "value": 0.997,
+          "limit": 0.95
+        },
+        {
+          "name": "Pflichtfarbe jersey",
+          "pass": true,
+          "value": 0.1507,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe fur",
+          "pass": true,
+          "value": 0.0723,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe helmet",
+          "pass": true,
+          "value": 0.1655,
+          "limit": "> 0.01"
+        }
+      ]
+    },
+    {
+      "id": "bonny_back",
+      "title": "Bonny – Rückansicht",
+      "pass": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "scale": 6.6,
+          "pass": true,
+          "failed": []
+        }
+      ],
+      "checks": [
+        {
+          "name": "Nicht abgeschnitten (Rand frei)",
+          "pass": true,
+          "value": 0,
+          "limit": 0
+        },
+        {
+          "name": "Saubere Freistellung (wenig Halbtransparenz)",
+          "pass": true,
+          "value": 0.0291,
+          "limit": 0.22
+        },
+        {
+          "name": "Motiv vorhanden",
+          "pass": true,
+          "value": 0.2299,
+          "limit": "> 0.02"
+        },
+        {
+          "name": "Geschlossene Tuschekontur",
+          "pass": true,
+          "value": 1,
+          "limit": 0.85
+        },
+        {
+          "name": "Farben aus der Palette",
+          "pass": true,
+          "value": 0.9893,
+          "limit": 0.95
+        },
+        {
+          "name": "Pflichtfarbe jersey",
+          "pass": true,
+          "value": 0.2855,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe fur",
+          "pass": true,
+          "value": 0.0429,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe helmet",
+          "pass": true,
+          "value": 0.2406,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Farbkonsistenz zur Referenz",
+          "pass": true,
+          "value": 0.9156,
+          "limit": 0.75
+        },
+        {
+          "name": "Gleiche Figurengröße wie Referenz",
+          "pass": true,
+          "value": 0.0299,
+          "limit": 0.15
+        }
+      ]
+    },
+    {
+      "id": "bonny_pose_skate",
+      "title": "Bonny – Laufen",
+      "pass": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "scale": 6.6,
+          "pass": true,
+          "failed": []
+        }
+      ],
+      "checks": [
+        {
+          "name": "Nicht abgeschnitten (Rand frei)",
+          "pass": true,
+          "value": 0,
+          "limit": 0
+        },
+        {
+          "name": "Saubere Freistellung (wenig Halbtransparenz)",
+          "pass": true,
+          "value": 0.0347,
+          "limit": 0.22
+        },
+        {
+          "name": "Motiv vorhanden",
+          "pass": true,
+          "value": 0.2012,
+          "limit": "> 0.02"
+        },
+        {
+          "name": "Geschlossene Tuschekontur",
+          "pass": true,
+          "value": 0.9883,
+          "limit": 0.85
+        },
+        {
+          "name": "Farben aus der Palette",
+          "pass": true,
+          "value": 0.9962,
+          "limit": 0.95
+        },
+        {
+          "name": "Pflichtfarbe jersey",
+          "pass": true,
+          "value": 0.1457,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe fur",
+          "pass": true,
+          "value": 0.0705,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe helmet",
+          "pass": true,
+          "value": 0.1548,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Farbkonsistenz zur Referenz",
+          "pass": true,
+          "value": 0.9997,
+          "limit": 0.75
+        }
+      ]
+    },
+    {
+      "id": "bonny_pose_shot",
+      "title": "Bonny – Schuss",
+      "pass": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "scale": 6.6,
+          "pass": true,
+          "failed": []
+        }
+      ],
+      "checks": [
+        {
+          "name": "Nicht abgeschnitten (Rand frei)",
+          "pass": true,
+          "value": 0,
+          "limit": 0
+        },
+        {
+          "name": "Saubere Freistellung (wenig Halbtransparenz)",
+          "pass": true,
+          "value": 0.033,
+          "limit": 0.22
+        },
+        {
+          "name": "Motiv vorhanden",
+          "pass": true,
+          "value": 0.1812,
+          "limit": "> 0.02"
+        },
+        {
+          "name": "Geschlossene Tuschekontur",
+          "pass": true,
+          "value": 0.9924,
+          "limit": 0.85
+        },
+        {
+          "name": "Farben aus der Palette",
+          "pass": true,
+          "value": 0.9958,
+          "limit": 0.95
+        },
+        {
+          "name": "Pflichtfarbe jersey",
+          "pass": true,
+          "value": 0.1584,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe fur",
+          "pass": true,
+          "value": 0.0486,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe helmet",
+          "pass": true,
+          "value": 0.163,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Farbkonsistenz zur Referenz",
+          "pass": true,
+          "value": 0.9927,
+          "limit": 0.75
+        }
+      ]
+    },
+    {
+      "id": "bonny_pose_cheer",
+      "title": "Bonny – Jubel",
+      "pass": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "scale": 6.6,
+          "pass": false,
+          "failed": [
+            "Nicht abgeschnitten (Rand frei)"
+          ]
+        },
+        {
+          "attempt": 2,
+          "scale": 5.94,
+          "pass": true,
+          "failed": []
+        }
+      ],
+      "checks": [
+        {
+          "name": "Nicht abgeschnitten (Rand frei)",
+          "pass": true,
+          "value": 0,
+          "limit": 0
+        },
+        {
+          "name": "Saubere Freistellung (wenig Halbtransparenz)",
+          "pass": true,
+          "value": 0.0395,
+          "limit": 0.22
+        },
+        {
+          "name": "Motiv vorhanden",
+          "pass": true,
+          "value": 0.1518,
+          "limit": "> 0.02"
+        },
+        {
+          "name": "Geschlossene Tuschekontur",
+          "pass": true,
+          "value": 0.9977,
+          "limit": 0.85
+        },
+        {
+          "name": "Farben aus der Palette",
+          "pass": true,
+          "value": 0.9957,
+          "limit": 0.95
+        },
+        {
+          "name": "Pflichtfarbe jersey",
+          "pass": true,
+          "value": 0.1689,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe fur",
+          "pass": true,
+          "value": 0.0622,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Pflichtfarbe helmet",
+          "pass": true,
+          "value": 0.1661,
+          "limit": "> 0.01"
+        },
+        {
+          "name": "Farbkonsistenz zur Referenz",
+          "pass": true,
+          "value": 0.995,
+          "limit": 0.75
+        }
+      ]
+    },
+    {
+      "id": "stick",
+      "title": "Inlinehockey-Schläger",
+      "pass": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "scale": 6.6,
+          "pass": true,
+          "failed": []
+        }
+      ],
+      "checks": [
+        {
+          "name": "Nicht abgeschnitten (Rand frei)",
+          "pass": true,
+          "value": 0,
+          "limit": 0
+        },
+        {
+          "name": "Saubere Freistellung (wenig Halbtransparenz)",
+          "pass": true,
+          "value": 0.0884,
+          "limit": 0.22
+        },
+        {
+          "name": "Motiv vorhanden",
+          "pass": true,
+          "value": 0.0516,
+          "limit": "> 0.02"
+        },
+        {
+          "name": "Geschlossene Tuschekontur",
+          "pass": true,
+          "value": 1,
+          "limit": 0.85
+        },
+        {
+          "name": "Farben aus der Palette",
+          "pass": true,
+          "value": 1,
+          "limit": 0.95
+        }
+      ]
+    },
+    {
+      "id": "bonny_skate_cycle",
+      "title": "Bonny – Laufzyklus (8 Bilder)",
+      "pass": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "scale": 2.9,
+          "pass": true,
+          "failed": []
+        }
+      ],
+      "checks": [
+        {
+          "name": "Nicht abgeschnitten (Rand frei)",
+          "pass": true,
+          "value": 0,
+          "limit": 0
+        },
+        {
+          "name": "Saubere Freistellung (wenig Halbtransparenz)",
+          "pass": true,
+          "value": 0.0714,
+          "limit": 0.22
+        },
+        {
+          "name": "Motiv vorhanden",
+          "pass": true,
+          "value": 0.2336,
+          "limit": "> 0.02"
+        },
+        {
+          "name": "Geschlossene Tuschekontur",
+          "pass": true,
+          "value": 0.9959,
+          "limit": 0.85
+        },
+        {
+          "name": "Farben aus der Palette",
+          "pass": true,
+          "value": 0.9917,
+          "limit": 0.95
+        },
+        {
+          "name": "Alle Frames vollständig",
+          "pass": true,
+          "value": "ok",
+          "limit": "ok"
+        },
+        {
+          "name": "Bodenkontakt stabil",
+          "pass": true,
+          "value": 2,
+          "limit": 4
+        },
+        {
+          "name": "Kein Springen zwischen Frames",
+          "pass": true,
+          "value": 0.838,
+          "limit": 0.5
+        },
+        {
+          "name": "Echte Bewegung",
+          "pass": true,
+          "value": 0.8975,
+          "limit": 0.995
+        }
+      ]
+    },
+    {
+      "id": "boni_court",
+      "title": "Spielfeld am Bonifatiusplatz",
+      "pass": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "scale": 2,
+          "pass": true,
+          "failed": []
+        }
+      ],
+      "checks": [
+        {
+          "name": "Deckend (Hintergrund)",
+          "pass": true,
+          "value": 1,
+          "limit": 1
+        },
+        {
+          "name": "Farben aus der Palette",
+          "pass": true,
+          "value": 0.9988,
+          "limit": 0.88
+        },
+        {
+          "name": "Detailreichtum",
+          "pass": true,
+          "value": 0.0903,
+          "limit": 0.02
+        }
+      ]
+    },
+    {
+      "id": "boni_court_bonny",
+      "title": "Bonny auf dem Boni-Platz (Vorschau)",
+      "pass": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "scale": 2,
+          "pass": true,
+          "failed": []
+        }
+      ],
+      "checks": [
+        {
+          "name": "Deckend (Hintergrund)",
+          "pass": true,
+          "value": 1,
+          "limit": 1
+        },
+        {
+          "name": "Farben aus der Palette",
+          "pass": true,
+          "value": 0.9987,
+          "limit": 0.88
+        },
+        {
+          "name": "Detailreichtum",
+          "pass": true,
+          "value": 0.0931,
+          "limit": 0.02
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "pass": true
+}

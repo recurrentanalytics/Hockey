@@ -3,19 +3,21 @@
 // pose can be drawn; front and back views are for the model sheet and menus.
 // Figure units: ~70 tall, anchor (0,0) on the ground between the skates, y up = negative.
 import { shape, tube, draw, render, P, lerp, ellipse, poly, blob, ik, letter, INK } from './ink.js';
+import { STYLE } from '../../art/bible.js';
 
+const PAL = STYLE.palette;
 export const COLORS = {
-  fur: '#8a4b22', furShade: '#5c3015', furLight: '#b5703a',
-  muzzle: '#e0a37c', muzzleShade: '#c4835f',
-  snout: '#f0a8a0', snoutShade: '#d98479', pink: '#f29a9a',
-  tusk: '#fff6e4', eyeWhite: '#ffffff', pupil: '#2a160c',
-  jersey: '#1f5a33', jerseyShade: '#143d22', jerseyLight: '#2e7a47',
-  cream: '#f3e3b5', orange: '#d2642a', orangeShade: '#a8481a',
-  pants: '#2b2018', pantsShade: '#17110c',
-  helmet: '#1d4a2c', helmetShade: '#10301b', helmetLight: '#3f8a58',
-  glove: '#1f5a33', gloveShade: '#143d22',
-  boot: '#25222c', bootShade: '#141219', frame: '#b8bfcc', wheel: '#e8763a', wheelShade: '#b0541f',
-  wood: '#c99a5b', woodShade: '#9a6f3a', tape: '#1c1c22',
+  fur: PAL.fur, furShade: PAL.furDark, furLight: PAL.fur,
+  muzzle: PAL.muzzle, muzzleShade: PAL.muzzleDark,
+  snout: PAL.snout, snoutShade: PAL.snoutDark, pink: PAL.pink,
+  tusk: PAL.tusk, eyeWhite: PAL.eyeWhite, pupil: PAL.pupil,
+  jersey: PAL.jersey, jerseyShade: PAL.jerseyFar, jerseyLight: PAL.jersey,
+  cream: PAL.cream, orange: PAL.orange, orangeShade: PAL.orangeFar,
+  pants: PAL.pants, pantsShade: PAL.pants,
+  helmet: PAL.helmet, helmetShade: PAL.helmetDark, helmetLight: PAL.helmet,
+  glove: PAL.glove, gloveShade: PAL.jerseyFar,
+  boot: PAL.boot, bootShade: PAL.bootFar, frame: PAL.frame, wheel: PAL.wheel, wheelShade: PAL.wheelFar,
+  wood: PAL.wood, woodShade: PAL.wood, tape: PAL.tape,
 };
 const C = COLORS;
 
@@ -32,7 +34,7 @@ function skateSide(parts, ank, far) {
   parts.push(shape((p) => poly(p, [P(g.x - 6.4, g.y - 4.2), P(g.x + 7.4, g.y - 4.2), P(g.x + 7.4, g.y - 3), P(g.x - 6.4, g.y - 3)]), C.frame, { lw: 0.4 }));
   parts.push(shape((p) => blob(p, [P(ank.x - 3.6, ank.y - 4), P(ank.x + 2.4, ank.y - 4.6), P(ank.x + 3.6, ank.y - 0.6), P(ank.x + 8.4, ank.y + 0.6), P(ank.x + 8, ank.y + 1.8), P(ank.x - 4.8, ank.y + 1.8)]),
     far ? C.bootShade : C.boot, { shade: far ? null : C.bootShade, shadeOffset: 1,
-      details: (ctx) => { ctx.strokeStyle = far ? '#8d8a80' : C.cream; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(ank.x - 4.5, ank.y + 0.9); ctx.lineTo(ank.x + 7.8, ank.y + 0.9); ctx.stroke(); } }));
+      details: (ctx) => { ctx.strokeStyle = far ? PAL.trimFar : C.cream; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(ank.x - 4.5, ank.y + 0.9); ctx.lineTo(ank.x + 7.8, ank.y + 0.9); ctx.stroke(); } }));
   void dk;
 }
 
@@ -44,7 +46,7 @@ function legSide(parts, hip, foot, far) {
     details: (ctx) => {
       // sock rings: cream, orange, cream
       const band = (t0, t1, col) => { const a = lerp(knee, end, t0), b = lerp(knee, end, t1); ctx.strokeStyle = col; ctx.lineWidth = 5.2; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); };
-      band(0.28, 0.36, far ? '#b8a983' : C.cream); band(0.36, 0.46, far ? C.orangeShade : C.orange); band(0.46, 0.54, far ? '#b8a983' : C.cream);
+      band(0.28, 0.36, far ? PAL.creamFar : C.cream); band(0.36, 0.46, far ? C.orangeShade : C.orange); band(0.46, 0.54, far ? PAL.creamFar : C.cream);
     } }));
   skateSide(parts, end, far);
   return { knee, ankle: end };
@@ -57,7 +59,7 @@ function armSide(parts, sh, hand, far, stripe = true) {
       if (!stripe) return;
       const a = lerp(elbow, end, 0.45), b = lerp(elbow, end, 0.7);
       ctx.lineCap = 'butt'; ctx.lineWidth = 5;
-      ctx.strokeStyle = far ? '#b8a983' : C.cream; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      ctx.strokeStyle = far ? PAL.creamFar : C.cream; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
       const m1 = lerp(elbow, end, 0.52), m2 = lerp(elbow, end, 0.63);
       ctx.strokeStyle = far ? C.orangeShade : C.orange; ctx.beginPath(); ctx.moveTo(m1.x, m1.y); ctx.lineTo(m2.x, m2.y); ctx.stroke();
     } }));
@@ -103,7 +105,7 @@ function headSide(parts, hc, mood, tilt = 0) {
   parts.push(shape((p) => blob(p, [rot(5, -3.5), rot(13, -1.5), rot(18, 2), rot(18, 8.6), rot(12, 11), rot(5, 10.5), rot(3, 4)]), C.muzzle, { shade: C.muzzleShade, shadeOffset: 1.2 }));
   // snout disc seen from the side
   parts.push(shape((p) => ellipse(p, ...Object.values(rot(18.4, 5)), 2.8, 4.8, tilt), C.snout, { shade: C.snoutShade, shadeOffset: 0.8,
-    details: (ctx) => { const n = rot(19.4, 5.2); ctx.fillStyle = '#5a2a20'; ctx.beginPath(); ctx.ellipse(n.x, n.y, 0.8, 1.6, tilt, 0, Math.PI * 2); ctx.fill(); } }));
+    details: (ctx) => { const n = rot(19.4, 5.2); ctx.fillStyle = PAL.nostril; ctx.beginPath(); ctx.ellipse(n.x, n.y, 0.8, 1.6, tilt, 0, Math.PI * 2); ctx.fill(); } }));
   // tusk
   parts.push(shape((p) => poly(p, [rot(12.6, 10.6), rot(15.2, 10.4), rot(15.6, 5.6)]), C.tusk, { lw: 0.45 }));
   // helmet: dome over the top and back, rim above the eye
@@ -112,9 +114,6 @@ function headSide(parts, hc, mood, tilt = 0) {
     blob(p, pts);
   }, C.helmet, { shade: C.helmetShade, shadeOffset: 2,
     details: (ctx) => {
-      const h = rot(-1.5, -10.4);
-      ctx.fillStyle = C.helmetLight; ctx.beginPath(); ctx.ellipse(h.x, h.y, 5, 1.8, tilt - 0.2, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.ellipse(h.x + 2.6, h.y - 0.6, 1.2, 0.6, tilt - 0.2, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = C.helmetShade;
       for (const [x, y] of [[-8, -7], [-4.6, -10.2]]) { const v = rot(x, y); ctx.beginPath(); ctx.ellipse(v.x, v.y, 1.4, 0.6, tilt - 0.7, 0, Math.PI * 2); ctx.fill(); }
       const e = rot(-6.4, -0.6); ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(e.x, e.y, 1.3, 0, Math.PI * 2); ctx.fill();
@@ -149,11 +148,11 @@ function headSide(parts, hc, mood, tilt = 0) {
     const b0 = rot(4.6, mood === 'sad' ? -4.4 : mood === 'effort' ? -4.2 : -6.2), b1 = rot(10, mood === 'sad' ? -6.2 : mood === 'effort' ? -3.4 : -5.6);
     ctx.strokeStyle = INK; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(b0.x, b0.y); ctx.lineTo(b1.x, b1.y); ctx.stroke();
     // cheek
-    const ck = rot(7.4, 5); ctx.fillStyle = 'rgba(242,120,120,0.55)'; ctx.beginPath(); ctx.ellipse(ck.x, ck.y, 2.2, 1.3, tilt, 0, Math.PI * 2); ctx.fill();
+    const ck = rot(7.4, 5); ctx.fillStyle = PAL.pink; ctx.beginPath(); ctx.ellipse(ck.x, ck.y, 2.2, 1.3, tilt, 0, Math.PI * 2); ctx.fill();
     // mouth
     ctx.strokeStyle = INK; ctx.lineWidth = 0.8; ctx.beginPath();
     const m0 = rot(9, 9), m1 = rot(15.4, 9.4);
-    if (mood === 'happy') { ctx.moveTo(m0.x, m0.y - 0.6); ctx.quadraticCurveTo((m0.x + m1.x) / 2, m0.y + 3.6, m1.x, m1.y - 0.8); ctx.closePath(); ctx.fillStyle = '#7a2a2a'; ctx.fill(); }
+    if (mood === 'happy') { ctx.moveTo(m0.x, m0.y - 0.6); ctx.quadraticCurveTo((m0.x + m1.x) / 2, m0.y + 3.6, m1.x, m1.y - 0.8); ctx.closePath(); ctx.fillStyle = PAL.mouth; ctx.fill(); }
     else if (mood === 'sad') { ctx.moveTo(m0.x, m0.y + 1); ctx.quadraticCurveTo((m0.x + m1.x) / 2, m0.y - 1, m1.x, m1.y + 0.6); }
     else if (mood === 'effort') { ctx.rect(m0.x + 0.4, m0.y - 1, 5, 2); ctx.fillStyle = '#ffffff'; ctx.fill(); }
     else { ctx.moveTo(m0.x, m0.y); ctx.quadraticCurveTo((m0.x + m1.x) / 2, m0.y + 1.6, m1.x, m1.y - 0.6); }
@@ -175,7 +174,7 @@ function stickSide(parts, top, bottom, blade) {
     const dir = blade.x >= bottom.x ? 1 : -1;
     ctx.fillStyle = INK; ctx.beginPath(); ctx.roundRect(dir > 0 ? blade.x - 1.2 : blade.x - 8.8, blade.y - 1.6, 10, 3.2, 1.4); ctx.fill();
     ctx.fillStyle = C.tape; ctx.beginPath(); ctx.roundRect(dir > 0 ? blade.x - 0.6 : blade.x - 8.2, blade.y - 1, 8.8, 2, 0.9); ctx.fill();
-    ctx.strokeStyle = '#4a4a55'; ctx.lineWidth = 0.4;
+    ctx.strokeStyle = PAL.tapeLine; ctx.lineWidth = 0.4;
     for (let i = 1; i < 5; i++) { const x = (dir > 0 ? blade.x - 0.6 : blade.x - 8.2) + i * 1.8; ctx.beginPath(); ctx.moveTo(x, blade.y - 1); ctx.lineTo(x - 0.6, blade.y + 1); ctx.stroke(); }
   }));
 }
@@ -246,7 +245,7 @@ export function sideParts(pose) {
     parts.push(draw((ctx) => {
       for (let i = 0; i < 4; i++) {
         const a = i * (Math.PI / 2) + 0.4, x = hc.x - 4 + Math.cos(a) * 11, y = hc.y - 15 + Math.sin(a) * 3.5;
-        star(ctx, x, y, 2.2, i % 2 ? '#ffd84a' : '#ffffff');
+        star(ctx, x, y, 2.2, i % 2 ? PAL.star : '#ffffff');
       }
     }));
   }
@@ -321,8 +320,6 @@ export function frontParts(mood = 'happy') {
   // helmet
   parts.push(shape((p) => blob(p, [P(-13, -56), P(-11.6, -65), P(-4, -70.2), P(4, -70.2), P(11.6, -65), P(13, -56), P(8, -60.6), P(0, -61.6), P(-8, -60.6)]), C.helmet, { shade: C.helmetShade, shadeOffset: 1.6,
     details: (ctx) => {
-      ctx.fillStyle = C.helmetLight; ctx.beginPath(); ctx.ellipse(-3, -67, 4.6, 1.6, -0.1, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.ellipse(-5.4, -67.6, 1.2, 0.6, -0.2, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = C.helmetShade; for (const x of [-4, 0, 4]) { ctx.beginPath(); ctx.ellipse(x, -64.6, 1, 0.5, 0, 0, Math.PI * 2); ctx.fill(); }
     } }));
   // tuft on top
@@ -330,7 +327,7 @@ export function frontParts(mood = 'happy') {
   // muzzle and snout
   parts.push(shape((p) => ellipse(p, 0, -50.6, 7.4, 5.6), C.muzzle, { shade: C.muzzleShade, shadeOffset: 1 }));
   parts.push(shape((p) => ellipse(p, 0, -52, 5, 3.7), C.snout, { shade: C.snoutShade, shadeOffset: 0.7,
-    details: (ctx) => { ctx.fillStyle = '#5a2a20'; for (const x of [-1.9, 1.9]) { ctx.beginPath(); ctx.ellipse(x, -52, 1, 1.5, 0, 0, Math.PI * 2); ctx.fill(); } } }));
+    details: (ctx) => { ctx.fillStyle = PAL.nostril; for (const x of [-1.9, 1.9]) { ctx.beginPath(); ctx.ellipse(x, -52, 1, 1.5, 0, 0, Math.PI * 2); ctx.fill(); } } }));
   for (const s of [-1, 1]) parts.push(shape((p) => poly(p, [P(s * 4.6, -46.4), P(s * 7.2, -46.6), P(s * 6.8, -50.6)]), C.tusk, { lw: 0.45 }));
   parts.push(draw((ctx) => {
     for (const s of [-1, 1]) {
@@ -342,11 +339,11 @@ export function frontParts(mood = 'happy') {
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ex - 0.5, ey - 0.6, 0.8, 0, Math.PI * 2); ctx.fill();
       }
       ctx.strokeStyle = INK; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(ex - s * 2.4, ey - 5.2); ctx.lineTo(ex + s * 2.6, ey - 6); ctx.stroke();
-      ctx.fillStyle = 'rgba(242,120,120,0.55)'; ctx.beginPath(); ctx.ellipse(s * 8.2, -52.6, 2, 1.2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = PAL.pink; ctx.beginPath(); ctx.ellipse(s * 8.2, -52.6, 2, 1.2, 0, 0, Math.PI * 2); ctx.fill();
     }
     // mouth: a big grin under the snout
     ctx.strokeStyle = INK; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(-3.4, -47.4); ctx.quadraticCurveTo(0, -44, 3.4, -47.4); ctx.closePath();
-    ctx.fillStyle = '#7a2a2a'; if (mood === 'happy') ctx.fill(); ctx.stroke();
+    ctx.fillStyle = PAL.mouth; if (mood === 'happy') ctx.fill(); ctx.stroke();
     // chin straps
     ctx.strokeStyle = C.helmetShade; ctx.lineWidth = 0.9;
     for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * 11.6, -57); ctx.quadraticCurveTo(s * 9, -47, s * 3, -44.6); ctx.stroke(); }
@@ -385,14 +382,13 @@ export function backParts() {
       ctx.fillStyle = C.orange; ctx.fillRect(-14, -26, 28, 1.8);
       ctx.fillStyle = C.cream; ctx.fillRect(-14, -24.2, 28, 1.6);
       letter(ctx, 'BONI', 0, -39.4, 3.6, { fill: C.cream, outline: 0.4 });
-      letter(ctx, '61', 0, -33, 8.6, { fill: C.cream, ink: '#5c3015', outline: 0.7 });
+      letter(ctx, '61', 0, -33, 8.6, { fill: C.cream, ink: PAL.furDark, outline: 0.7 });
     } }));
   for (const s of [-1, 1]) parts.push(shape((p) => poly(p, [P(s * 6, -64), P(s * 13, -76), P(s * 10.6, -61)]), C.fur, { lw: 0.55 }));
   parts.push(shape((p) => blob(p, [P(-12, -58), P(-8, -66.6), P(0, -68.4), P(8, -66.6), P(12, -58), P(10.6, -49), P(0, -45.2), P(-10.6, -49)]), C.fur, { shade: C.furShade, shadeOffset: 1.6 }));
   // helmet covers the back of the head
   parts.push(shape((p) => blob(p, [P(-13, -54), P(-11.6, -65), P(-4, -70.2), P(4, -70.2), P(11.6, -65), P(13, -54), P(6, -52.4), P(0, -52), P(-6, -52.4)]), C.helmet, { shade: C.helmetShade, shadeOffset: 1.6,
     details: (ctx) => {
-      ctx.fillStyle = C.helmetLight; ctx.beginPath(); ctx.ellipse(-3, -66, 4.6, 1.6, -0.1, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = C.helmetShade; for (const x of [-5, 0, 5]) { ctx.beginPath(); ctx.ellipse(x, -60, 1.1, 0.5, 0, 0, Math.PI * 2); ctx.fill(); }
     } }));
   // nape bristles below the helmet, tuft on top
@@ -402,10 +398,47 @@ export function backParts() {
 }
 
 /** Draw a part list scaled at (x, y) — anchor on the ground. flip: face left. */
-export function drawFigure(ctx, parts, x, y, scale, { flip = false, outer = 1.25 } = {}) {
+export function drawFigure(ctx, parts, x, y, scale, { flip = false, outer = 1.25, ligne = true } = {}) {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(flip ? -scale : scale, scale);
-  render(ctx, parts, { outer });
+  render(ctx, parts, ligne ? { uniform: STYLE.line.width, flat: true } : { outer });
   ctx.restore();
+}
+
+// ------------------------------------------------------------------ animation and props
+
+/** One frame of the skating stride (n frames per cycle): legs push and recover, arm swings. */
+export function stridePose(i, n = 8) {
+  const ph = i / n;
+  const leg = (p, base, side) => {
+    p = ((p % 1) + 1) % 1;
+    if (p < 0.5) { const u = p / 0.5; return P(base - 15 * u, -Math.sin(Math.PI * u) * 1.2 * side); }
+    const u = (p - 0.5) / 0.5; return P(base - 15 * (1 - u), -Math.sin(Math.PI * u) * 5.5);
+  };
+  const bob = (1 + Math.cos(4 * Math.PI * ph)) / 2;
+  const sw = Math.cos(2 * Math.PI * ph);
+  return {
+    oneHand: true,
+    hip: P(-1.5, -24 + bob * 1.2), lean: deg(32),
+    far: leg(ph, 4, 1), near: leg(ph + 0.5, 7, -1),
+    farHand: P(-6 + sw * 10, -36 - Math.abs(sw) * 2),
+    nearHand: P(16, -22 + bob), blade: P(26, -0.5),
+    mood: 'normal',
+  };
+}
+
+/** The inline hockey stick on its own (prop asset): shaft, grip tape, curved blade with tape. */
+export function stickParts(len = 64) {
+  const parts = [];
+  const top = P(-len * 0.55, -len * 0.62), heel = P(len * 0.28, -2.2);
+  parts.push(tube([top, heel], 2.4, C.wood, { details: (ctx) => {
+    // black grip tape at the top end
+    const g = lerp(top, heel, 0.14);
+    ctx.lineCap = 'butt'; ctx.strokeStyle = C.tape; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(top.x, top.y); ctx.lineTo(g.x, g.y); ctx.stroke();
+  } }));
+  parts.push(shape((p) => blob(p, [P(heel.x - 2, heel.y - 1.6), P(heel.x + 6, heel.y + 0.2), P(heel.x + 15, heel.y + 0.6), P(heel.x + 16.4, heel.y + 2.4), P(heel.x + 6, heel.y + 2.8), P(heel.x - 2.4, heel.y + 1.6)]), C.tape, {
+    details: (ctx) => { ctx.strokeStyle = PAL.tapeLine; ctx.lineWidth = 0.45; for (let i = 0; i < 6; i++) { const x = heel.x + 1 + i * 2.4; ctx.beginPath(); ctx.moveTo(x, heel.y - 1); ctx.lineTo(x - 0.8, heel.y + 3); ctx.stroke(); } } }));
+  return parts;
 }
