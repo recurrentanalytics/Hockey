@@ -20,18 +20,18 @@ const LOOKAHEAD = 0.3;
 /** Line-ups per mode. `ai` lists the sides the team AI plays for. */
 const MODES = {
   practice: { home: { team: 'blazers', skaters: 2 }, away: { team: 'waves', skaters: 0 }, ai: [] },
-  ai:       { home: { team: 'blazers', skaters: 4 }, away: { team: 'waves', skaters: 4 }, ai: ['home', 'away'] },
-  versus:   { home: { team: 'blazers', skaters: 4 }, away: { team: 'waves', skaters: 4 }, ai: ['home', 'away'] },
-  coop:     { home: { team: 'blazers', skaters: 4 }, away: { team: 'waves', skaters: 4 }, ai: ['home', 'away'] },
+  ai:       { home: { team: 'blazers', skaters: 4, lines: 2 }, away: { team: 'waves', skaters: 4, lines: 2 }, ai: ['home', 'away'] },
+  versus:   { home: { team: 'blazers', skaters: 4, lines: 2 }, away: { team: 'waves', skaters: 4, lines: 2 }, ai: ['home', 'away'] },
+  coop:     { home: { team: 'blazers', skaters: 4, lines: 2 }, away: { team: 'waves', skaters: 4, lines: 2 }, ai: ['home', 'away'] },
 };
-
 export class RinkScene {
   /**
    * mode:    'practice' | 'ai' | 'versus' | 'coop'
    * humans:  [{ controller, side }]
    * camera:  'single' | 'shared' | 'split'
    */
-  constructor(app, { title, mode = 'practice', humans, camera = 'single' }) {
+  constructor(app, { title, mode = 'practice', humans, camera = 'single', teams = null, onFinish = null }) {
+    this.onFinish = onFinish;
     this.app = app;
     this.title = title;
     this.mode = mode;
@@ -41,8 +41,8 @@ export class RinkScene {
     const lineup = MODES[mode];
     this.match = new Match({
       ...lineup,
-      home: { ...lineup.home, team: settings.homeTeam },
-      away: { ...lineup.away, team: mode === 'practice' ? otherTeam(settings.homeTeam) : settings.awayTeam },
+      home: { ...lineup.home, team: teams?.home ?? settings.homeTeam },
+      away: { ...lineup.away, team: teams?.away ?? (mode === 'practice' ? otherTeam(settings.homeTeam) : settings.awayTeam) },
       rules: this.rules,
       difficulty: settings.difficulty,
       humans: humans.map((h, i) => ({ ...h, tag: `P${i + 1}`, color: PLAYER_COLORS[i] })),
@@ -110,7 +110,11 @@ export class RinkScene {
     const m = this.match;
     if (m.state === 'final') {
       const pressed = input.menu.confirm || input.taps.length || m.humans.some((h) => input.controller(h.controller)?.pressed.shoot);
-      if (pressed && (this.finalT = (this.finalT ?? 0) + dt) > 0.8) this.app.popTo((s) => s.isMainMenu);
+      if (pressed && (this.finalT = (this.finalT ?? 0) + dt) > 0.8) {
+        if (this.onFinish) this.onFinish({ score: { ...m.score }, how: m.ref?.result?.how ?? '', winner: m.ref?.result?.winner });
+        else this.app.popTo((s) => s.isMainMenu);
+        return;
+      }
       else this.finalT = (this.finalT ?? 0) + dt;
     }
     m.update(dt, input);
@@ -140,6 +144,7 @@ export class RinkScene {
         case 'steal': rumble(e.from.human, 0.3, 0.3, 80); break;
         case 'faceoffWon': sfx.play('stick', 0.9); break;
         case 'faceoffEarly': this.notice = { text: 'TOO EARLY - DRAW LOST', t: 1.5 }; break;
+        case 'lineChange': if (m.humans.some((h) => h.side === e.side)) this.notice = { text: `LINE CHANGE - ${name(e.side)}`, t: 1.5 }; break;
         case 'timeoutRequested': this.notice = { text: `TIME-OUT REQUESTED - ${name(e.side)}`, t: 2 }; break;
       }
       if (e.type === 'goal') this.banner = { text: e.shootout ? 'SCORES!' : 'GOAL!', sub: e.shootout ? name(e.side) : this.goalText(e), t: 2.4 };

@@ -67,6 +67,10 @@ ES modules need HTTP; opening `index.html` straight from disk won't work.
 - Animations: goalie butterfly, knockdowns from checks, the scorer raising the stick
 - A stats table on the final screen
 
+**More:**
+- **Line changes:** each team has two lines of 4 skaters (8 in all). A tired line swaps for the rested one at stoppages, and the bench recovers.
+- **Tournament:** 4 teams play a round robin, then the top two meet in the final. Scoring is 3 points for a regulation win, 2 for a win in OT or the shootout, and 1 for a loss in OT or the shootout. Games without you are simulated, and progress is saved in the browser.
+
 ## Default controls
 
 | Action | Keyboard 1 | Keyboard 2 | Gamepad (position) |

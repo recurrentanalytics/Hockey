@@ -28,7 +28,7 @@ export class PauseScene {
     }
     items.push(
       { label: 'SETTINGS', onSelect: () => app.push(new SettingsScene(app)) },
-      { label: 'QUIT TO MENU', color: PAL.red, onSelect: () => app.popTo((s) => s.isMainMenu) },
+      { label: 'QUIT TO MENU', color: PAL.red, onSelect: () => app.popTo((s) => s.isTournament || s.isMainMenu) },
     );
     this.menu = new Menu(items, { width: 190, top: 70 });
   }

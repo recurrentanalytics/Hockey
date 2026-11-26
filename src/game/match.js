@@ -19,6 +19,7 @@ const angleDiff = (a, b) => Math.abs(((((b - a + Math.PI) % (2 * Math.PI)) + 2 *
 
 /** Skater start spots for the home side (defends the left net); away is mirrored. */
 // Slots 0–1 are forwards (0 takes the draw), 2–3 defence.
+const NUMBERS = [9, 17, 4, 44, 11, 22, 7, 33];
 const SPOTS = [{ x: -1.3, y: 0 }, { x: -5, y: 5 }, { x: -10, y: -4 }, { x: -10, y: 4 }];
 
 export class Match {
@@ -37,10 +38,12 @@ export class Match {
     this.skaters = [];
     this.goalies = [];
     for (const [key, cfg] of [['home', home], ['away', away]]) {
-      for (let i = 0; i < cfg.skaters; i++) {
-        const s = new Skater({ team: cfg.team, number: [9, 17, 4, 44][i] });
+      const lines = cfg.lines ?? 1;
+      for (let i = 0; i < cfg.skaters * lines; i++) {
+        const s = new Skater({ team: cfg.team, number: NUMBERS[i] ?? 50 + i });
         s.sideKey = key;
-        s.slot = i;
+        s.slot = i % cfg.skaters;              // role in the line: 0-1 forwards, 2-3 defence
+        s.line = Math.floor(i / cfg.skaters);
         this.skaters.push(s);
       }
       if (cfg.goalie !== false) {
@@ -61,6 +64,8 @@ export class Match {
     this.difficulty = difficulty;
     this.lastGoal = null;
     this.roster = [...this.skaters];   // everyone; this.skaters = on the ice right now
+    // Only the first line starts on the ice.
+    for (const s of this.roster) if (s.line > 0) { this.offIce(s); s.benched = true; }
     this.ai = new AI(this, { sides: ai, difficulty });
     this.ref = rules ? new Referee(this, rules) : null;
     this.faceoff();
@@ -72,7 +77,7 @@ export class Match {
 
   /** Face-off at a spot (centre by default); line-ups are shifted to it and kept on the rink. */
   faceoff(at = { x: 0, y: 0 }) {
-    if (this.ref) this.applyStrength();
+    if (this.ref) { this.lineChanges(); this.applyStrength(); }
     this.puck.reset(at.x, at.y);
     const team = { home: 0, away: 0 };
     for (const s of this.skaters) {
@@ -176,8 +181,9 @@ export class Match {
       s.update(dt, live && c ? { move: c.move, sprint: c.down.sprint } : {});
       if (live && c && !drawing) this.actions(h, c, dt);
     }
-    // Fatigue recovers during stoppages.
+    // Fatigue recovers during stoppages, and faster on the bench.
     if (!live) for (const s of this.skaters) s.fatigue = Math.max(0, (s.fatigue ?? 0) - 0.03 * dt);
+    for (const s of this.roster) if (s.benched) s.fatigue = Math.max(0, (s.fatigue ?? 0) - 0.02 * dt);
     this.ai.think(dt);
     for (const s of this.skaters) if (!s.human) s.update(dt, this.ai.controls.get(s) ?? {});
 
@@ -307,6 +313,23 @@ export class Match {
       if (this.skaters.includes(h.skater)) continue;
       const mate = this.skaters.find((k) => k.sideKey === h.side && !k.human);
       if (mate) this.giveControl(h, mate);
+    }
+  }
+
+  /** At a stoppage a tired line goes off for the rested one on the bench. */
+  lineChanges() {
+    for (const side of ['home', 'away']) {
+      const boxed = (s) => this.ref.box.some((b) => b.skater === s);
+      const bench = this.roster.filter((s) => s.sideKey === side && s.benched && !boxed(s));
+      const on = this.skaters.filter((s) => s.sideKey === side);
+      if (!bench.length || !on.length) continue;
+      const avg = (list) => list.reduce((a, s) => a + (s.fatigue ?? 0), 0) / list.length;
+      if (avg(on) < 0.3 || avg(bench) > avg(on) - 0.15) continue;
+      const n = on.length;
+      for (const s of on) { this.offIce(s); s.benched = true; }
+      bench.sort((a, b) => (a.fatigue ?? 0) - (b.fatigue ?? 0));
+      for (const s of bench.slice(0, n)) { s.benched = false; this.onIce(s, 0, 0); }
+      this.events.push({ type: 'lineChange', side });
     }
   }
 
