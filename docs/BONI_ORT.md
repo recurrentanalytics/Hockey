@@ -35,12 +35,12 @@ Die Skizze `docs/ort/boni_skizze.png` (erzeugt von `tools/art/venue/boni_blockou
 
 Bild: `docs/ort/boni_bolzplatz_grundriss.jpg` (Luftbild © GeoBasis-DE / LGLN, CC BY 4.0).
 
-- **Form:** Rechteck, eingezäunt. Seite oben (zur Straße mit den Parkplätzen) und Seite links (zum Nilpferd-Sandplatz) wurden aus dem Luftbild abgelesen, die anderen beiden rechtwinklig ergänzt.
-- **Größe:** ca. 18 m × 18,5 m (Messgenauigkeit etwa ±1 m; im Winterbild verdecken Astschatten den Rand).
-- **Ausrichtung:** Die obere Seite ist um ca. 25° gegen Ost–West gedreht (fällt nach Südosten ab).
+- **Form:** Rechteck, eingezäunt. Die linke Seite folgt dem Rand der hellen Asphaltfläche (zum Nilpferd-Sandplatz), die untere Seite der Zaunlinie entlang der Hecke an der Straße, die obere Seite der Kante zur Straße mit den Parkplätzen.
+- **Größe:** ca. 18 m (Seite oben) × 25 m (Seite links), Messgenauigkeit etwa ±1 m; im Winterbild verdecken Astschatten den Rand.
+- **Ausrichtung:** Die Seiten sind um ca. 27° gegen die Nord-Süd- und Ost-West-Achse gedreht, also etwa parallel zu den umliegenden Straßen.
 - **Ecken (WGS84, Breite/Länge):**
-  - A Nordwest: 52.389135 / 9.744611
-  - B Nordost: 52.389067 / 9.744850
-  - C Südost: 52.388917 / 9.744735
-  - D Südwest: 52.388985 / 9.744496
+  - A Nord: 52.389147 / 9.744611
+  - B Ost: 52.389073 / 9.744851
+  - C Süd: 52.388874 / 9.744686
+  - D West: 52.388949 / 9.744445
 - **Umgebung:** links (Nordwest) der Sandspielplatz mit Holz-Nilpferd, rechts (Südost) hinter Mulchstreifen die Metallschale, oben die Straße mit Schrägparkern und Altbauten, unten links Hecke und Straße.
