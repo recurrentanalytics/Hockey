@@ -129,6 +129,15 @@ export class RinkScene {
         case 'whistle': sfx.play('whistle'); break;
         case 'break': case 'final': sfx.play('buzzer'); if (e.type === 'final') sfx.play('cheer'); break;
         case 'attempt': if (!e.scored) sfx.play('save', 0.6); break;
+      }
+      // Rumble on the pads of the players involved.
+      const rumble = (h, strong, weak, ms) => h && this.app.input.rumble(h.controller, strong, weak, ms);
+      switch (e.type) {
+        case 'shot': rumble(e.by.human, 0.15, 0.4, 60); break;
+        case 'hit': rumble(e.victim.human, 0.8, 0.5, 180); rumble(e.hitter.human, 0.4, 0.3, 100); break;
+        case 'post': for (const h of m.humans) rumble(h, 0.2, 0.6, 90); break;
+        case 'goal': for (const h of m.humans) rumble(h, h.side === e.side ? 0.6 : 1, 0.8, h.side === e.side ? 300 : 450); break;
+        case 'steal': rumble(e.from.human, 0.3, 0.3, 80); break;
         case 'faceoffWon': sfx.play('stick', 0.9); break;
         case 'faceoffEarly': this.notice = { text: 'TOO EARLY - DRAW LOST', t: 1.5 }; break;
         case 'timeoutRequested': this.notice = { text: `TIME-OUT REQUESTED - ${name(e.side)}`, t: 2 }; break;

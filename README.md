@@ -79,6 +79,17 @@ ES modules need HTTP; opening `index.html` straight from disk won't work.
 | Sprint | Left Shift / Space | Num0 / Right Shift | Right bumper, left trigger |
 | Pause | Esc | Backspace | Start |
 
+### 8BitDo SN30 Pro (and other gamepads)
+
+- **Modes:** choose one when switching the pad on.
+  - START+X: Windows (X-input). The browser sees an Xbox pad, and rumble works.
+  - START+B: Android (D-input). Detected automatically, including the d-pad hat.
+  - START+A: macOS
+  - START+Y: Switch. Detected as a Pro Controller, with Nintendo letters.
+- **Default buttons** (SN30 letters): Y or ZR shoot, B pass, A poke check, L switch, R or ZL sprint, START pause. Move with the d-pad or the left stick. B confirms in menus, A goes back.
+- **Guided setup:** Settings → Controls → *Pad 1* → **Guided setup**. A drawing of the pad lights up each button to press, so the mapping and the letters on screen match your pad in any mode and browser. It's recommended for X-input mode, where the browser reports an Xbox pad.
+- **Rumble:** hits, goals, shots and posts, where the browser and mode support it (Chrome, X-input). Turn it off under Controls → Rumble.
+
 Menus: arrows/WASD + Enter/Esc, the d-pad and face buttons, or tap/click.
 
 **Fullscreen:** the game goes fullscreen on your first tap, click or key press (turn this off under Settings → Auto fullscreen). The corner button or **F** toggles it. On phones it also tries to lock landscape. iPhone Safari doesn't support fullscreen for web pages.

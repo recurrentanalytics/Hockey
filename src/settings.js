@@ -16,6 +16,7 @@ const DEFAULTS = {
   pixelPerfect: false,
   autoFullscreen: true,
   sound: 0.75,
+  rumble: true,
   homeTeam: 'blazers',
   awayTeam: 'waves',
 };
@@ -74,6 +75,10 @@ export const OPTIONS = {
     { value: 0.5, label: '50%' },
     { value: 0.75, label: '75%' },
     { value: 1, label: '100%' },
+  ],
+  rumble: [
+    { value: true, label: 'ON' },
+    { value: false, label: 'OFF' },
   ],
   homeTeam: TEAM_OPTIONS,
   awayTeam: TEAM_OPTIONS,

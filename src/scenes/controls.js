@@ -24,10 +24,11 @@ export class ControlsScene extends MenuScene {
     }));
     pads.forEach((p, i) => items.push({
       label: `PAD ${i + 1}: ${p.name}`,
-      value: () => (p.profileKey === 'pad' ? 'STANDARD' : 'CUSTOM'),
+      value: () => (app.input.bindings[p.profileKey] ? 'CUSTOM' : p.info?.mode || 'DEFAULT'),
       onSelect: () => app.push(new BindingsScene(app, p.profileKey, `PAD ${i + 1}`, p.id)),
     }));
     items.push(choice('BUTTON LABELS', 'buttonLabels'));
+    items.push(choice('RUMBLE', 'rumble'));
     items.push(choice('MENU CONFIRM', 'confirmButton'));
     items.push({ label: 'BACK', onSelect: () => app.pop() });
     const index = Math.min(this.menu.index, items.length - 1);
@@ -42,7 +43,12 @@ export class ControlsScene extends MenuScene {
   }
 
   drawExtra(ctx, W, H) {
-    if (!this.app.input.padControllers().length) {
+    const pads = this.app.input.padControllers();
+    if (pads.some((p) => p.info?.family === '8bitdo' || p.info?.family === 'nintendo' || p.info?.family === 'xbox')) {
+      drawText(ctx, '8BITDO SN30 PRO MODES: START+X WINDOWS, START+B ANDROID,', W / 2, H - 42, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+      drawText(ctx, 'START+A MACOS, START+Y SWITCH. RUMBLE NEEDS X-INPUT.', W / 2, H - 34, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+    }
+    if (!pads.length) {
       drawText(ctx, 'NO GAMEPAD FOUND. CONNECT ONE (USB OR', W / 2, H - 42, { color: PAL.mist, align: 'center', shadow: PAL.ink });
       drawText(ctx, 'BLUETOOTH) AND PRESS ANY BUTTON ON IT.', W / 2, H - 34, { color: PAL.mist, align: 'center', shadow: PAL.ink });
     }

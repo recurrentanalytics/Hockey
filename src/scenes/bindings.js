@@ -7,6 +7,7 @@ import { Menu } from '../ui/menu.js';
 import { header, hintBar } from '../ui/hud.js';
 import { BACK_BUTTON, hit, drawBackButton } from '../ui/corner.js';
 import { ACTIONS } from '../input/actions.js';
+import { PadSetupScene } from './padSetup.js';
 
 export class BindingsScene {
   constructor(app, profileKey, title, controllerId) {
@@ -25,9 +26,17 @@ export class BindingsScene {
         : input.profile(profileKey)[a.id].map((b) => input.bindingLabel(profileKey, b)).join(' / ')),
       onSelect: () => this.capture(a),
     }));
+    if (profileKey.startsWith('pad')) {
+      items.unshift({
+        label: 'GUIDED SETUP',
+        value: () => 'RECOMMENDED',
+        color: PAL.yellow,
+        onSelect: () => { const pad = this.device(); if (pad?.connected) app.push(new PadSetupScene(app, pad)); else app.toasts.push('CONNECT THE PAD FIRST'); },
+      });
+    }
     items.push({ label: 'RESET TO DEFAULTS', onSelect: () => { input.resetProfile(profileKey); app.toasts.push('DEFAULTS RESTORED'); } });
     items.push({ label: 'BACK', onSelect: () => app.pop() });
-    this.menu = new Menu(items, { width: 250, top: 46 });
+    this.menu = new Menu(items, { width: 250, top: profileKey.startsWith('pad') ? 44 : 46 });
   }
 
   capture(action) {

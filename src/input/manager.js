@@ -10,6 +10,7 @@ import { Pointers } from './pointers.js';
 import { TouchController } from './touch.js';
 import { MenuPad } from './menuPad.js';
 import { ACTION_IDS, defaultProfile } from './actions.js';
+import { identify, LAYOUTS, actionsFor, PRINTED, hatValue } from './pads.js';
 import { keyLabel, padBindingLabel, detectPadStyle, padName } from './labels.js';
 import { load, save } from '../engine/storage.js';
 import { settings } from '../settings.js';
@@ -64,6 +65,7 @@ function axisValue(v) {
 
 function bindingValue(c, binding) {
   if (binding.startsWith('b:')) return c.buttons[+binding.slice(2)] ?? 0;
+  if (binding.startsWith('h:')) return hatValue(c.axes, binding);
   const m = /^a:(\d+)([+-])$/.exec(binding);
   if (!m) return 0;
   const v = c.axes[+m[1]] ?? 0;
@@ -83,6 +85,7 @@ export class InputManager {
     this.keyboard = new Keyboard();
     this.pointers = new Pointers(canvas, display);
     this.touch = new TouchController();
+    this.padInfo = new Map(); // profile key → identify() result
     this.menuPad = new MenuPad();
     this.bindings = load('bindings', {});
     this.controllers = new Map([
@@ -106,7 +109,20 @@ export class InputManager {
   // ------------------------------------------------------------ bindings
 
   profile(key) {
-    return this.bindings[key] || defaultProfile(key);
+    if (this.bindings[key]) return this.bindings[key];
+    if (key.startsWith('pad')) {
+      const info = this.padInfo.get(key) ?? { layout: 'standard' };
+      // Older saves kept one shared profile for all standard pads.
+      if (info.layout === 'standard' && this.bindings.pad) return this.bindings.pad;
+      return actionsFor(LAYOUTS[info.layout] ?? LAYOUTS.standard);
+    }
+    return defaultProfile(key);
+  }
+
+  /** Replace a whole pad profile (used by the guided setup). */
+  setProfile(key, prof) {
+    this.bindings[key] = prof;
+    save('bindings', this.bindings);
   }
 
   setBinding(key, action, binding) {
@@ -130,14 +146,40 @@ export class InputManager {
   }
 
   padStyle(c) {
-    return settings.buttonLabels === 'auto' ? detectPadStyle(c?.gpId) : settings.buttonLabels;
+    if (settings.buttonLabels !== 'auto') return settings.buttonLabels;
+    if (!c) return 'xbox';
+    return this.profile(c.profileKey).style ?? this.padInfo.get(c.profileKey)?.style ?? detectPadStyle(c.gpId);
   }
 
   /** Label for a binding of a given profile, using the look of a matching connected pad. */
   bindingLabel(profileKey, binding) {
     if (profileKey.startsWith('kb')) return keyLabel(binding);
+    const prof = this.profile(profileKey);
+    if (prof.names?.[binding]) return prof.names[binding];
     const pad = this.padControllers().find((c) => c.profileKey === profileKey);
-    return padBindingLabel(binding, this.padStyle(pad), profileKey === 'pad');
+    const style = this.padStyle(pad);
+    const L = LAYOUTS[this.padInfo.get(profileKey)?.layout ?? 'standard'];
+    // Printed name of the physical button, if this layout knows it.
+    for (const [phys, b] of Object.entries(L)) {
+      if (typeof b === 'string' && b === binding && PRINTED[style]?.[phys]) return PRINTED[style][phys];
+    }
+    for (const dir of ['up', 'down', 'left', 'right']) {
+      if (binding.startsWith('h:') && L[dir].includes(binding)) return `D-${dir.toUpperCase()}`;
+    }
+    return padBindingLabel(binding, style, true);
+  }
+
+  /** Short rumble on a player's pad, where the browser and pad support it. */
+  rumble(controllerId, strong = 0.5, weak = 0.5, ms = 120) {
+    if (!settings.rumble) return;
+    const c = this.promptController(controllerId);
+    if (c?.kind !== 'gamepad') return;
+    const gp = navigator.getGamepads?.()[c.index];
+    try {
+      gp?.vibrationActuator?.playEffect?.('dual-rumble', { duration: ms, strongMagnitude: strong, weakMagnitude: weak })?.catch?.(() => {});
+    } catch {
+      /* no rumble on this pad/browser */
+    }
   }
 
   /** Controller whose labels should be shown for prompts. */
@@ -176,23 +218,23 @@ export class InputManager {
   confirmLabel() {
     if (this.lastKind === 'touch') return 'TAP';
     const c = this.promptController();
-    if (c?.kind === 'gamepad') return padBindingLabel(`b:${settings.confirmButton === 'east' ? 1 : 0}`, this.padStyle(c));
+    if (c?.kind === 'gamepad') return PRINTED[this.padStyle(c)]?.[settings.confirmButton === 'east' ? 'east' : 'south'] ?? 'A';
     return 'ENTER';
   }
 
   backLabel() {
     if (this.lastKind === 'touch') return null;
     const c = this.promptController();
-    if (c?.kind === 'gamepad') return padBindingLabel(`b:${settings.confirmButton === 'east' ? 0 : 1}`, this.padStyle(c));
+    if (c?.kind === 'gamepad') return PRINTED[this.padStyle(c)]?.[settings.confirmButton === 'east' ? 'south' : 'east'] ?? 'B';
     return 'ESC';
   }
 
   // ------------------------------------------------------------ remapping
 
-  startCapture(profileKey, done) {
+  startCapture(profileKey, done, timeout = 8) {
     const rest = new Map();
     for (const c of this.padControllers()) rest.set(c.id, [...c.axes]);
-    this.capture = { profileKey, done, timeout: 8, rest };
+    this.capture = { profileKey, done, timeout, rest };
   }
 
   get capturing() {
@@ -219,6 +261,12 @@ export class InputManager {
       for (let i = 0; i < c.buttons.length; i++) if (c.buttonEdge(i)) return this.finishCapture(`b:${i}`);
       const rest = cap.rest.get(c.id) || [];
       for (let i = 0; i < c.axes.length; i++) {
+        // A hat switch rests outside [-1, 1] and jumps to one of 8 fixed values.
+        if (Math.abs(rest[i] ?? 0) > 1.05) {
+          const v = c.axes[i];
+          if (Math.abs(v) <= 1.01 && Math.abs((c.prevAxes[i] ?? rest[i]) - v) > 0.05) return this.finishCapture(`h:${i}:${Number(v.toFixed(2))}`);
+          continue;
+        }
         const d = c.axes[i] - (rest[i] ?? 0);
         const pd = (c.prevAxes[i] ?? 0) - (rest[i] ?? 0);
         if (Math.abs(d) > 0.6 && Math.abs(pd) <= 0.6) return this.finishCapture(`a:${i}${d > 0 ? '+' : '-'}`);
@@ -278,10 +326,13 @@ export class InputManager {
       seen.add(id);
       let c = this.controllers.get(id);
       if (!c || c.gpId !== gp.id) {
-        const standard = gp.mapping === 'standard';
-        c = new Controller(id, 'gamepad', padName(gp.id), standard ? 'pad' : `pad:${gp.id}`);
+        const info = identify(gp);
+        const key = `pad:${gp.id}`;
+        this.padInfo.set(key, info);
+        c = new Controller(id, 'gamepad', padName(gp.id), key);
         c.gpId = gp.id;
         c.index = gp.index;
+        c.info = info;
         this.controllers.set(id, c);
       }
       c.connected = true;
@@ -340,13 +391,17 @@ export class InputManager {
     const ci = settings.confirmButton === 'east' ? 1 : 0;
     const bi = 1 - ci;
     for (const c of this.padControllers()) {
-      const B = c.buttons, A = c.axes;
-      held.up ||= (B[12] ?? 0) > 0.5 || (A[1] ?? 0) < -0.5;
-      held.down ||= (B[13] ?? 0) > 0.5 || (A[1] ?? 0) > 0.5;
-      held.left ||= (B[14] ?? 0) > 0.5 || (A[0] ?? 0) < -0.5;
-      held.right ||= (B[15] ?? 0) > 0.5 || (A[0] ?? 0) > 0.5;
-      confirm ||= c.buttonEdge(ci) || c.buttonEdge(9);
-      back ||= c.buttonEdge(bi);
+      const prof = this.profile(c.profileKey);
+      const L = LAYOUTS[c.info?.layout ?? 'standard'];
+      const val = (d) => Math.max(0, ...(prof[d] || []).map((b) => bindingValue(c, b)));
+      held.up ||= val('up') > 0.5;
+      held.down ||= val('down') > 0.5;
+      held.left ||= val('left') > 0.5;
+      held.right ||= val('right') > 0.5;
+      const menu = prof.menu ?? { south: L.south, east: L.east, start: L.start };
+      const edge = (b) => b?.startsWith('b:') && c.buttonEdge(+b.slice(2));
+      confirm ||= edge(ci === 0 ? menu.south : menu.east) || edge(menu.start);
+      back ||= edge(bi === 0 ? menu.south : menu.east);
     }
     const m = this.menu;
     for (const d of DIRS) {
