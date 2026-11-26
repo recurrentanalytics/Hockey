@@ -11,10 +11,25 @@ export const PUCK = {
   postBounce: 0.55,
   netBounce: 0.1,
   bodyBounce: 0.25,
+  groundBounce: 0.3,
+};
+
+// Inline-skaterhockey ball: rolls further and bounces more.
+export const BALL = {
+  ...PUCK,
+  drag: 0.14,
+  friction: 0.32,
+  boardBounce: 0.72,
+  postBounce: 0.65,
+  netBounce: 0.15,
+  bodyBounce: 0.35,
+  groundBounce: 0.5,
 };
 
 export class Puck {
-  constructor() {
+  constructor(ball = false) {
+    this.ball = ball;
+    this.phys = ball ? BALL : PUCK;
     this.radius = PUCK.radius;
     this.pos = { x: 0, y: 0 };
     this.vel = { x: 0, y: 0 };
@@ -58,6 +73,14 @@ export class Puck {
   draw(ctx, ox, oy) {
     const p = project(this.pos.x, this.pos.y, this.z);
     const x = Math.round(p.x + ox), y = Math.round(p.y + oy);
+    if (this.ball) {
+      ctx.fillStyle = PAL.orange;
+      ctx.fillRect(x - 1, y - 4, 3, 4);
+      ctx.fillRect(x - 2, y - 3, 5, 2);
+      ctx.fillStyle = PAL.yellow;
+      ctx.fillRect(x - 1, y - 3, 1, 1);
+      return;
+    }
     ctx.fillStyle = PAL.ink;
     ctx.fillRect(x - 2, y - 2, 5, 2);
     ctx.fillRect(x - 1, y, 3, 1);

@@ -34,7 +34,7 @@ export const SKATE = {
   boardBounce: 0.25,
 };
 
-export const SHOT = { minSpeed: 13, maxSpeed: 32, chargeTime: 0.9, minLift: 0.5, maxLift: 3.6 };
+export const SHOT = { minSpeed: 13, maxSpeed: 32, chargeTime: 0.9, minLift: 1.5, maxLift: 3.8 };
 
 export const TIMING = { step: 1 / 60, maxFrame: 0.25 };
 

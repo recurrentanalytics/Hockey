@@ -8,10 +8,12 @@ import { Camera } from '../world/camera.js';
 import { BAKE } from '../world/rink.js';
 import { project } from '../world/projection.js';
 import { Match } from '../game/match.js';
+import { resolveRules } from '../game/rules.js';
 import { hintBar } from '../ui/hud.js';
 import { PauseScene } from './pause.js';
 
 const SPLIT_ZOOM = 0.8;
+const fmt = (sec) => { const s = Math.max(0, Math.ceil(sec)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 const LOOKAHEAD = 0.3;
 
 /** Line-ups per mode. `ai` lists the sides the team AI plays for. */
@@ -34,8 +36,10 @@ export class RinkScene {
     this.mode = mode;
     this.cameraMode = humans.length > 1 ? camera : 'single';
     this.zoom = 1;
+    this.rules = mode === 'practice' ? null : resolveRules(settings.ruleset, settings.periodLength);
     this.match = new Match({
       ...MODES[mode],
+      rules: this.rules,
       difficulty: settings.difficulty,
       humans: humans.map((h, i) => ({ ...h, tag: `P${i + 1}`, color: PLAYER_COLORS[i] })),
     });
@@ -99,13 +103,36 @@ export class RinkScene {
       }
       if (c.pressed.pause) return this.pause();
     }
-    this.match.update(dt, input);
-    for (const e of this.match.events) {
-      if (e.type === 'goal') this.banner = { text: 'GOAL!', sub: this.goalText(e), t: 2.4, color: TEAMS[this.match.sides[e.side].team].main };
-      if (e.type === 'save') this.banner = { text: 'SAVE', sub: null, t: 0.8, color: PAL.cloud, small: true };
+    const m = this.match;
+    if (m.state === 'final') {
+      const pressed = input.menu.confirm || input.taps.length || m.humans.some((h) => input.controller(h.controller)?.pressed.shoot);
+      if (pressed && (this.finalT = (this.finalT ?? 0) + dt) > 0.8) this.app.popTo((s) => s.isMainMenu);
+      else this.finalT = (this.finalT ?? 0) + dt;
+    }
+    m.update(dt, input);
+    const name = (side) => TEAMS[m.sides[side].team].name;
+    for (const e of m.events) {
+      if (e.type === 'goal') this.banner = { text: e.shootout ? 'SCORES!' : 'GOAL!', sub: e.shootout ? name(e.side) : this.goalText(e), t: 2.4 };
+      if (e.type === 'save' && !this.banner) this.banner = { text: 'SAVE', t: 0.8, small: true };
+      if (e.type === 'foul') this.notice = { text: `${e.name} - ${name(e.offender.sideKey)} #${e.offender.number}`, t: 2.5 };
+      if (e.type === 'penalty') this.banner = { text: 'PENALTY', sub: `${name(e.side)} #${e.skater.number} - ${e.foul} - ${fmt(e.seconds)}`, t: 2.6, small2: true };
+      if (e.type === 'penaltyShot') this.banner = { text: 'PENALTY SHOT', sub: `${e.name} ON #${e.shooter.number}`, t: 2.6, small2: true };
+      if (e.type === 'attempt' && !e.scored) this.banner = { text: 'NO GOAL', t: 1.4, small: true };
+      if (e.type === 'break') this.banner = { text: e.text, t: 3, small2: true };
+      if (e.type === 'final') this.banner = { text: 'FINAL', sub: this.finalText(e), t: Infinity, final: true };
+      if (e.type === 'release') this.notice = { text: `${name(e.side)} BACK TO FULL STRENGTH`, t: 2 };
     }
     if (this.banner && (this.banner.t -= dt) <= 0) this.banner = null;
+    if (this.notice && (this.notice.t -= dt) <= 0) this.notice = null;
     this.updateCameras(dt);
+  }
+
+  finalText(e) {
+    const m = this.match;
+    const a = TEAMS[m.sides.home.team].name, b = TEAMS[m.sides.away.team].name;
+    const score = `${m.score.home}-${m.score.away}`;
+    if (!e.winner) return `DRAW ${score}`;
+    return `${e.winner === 'home' ? a : b} WIN ${score}${e.how ? ' ' + e.how : ''}`;
   }
 
   goalText(e) {
@@ -177,31 +204,52 @@ export class RinkScene {
   }
 
   drawScoreboard(ctx, W) {
-    const m = this.match;
+    const m = this.match, ref = m.ref;
     let text;
     if (this.mode === 'practice') {
       text = `GOALS ${m.score.home}   SHOTS ${m.shots.home}`;
     } else {
       const a = TEAMS[m.sides.home.team], b = TEAMS[m.sides.away.team];
       text = `${a.name} ${m.score.home} - ${m.score.away} ${b.name}`;
+      if (ref) text += `   ${ref.periodLabel} ${ref.clockText}`.trimEnd();
     }
     const w = textWidth(text) + 12, x = Math.round(W / 2 - w / 2);
     panel(ctx, x, 2, w, 11, { fill: PAL.ink, border: PAL.slate, alpha: 0.85 });
     drawText(ctx, text, W / 2, 5, { color: PAL.white, align: 'center' });
-    if (m.state === 'faceoff') drawText(ctx, 'FACE-OFF', W / 2, 17, { color: PAL.yellow, align: 'center', shadow: PAL.ink });
+
+    const lines = [];
+    if (ref && ref.phase !== 'final') {
+      for (const side of ['home', 'away']) {
+        const pens = ref.penaltiesOf(side);
+        if (!pens.length) continue;
+        const other = side === 'home' ? 'away' : 'home';
+        lines.push({ text: `POWER PLAY ${TEAMS[m.sides[other].team].name} ${fmt(Math.min(...pens.map((p) => p.t)))}`, color: PAL.yellow });
+      }
+      if (ref.pending) lines.push({ text: 'DELAYED PENALTY', color: PAL.orange });
+      if (ref.so) {
+        const mark = (log) => log.map((g) => (g ? 'O' : 'X')).join(' ') || '-';
+        lines.push({ text: `${TEAMS[m.sides.home.team].name} ${mark(ref.so.log.home)}  |  ${TEAMS[m.sides.away.team].name} ${mark(ref.so.log.away)}`, color: PAL.white });
+      }
+    }
+    if (m.state === 'faceoff' && !ref?.attempt) lines.push({ text: 'FACE-OFF', color: PAL.yellow });
+    if (this.notice) lines.push({ text: this.notice.text, color: PAL.cloud });
+    lines.forEach((l, i) => drawText(ctx, l.text, W / 2, 17 + i * 7, { color: l.color, align: 'center', shadow: PAL.ink }));
   }
 
   drawBanner(ctx, W, H) {
     const b = this.banner;
     if (!b) return;
     if (b.small) {
-      drawText(ctx, b.text, W / 2, 30, { color: b.color, scale: 2, align: 'center', shadow: PAL.ink });
+      drawText(ctx, b.text, W / 2, 40, { color: PAL.white, scale: 2, align: 'center', shadow: PAL.ink });
       return;
     }
+    const scale = b.small2 ? 3 : 4;
     const y = Math.round(H * 0.32);
-    panel(ctx, 0, y - 6, W, b.sub ? 40 : 30, { fill: PAL.ink, border: null, alpha: 0.6 });
-    drawText(ctx, b.text, W / 2 + 2, y + 2, { color: PAL.ink, scale: 4, align: 'center' });
-    drawText(ctx, b.text, W / 2, y, { color: b.color === PAL.cloud ? PAL.white : PAL.yellow, scale: 4, align: 'center' });
-    if (b.sub) drawText(ctx, b.sub, W / 2, y + 24, { color: PAL.white, align: 'center' });
+    const h = scale * 5 + (b.sub ? 18 : 12) + (b.final ? 10 : 0);
+    panel(ctx, 0, y - 6, W, h, { fill: PAL.ink, border: null, alpha: 0.65 });
+    drawText(ctx, b.text, W / 2 + 2, y + 2, { color: PAL.ink, scale, align: 'center' });
+    drawText(ctx, b.text, W / 2, y, { color: PAL.yellow, scale, align: 'center' });
+    if (b.sub) drawText(ctx, b.sub, W / 2, y + scale * 5 + 4, { color: PAL.white, align: 'center' });
+    if (b.final) drawText(ctx, `${this.app.input.confirmLabel()} TO CONTINUE`, W / 2, y + scale * 5 + 14, { color: PAL.mist, align: 'center' });
   }
 }

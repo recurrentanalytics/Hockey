@@ -99,6 +99,7 @@ export class AI {
     const team = m.skaters.filter((s) => s.sideKey === key);
     const opps = m.skaters.filter((s) => s.sideKey !== key);
     const ownGoal = { x: -A * RINK.goalLineX, y: 0 };
+    if (!team.length) return; // nobody on the ice (penalty shot / shootout)
     const pos = this.possession();
     const targets = new Map();
     for (const s of team) {
@@ -143,13 +144,22 @@ export class AI {
           const g = this.unit(carrier.pos, ownGoal);
           const close = dist(presser.pos, carrier.pos) < 2.5;
           const t = close ? p.pos : { x: carrier.pos.x + g.x * 0.5, y: carrier.pos.y + g.y * 0.5 };
-          targets.set(presser, { x: t.x, y: t.y, chase: true });
+          targets.set(presser, { x: t.x, y: t.y, chase: true, near: carrier.pos });
           this.tryPoke(presser, carrier, lv, dt);
         }
       }
+      const free = markers.slice();
+      // Slot guard: when the carrier is in our half, one defender blocks the lane to the net.
+      if (-A * carrier.pos.x > 0 && free.length) {
+        const g = this.unit(ownGoal, carrier.pos);
+        const d = Math.min(4, dist(ownGoal, carrier.pos) * 0.45);
+        const slot = legal(ownGoal.x + g.x * Math.max(2.4, d), ownGoal.y + g.y * Math.max(2.4, d));
+        const guard = this.closest(free, slot);
+        free.splice(free.indexOf(guard), 1);
+        if (this.isAI(guard)) targets.set(guard, slot);
+      }
       // Mark the most dangerous opponents (closest to our net) goal-side.
       const threats = opps.filter((o) => o !== carrier).sort((a, b) => dist(a.pos, ownGoal) - dist(b.pos, ownGoal));
-      const free = markers.slice();
       for (const o of threats) {
         if (!free.length) break;
         const d = this.closest(free, o.pos);
@@ -214,15 +224,24 @@ export class AI {
     if (d < 0.3 && !chase) return { move: { x: 0, y: 0 }, limit: lv.speed };
     const k = chase ? 1 : Math.min(1, d / 1.6);
     let mx = (dx / (d || 1)) * k, my = (dy / (d || 1)) * k;
-    // Light separation from teammates so they don't bunch up.
+    // Separation: spread out from teammates; when not chasing, skate around opponents too.
     for (const o of this.m.skaters) {
-      if (o === s || o.sideKey !== s.sideKey) continue;
+      if (o === s) continue;
+      const mate = o.sideKey === s.sideKey;
+      if (!mate && chase) continue;
+      const range = mate ? 2.2 : 1.6, w = mate ? 0.25 : 0.5;
       const ox = s.pos.x - o.pos.x, oy = s.pos.y - o.pos.y, od = Math.hypot(ox, oy);
-      if (od > 0 && od < 2.2) { mx += (ox / od) * (2.2 - od) * 0.25; my += (oy / od) * (2.2 - od) * 0.25; }
+      if (od > 0 && od < range) { mx += (ox / od) * (range - od) * w; my += (oy / od) * (range - od) * w; }
     }
     const len = Math.hypot(mx, my);
     if (len > 1) { mx /= len; my /= len; }
-    return { move: { x: mx, y: my }, sprint: d > 7 && s.stamina > 0.35, limit: lv.speed };
+    // Ease off when closing on an opponent: contact at speed is a body-checking call.
+    let limit = lv.speed;
+    if (t.near) {
+      const dn = dist(s.pos, t.near);
+      if (dn < 3) limit *= clamp(dn / 3, 0.45, 1);
+    }
+    return { move: { x: mx, y: my }, sprint: d > 7 && s.stamina > 0.35 && !t.near, limit };
   }
 
   tryPoke(s, carrier, lv, dt) {
@@ -272,7 +291,10 @@ export class AI {
       s.ai.decideT = lv.react + Math.random() * 0.15;
       const inFront = Math.abs(s.pos.y) < (A * (gx - s.pos.x)) * 0.9 + 1.5;
       if (X > 8 && X < RINK.goalLineX - 0.5 && goalDist < 16 && inFront) {
-        const chance = goalDist < 8 ? 0.6 : goalDist < 12 ? 0.35 : 0.15;
+        let chance = goalDist < 8 ? 0.3 : goalDist < 12 ? 0.18 : 0.08;
+        // A defender in the shooting lane: look for a pass or a better angle instead.
+        const goal = { x: gx, y: 0 };
+        if (opps.some((o) => segDist(o.pos, s.pos, goal) < 0.9)) chance *= 0.25;
         if (Math.random() < chance) {
           s.ai.charging = true;
           s.ai.chargeTo = goalDist < 7 ? Math.random() * 0.3 : 0.3 + Math.random() * 0.6;

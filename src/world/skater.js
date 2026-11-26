@@ -99,6 +99,7 @@ export class Skater {
     this.followT = Math.max(0, this.followT - dt);
     this.noPickup = Math.max(0, this.noPickup - dt);
     this.protectT = Math.max(0, (this.protectT ?? 0) - dt);
+    this.hitCd = Math.max(0, (this.hitCd ?? 0) - dt);
 
     this.pushing = mlen > 0.05 && this.speed > 0.6;
     if (this.pushing) this.anim += dt * (2.2 + this.speed * 0.45);
