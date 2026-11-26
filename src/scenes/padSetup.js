@@ -7,7 +7,7 @@ import { panel } from '../engine/draw.js';
 import { Menu } from '../ui/menu.js';
 import { header, hintBar } from '../ui/hud.js';
 import { drawPad } from '../ui/padDiagram.js';
-import { PRINTED } from '../input/pads.js';
+import { PRINTED, actionsFor } from '../input/pads.js';
 
 const STEPS = [
   { key: 'south', where: 'BOTTOM FACE BUTTON' },
@@ -103,10 +103,12 @@ export class PadSetupScene {
     const stick = { up: P.stickUp, down: flip(P.stickUp), left: P.stickLeft, right: flip(P.stickLeft) };
     for (const [d, b] of Object.entries(stick)) if (b) names[b] = `STICK ${d.toUpperCase()}`;
     const list = (...b) => b.filter(Boolean);
+    const base = actionsFor({ ...P, up: [], down: [], left: [], right: [] }, this.style);
+    const clean = (a) => list(...a);
     this.profile = {
       up: list(P.up, stick.up), down: list(P.down, stick.down), left: list(P.left, stick.left), right: list(P.right, stick.right),
-      shoot: list(P.west, P.zr), pass: list(P.south), check: list(P.east), switch: list(P.l),
-      sprint: list(P.r, P.zl), pause: list(P.start),
+      shoot: clean(base.shoot), pass: clean(base.pass), check: clean(base.check), switch: clean(base.switch),
+      sprint: clean(base.sprint), pause: clean(base.pause),
       menu: { south: P.south, east: P.east, start: P.start },
       style: this.style,
       names,
@@ -167,10 +169,11 @@ export class PadSetupScene {
 
     // Done: show what each button does.
     drawPad(ctx, cx, cy, { letters: this.printed, done });
-    const t = this.printed;
+    const name = (bs) => bs.map((b) => this.profile.names[b]).filter(Boolean).join(' / ') || '-';
+    const pr = this.profile;
     const lines = [
-      `${t.west}${this.map.zr ? ' / ' + t.zr : ''} SHOOT    ${t.south} PASS    ${t.east} POKE CHECK`,
-      `${t.l} SWITCH    ${t.r}${this.map.zl ? ' / ' + t.zl : ''} SPRINT    ${this.map.start ? t.start : '-'} PAUSE`,
+      `${name(pr.pass)} PASS    ${name(pr.shoot)} SHOOT    ${name(pr.check)} POKE CHECK`,
+      `${name(pr.switch)} SWITCH    ${name(pr.sprint)} SPRINT    ${name(pr.pause)} PAUSE`,
       'MOVE WITH THE D-PAD OR LEFT STICK',
     ];
     lines.forEach((l, i) => drawText(ctx, fitText(l, W - 16), W / 2, 116 + i * 9, { color: i < 2 ? PAL.white : PAL.mist, align: 'center', shadow: PAL.ink }));

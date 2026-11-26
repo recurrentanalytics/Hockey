@@ -46,13 +46,26 @@ export const LAYOUTS = {
   },
 };
 
-/** Game actions on physical buttons, the same for every pad. */
-export function actionsFor(L) {
+/**
+ * Game actions on physical buttons.
+ * Nintendo-lettered pads (8BitDo, Switch) are laid out by letter:
+ *   A pass · B shoot (+ZR) · Y poke check · X / L switch · R sprint (+ZL) · START pause
+ * Xbox/PlayStation-style pads by position: bottom pass, left shoot, right poke, LB switch.
+ */
+export function actionsFor(L, style = 'xbox') {
+  const dirs = { up: [...L.up], down: [...L.down], left: [...L.left], right: [...L.right] };
+  const menu = { south: L.south, east: L.east, start: L.start };
+  if (style === 'nintendo') {
+    return {
+      ...dirs,
+      pass: [L.east], shoot: [L.south, L.zr], check: [L.west], switch: [L.north, L.l],
+      sprint: [L.r, L.zl], pause: [L.start], menu, style,
+    };
+  }
   return {
-    up: [...L.up], down: [...L.down], left: [...L.left], right: [...L.right],
+    ...dirs,
     shoot: [L.west, L.zr], pass: [L.south], check: [L.east], switch: [L.l],
-    sprint: [L.r, L.zl], pause: [L.start],
-    menu: { south: L.south, east: L.east, start: L.start },
+    sprint: [L.r, L.zl], pause: [L.start], menu,
   };
 }
 

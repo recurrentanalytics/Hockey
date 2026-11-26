@@ -29,7 +29,7 @@ export class ControlsScene extends MenuScene {
     }));
     items.push(choice('BUTTON LABELS', 'buttonLabels'));
     items.push(choice('RUMBLE', 'rumble'));
-    items.push(choice('MENU CONFIRM', 'confirmButton'));
+    items.push(choice('MENU CONFIRM', 'padConfirm'));
     items.push({ label: 'BACK', onSelect: () => app.pop() });
     const index = Math.min(this.menu.index, items.length - 1);
     this.menu = new Menu(items, { width: 240, top: 52 });

@@ -114,7 +114,7 @@ export class InputManager {
       const info = this.padInfo.get(key) ?? { layout: 'standard' };
       // Older saves kept one shared profile for all standard pads.
       if (info.layout === 'standard' && this.bindings.pad) return this.bindings.pad;
-      return actionsFor(LAYOUTS[info.layout] ?? LAYOUTS.standard);
+      return actionsFor(LAYOUTS[info.layout] ?? LAYOUTS.standard, info.style);
     }
     return defaultProfile(key);
   }
@@ -169,6 +169,12 @@ export class InputManager {
     return padBindingLabel(binding, style, true);
   }
 
+  /** Which face button confirms in menus: A on Nintendo-lettered pads (right), bottom otherwise. */
+  confirmSide(c) {
+    if (settings.padConfirm === 'south' || settings.padConfirm === 'east') return settings.padConfirm;
+    return this.padStyle(c) === 'nintendo' ? 'east' : 'south';
+  }
+
   /** Short rumble on a player's pad, where the browser and pad support it. */
   rumble(controllerId, strong = 0.5, weak = 0.5, ms = 120) {
     if (!settings.rumble) return;
@@ -218,14 +224,14 @@ export class InputManager {
   confirmLabel() {
     if (this.lastKind === 'touch') return 'TAP';
     const c = this.promptController();
-    if (c?.kind === 'gamepad') return PRINTED[this.padStyle(c)]?.[settings.confirmButton === 'east' ? 'east' : 'south'] ?? 'A';
+    if (c?.kind === 'gamepad') return PRINTED[this.padStyle(c)]?.[this.confirmSide(c)] ?? 'A';
     return 'ENTER';
   }
 
   backLabel() {
     if (this.lastKind === 'touch') return null;
     const c = this.promptController();
-    if (c?.kind === 'gamepad') return PRINTED[this.padStyle(c)]?.[settings.confirmButton === 'east' ? 'south' : 'east'] ?? 'B';
+    if (c?.kind === 'gamepad') return PRINTED[this.padStyle(c)]?.[this.confirmSide(c) === 'east' ? 'south' : 'east'] ?? 'B';
     return 'ESC';
   }
 
@@ -388,9 +394,8 @@ export class InputManager {
     for (const d of DIRS) held[d] ||= mp.held[d];
     confirm ||= mp.confirm;
     back ||= mp.back;
-    const ci = settings.confirmButton === 'east' ? 1 : 0;
-    const bi = 1 - ci;
     for (const c of this.padControllers()) {
+      const confirmKey = this.confirmSide(c), backKey = confirmKey === 'east' ? 'south' : 'east';
       const prof = this.profile(c.profileKey);
       const L = LAYOUTS[c.info?.layout ?? 'standard'];
       const val = (d) => Math.max(0, ...(prof[d] || []).map((b) => bindingValue(c, b)));
@@ -400,8 +405,8 @@ export class InputManager {
       held.right ||= val('right') > 0.5;
       const menu = prof.menu ?? { south: L.south, east: L.east, start: L.start };
       const edge = (b) => b?.startsWith('b:') && c.buttonEdge(+b.slice(2));
-      confirm ||= edge(ci === 0 ? menu.south : menu.east) || edge(menu.start);
-      back ||= edge(bi === 0 ? menu.south : menu.east);
+      confirm ||= edge(menu[confirmKey]) || edge(menu.start);
+      back ||= edge(menu[backKey]);
     }
     const m = this.menu;
     for (const d of DIRS) {

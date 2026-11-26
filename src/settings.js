@@ -12,7 +12,7 @@ const DEFAULTS = {
   twoPlayerCamera: 'shared',
   touchControls: 'auto',
   buttonLabels: 'auto',
-  confirmButton: 'south',
+  padConfirm: 'auto',
   pixelPerfect: false,
   autoFullscreen: true,
   sound: 0.75,
@@ -65,7 +65,8 @@ export const OPTIONS = {
     { value: 'nintendo', label: 'NINTENDO' },
     { value: 'playstation', label: 'PLAYSTATION' },
   ],
-  confirmButton: [
+  padConfirm: [
+    { value: 'auto', label: 'AUTO (A ON 8BITDO)' },
     { value: 'south', label: 'BOTTOM BUTTON' },
     { value: 'east', label: 'RIGHT BUTTON' },
   ],
