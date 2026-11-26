@@ -154,6 +154,15 @@ const GOALIE = [
   '..FFFF...FFFF....',
   '..WWWW...WWWW....',
 ];
+// Butterfly: knees down, pads flared flat along the floor.
+const GOALIE_DOWN = [
+  '', '', '', '', '', '', '',           // dropped 7 px lower than standing
+  ...GOALIE.slice(0, 12),
+  '...oPPPPPPPo.....',
+  'oDDdDDDoDDDdDDDo.',
+  'oDDdDDDoDDDdDDDo.',
+  'oooooooooooooooo.',                  // row 22 = floor, same anchor as standing
+];
 export const GOALIE_W = 18;
 export const GOALIE_ANCHOR_X = 7;
 export const GOALIE_ANCHOR_Y = 22;
@@ -168,19 +177,22 @@ export function goalieSprites(team) {
     M: PAL.white, D: PAL.white, d: team.main, B: PAL.cloud, G: team.shade,
   };
   const colors = Object.fromEntries(Object.entries(pal).map(([k, v]) => [k, rgba(v)]));
-  const surf = new Surface(GOALIE_W, 24);
-  GOALIE.forEach((row, y) => {
-    for (let x = 0; x < row.length; x++) {
-      const c = colors[row[x]];
-      if (c) surf.set(x, y, c);
-    }
-  });
-  // Goalie stick: paddle down in front of the pads.
-  const shaft = rgba(PAL.wood), blade = rgba(PAL.ink);
-  surf.line(2, 11, 3, 19, shaft);
-  surf.rect(3, 20, 7, 2, blade);
-  const right = surf.toCanvas();
-  s = { right, left: mirror(right) };
+  const bake = (rows, stick) => {
+    const surf = new Surface(GOALIE_W, 24);
+    rows.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        const c = colors[row[x]];
+        if (c) surf.set(x, y, c);
+      }
+    });
+    const shaft = rgba(PAL.wood), blade = rgba(PAL.ink);
+    stick(surf, shaft, blade);
+    return surf.toCanvas();
+  };
+  // Stand-up: paddle down in front of the pads. Butterfly: paddle flat across the five-hole.
+  const right = bake(GOALIE, (s, shaft, blade) => { s.line(2, 11, 3, 19, shaft); s.rect(3, 20, 7, 2, blade); });
+  const down = bake(GOALIE_DOWN, (s, shaft, blade) => { s.line(2, 15, 5, 19, shaft); s.rect(5, 20, 7, 1, blade); });
+  s = { right, left: mirror(right), downRight: down, downLeft: mirror(down) };
   goalieCache.set(team, s);
   return s;
 }

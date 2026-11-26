@@ -56,6 +56,9 @@ export class Match {
     this.score = { home: 0, away: 0 };
     this.shots = { home: 0, away: 0 };
     this.events = [];
+    const blank = () => ({ ppGoals: 0, ppOpp: 0, pim: 0, faceoffs: 0, hits: 0 });
+    this.stats = { home: blank(), away: blank() };
+    this.difficulty = difficulty;
     this.lastGoal = null;
     this.roster = [...this.skaters];   // everyone; this.skaters = on the ice right now
     this.ai = new AI(this, { sides: ai, difficulty });
@@ -84,6 +87,57 @@ export class Match {
     for (const g of this.goalies) g.reset();
     this.state = 'faceoff';
     this.timer = 1.2;
+    // The first skater lined up for each side takes the draw; humans get control of their centre.
+    const centers = {};
+    for (const s of this.skaters) centers[s.sideKey] ??= s;
+    for (const side of ['home', 'away']) {
+      const h = this.humans.find((x) => x.side === side);
+      const c = centers[side];
+      if (h && c && h.skater !== c && !c.human) this.giveControl(h, c);
+    }
+    const react = { easy: 0.36, normal: 0.26, hard: 0.18 }[this.difficulty] ?? 0.26;
+    this.draw = {
+      spot: { ...at }, centers, live: false, t: 0, early: {},
+      press: {
+        home: centers.home?.human ? null : react * (0.6 + Math.random() * 0.9),
+        away: centers.away?.human ? null : react * (0.6 + Math.random() * 0.9),
+      },
+    };
+  }
+
+  /** Face-off draw: whoever reacts first to the drop wins it back to a teammate. */
+  updateDraw(dt, input) {
+    const d = this.draw;
+    if (!d?.live) return;
+    d.t += dt;
+    for (const side of ['home', 'away']) {
+      const c = d.centers[side];
+      if (!c?.human || d.press[side] != null) continue;
+      const ctl = input.controller(c.human.controller);
+      if (ctl && (ctl.pressed.shoot || ctl.pressed.pass)) d.press[side] = d.early[side] ? Infinity : d.t;
+    }
+    const ph = d.press.home ?? Infinity, pa = d.press.away ?? Infinity;
+    const done = (d.press.home != null && d.press.away != null) || d.t > 0.7;
+    if (!done) return;
+    d.live = false;
+    if (ph === Infinity && pa === Infinity) return; // nobody won it cleanly: loose puck
+    const side = ph < pa ? 'home' : pa < ph ? 'away' : (Math.random() < 0.5 ? 'home' : 'away');
+    const win = d.centers[side];
+    if (!win) return;
+    this.stats[side].faceoffs += 1;
+    // Pull it back toward a teammate behind the draw.
+    const A = this.sides[side].attack;
+    const mates = this.skaters.filter((s) => s.sideKey === side && s !== win);
+    const back = mates.sort((a, b) => A * a.pos.x - A * b.pos.x)[0];
+    const p = this.puck;
+    const tx = back ? back.pos.x : p.pos.x - A * 4, ty = back ? back.pos.y : p.pos.y;
+    const dx = tx - p.pos.x, dy = ty - p.pos.y, dd = Math.hypot(dx, dy) || 1;
+    const speed = Math.min(9, 4 + dd * 0.6);
+    p.vel.x = (dx / dd) * speed;
+    p.vel.y = (dy / dd) * speed;
+    p.lastTouch = win;
+    win.noPickup = 0.3;
+    this.events.push({ type: 'faceoffWon', side, by: win });
   }
 
   // ------------------------------------------------------------------ update
@@ -94,21 +148,36 @@ export class Match {
     this.ref?.update(dt);
     if (this.state === 'faceoff' || this.state === 'break') {
       for (const g of this.goalies) g.update(dt, this.puck);
+      // Moving early on a face-off loses the draw.
+      if (this.state === 'faceoff' && this.draw) {
+        for (const side of ['home', 'away']) {
+          const c = this.draw.centers[side];
+          const ctl = c?.human && input.controller(c.human.controller);
+          if (ctl && (ctl.pressed.shoot || ctl.pressed.pass) && !this.draw.early[side]) {
+            this.draw.early[side] = true;
+            this.events.push({ type: 'faceoffEarly', side });
+          }
+        }
+      }
       this.timer -= dt;
       if (this.timer <= 0) {
-        if (this.state === 'faceoff') this.state = 'play';
+        if (this.state === 'faceoff') { this.state = 'play'; if (this.draw) { this.draw.live = true; this.draw.t = 0; } }
         else { const next = this.afterBreak; this.afterBreak = null; next?.(); }
       }
       return;
     }
 
     const live = this.state === 'play';
+    if (live) this.updateDraw(dt, input);
+    const drawing = !!this.draw?.live;
     for (const h of this.humans) {
       const c = input.controller(h.controller);
       const s = h.skater;
       s.update(dt, live && c ? { move: c.move, sprint: c.down.sprint } : {});
-      if (live && c) this.actions(h, c, dt);
+      if (live && c && !drawing) this.actions(h, c, dt);
     }
+    // Fatigue recovers during stoppages.
+    if (!live) for (const s of this.skaters) s.fatigue = Math.max(0, (s.fatigue ?? 0) - 0.03 * dt);
     this.ai.think(dt);
     for (const s of this.skaters) if (!s.human) s.update(dt, this.ai.controls.get(s) ?? {});
 
@@ -133,7 +202,7 @@ export class Match {
         const after = this.afterWhistle;
         this.afterWhistle = null;
         if (after) after();
-        else this.faceoff(this.state === 'whistle' ? this.nextSpot ?? undefined : undefined);
+        else if (!this.ref?.stoppage()) this.faceoff(this.state === 'whistle' ? this.nextSpot ?? undefined : undefined);
       }
     }
   }
@@ -167,6 +236,9 @@ export class Match {
     }
     victim.vel.x += sx * approach * 0.35;
     victim.vel.y += sy * approach * 0.35;
+    if (legalCheck || approach > 7) victim.downT = 0.8; // knocked off the skates
+    // Count real checks only: legal checks, knockdowns and hard human hits (not incidental bumps).
+    if (legalCheck || approach > 7 || (hitter.human && approach > 5)) this.stats[hitter.sideKey].hits += 1;
     this.events.push({ type: 'hit', hitter, victim, approach });
     if (!this.ref || legalCheck) return;
     // Only a deliberate, hard hit is called: the hitter must drive through at speed.
@@ -175,7 +247,8 @@ export class Match {
     // Racing for a loose puck is a puck battle, not a penalty.
     if (p.loose && Math.hypot(p.pos.x - victim.pos.x, p.pos.y - victim.pos.y) < 2.5) return;
     const chance = Math.min(0.7, (approach - 6) / 4 + 0.15);
-    if (Math.random() < chance) this.ref.foul(hitter, victim, fromBehind ? 'CHECKING FROM BEHIND' : this.ref.r.hitFoul);
+    if (fromBehind) this.ref.foul(hitter, victim, 'CHECKING FROM BEHIND', this.ref.r.fromBehind);
+    else if (Math.random() < chance) this.ref.foul(hitter, victim, this.ref.r.hitFoul);
   }
 
   // ------------------------------------------------------------------ who is on the ice
@@ -210,6 +283,7 @@ export class Match {
 
   /** Penalty shot / shootout: only the shooter skates. */
   isolate(shooter) {
+    this.draw = null;
     this.saved = this.skaters.filter((s) => s !== shooter);
     for (const s of this.saved) this.offIce(s);
     if (!this.skaters.includes(shooter)) this.onIce(shooter, 0, 0);
@@ -506,7 +580,7 @@ export class Match {
     }
     for (const g of this.goalies) g.clearT = Math.max(0, (g.clearT ?? 0) - dt);
 
-    if (this.state !== 'faceoff' && p.z < 0.45) this.pickups();
+    if (this.state !== 'faceoff' && !this.draw?.live && p.z < 0.45) this.pickups();
   }
 
   collideNets(p) {
@@ -591,6 +665,8 @@ export class Match {
         if (p.carrier) { p.carrier.hasPuck = false; p.carrier = null; }
         p.shot = null;
         this.lastGoal = { side: scorer, by };
+        this.nextSpot = null;
+        if (by && by.sideKey === scorer) by.celebrateT = 2.5;
         this.state = 'goal';
         this.timer = 2.6;
         this.events.push({ type: 'goal', side: scorer, by, shootout: !counts });

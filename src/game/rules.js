@@ -20,7 +20,10 @@ export const RULESETS = {
     ppGoalEndsMinor: true,                         // 6.2.1 B
     overtime: { minutes: 5, suddenDeath: true, skaters: 3, switchEnds: false }, // 1.3: 5 min, 3 on 3, same ends
     shootout: { rounds: 3, reverseSuddenDeath: true }, // 1.3: three shooters, then one each, order reversed
+    timeouts: { per: 'period', seconds: 60, inOvertime: false }, // 1.2 B / 5.x F: one per period, none in OT
+    fromBehind: 'major',                           // 6.4.26 A: major (+ game misconduct, not modelled)
     penaltyScaling: 'proportional',
+    switchEnds: true,                              // teams change ends between periods
   },
   usars: {
     name: 'USARS',
@@ -37,7 +40,10 @@ export const RULESETS = {
     ppGoalEndsMinor: true,                         // 16.2
     overtime: { minutes: 10, suddenDeath: true, skaters: 4, switchEnds: false }, // 79.1: 10-min sudden death, same ends
     shootout: { rounds: 3, reverseSuddenDeath: false }, // 79.2: three shooters each, then sudden death
+    timeouts: { per: 'game', seconds: 30, inOvertime: true }, // 82.1: one 30-second time-out per game
+    fromBehind: 'minor',                           // 42.2: minor + misconduct (misconduct not modelled)
     penaltyScaling: 'proportional',
+    switchEnds: true,                              // teams change ends between periods
   },
   ishd: {
     name: 'ISHD',
@@ -54,7 +60,10 @@ export const RULESETS = {
     ppGoalEndsMinor: true,                         // 7.2.3
     overtime: null,                                // league games: a draw goes to a penalty shootout (WKO)
     shootout: { rounds: 5, reverseSuddenDeath: false }, // 8.24: five shooters, then same order until decided
+    timeouts: { per: 'period', seconds: 30, inOvertime: true }, // 8.26.1: 30 s per period incl. overtime
+    fromBehind: 'major',                           // 8.10.12 a: Große Zeitstrafe (5')
     penaltyScaling: 'halveUnder30',                // 8.25.15: total time under 30 min halves all penalties
+    switchEnds: true,
   },
 };
 

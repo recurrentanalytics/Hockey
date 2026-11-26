@@ -20,6 +20,8 @@ None of the three rulebooks has icing or offside.
 | Minimum strength | 3 players including the goalie, so at least 2 skaters; further penalties are stacked [6.2.1 A] |
 | Power-play goal | Ends the first minor [6.2.1 B] |
 | Hard hits | Called as charging [6.4.12, 6.4.13] |
+| Checking from behind | **Major** (4 min) [6.4.26 A]; the game misconduct isn't modelled |
+| Time-outs | 1 per team per period, 60 s; none in overtime [1.2 B] |
 | Penalty shot | Carrier fouled from behind on a clear breakaway in the attacking half [6.1.9] |
 | Overtime | 5 min sudden death, **3 on 3**, no change of ends [1.3] |
 | Shootout | 3 shooters per team, then one each in sudden death with the shooting order reversed [1.3] |
@@ -34,6 +36,8 @@ None of the three rulebooks has icing or offside.
 | Minimum strength | No fewer than 2 skaters [27.1] |
 | Power-play goal | Ends the minor [16.2] |
 | Hard hits | Body checking is a roughing minor [48.2] |
+| Checking from behind | Minor [42.2]; the misconduct isn't modelled |
+| Time-outs | One 30-second time-out per game [82.1] |
 | Overtime | 10 min sudden death, no change of ends [79.1] |
 | Shootout | 3 shooters each, then sudden death [79.2] |
 
@@ -49,6 +53,8 @@ None of the three rulebooks has icing or offside.
 | Minimum strength | 2 field players + goalie |
 | Power-play goal | Ends the first minor [7.2.3] |
 | Checking | Fair check allowed only against the ball carrier, from the front or side [8.9.1]. Other hard hits are illegal checks [8.10.2], and hits from behind are always called. |
+| Checking from behind | **Major** (5 min) [8.10.12 a] |
+| Time-outs | One 30-second time-out per period, overtime included, not in the shootout [8.26.1] |
 | Draw | League games go straight to a penalty shootout. Cup and playoff games (2 × 10 min overtime) are not modelled. |
 | Shootout | 5 shooters each, then the same order until decided. Players with a running penalty can't shoot [8.24]. |
 
@@ -65,7 +71,9 @@ None of the three rulebooks has icing or offside.
   - nearest end-zone spot after the goalie covers the puck
   - the offending team's end after a penalty
 - **Shortened periods:** World Skate and USARS shrink penalties in proportion to the period length (to a quarter at least). ISHD uses its own halving rule.
+- **Majors** are served in full: a power-play goal doesn't end them.
+- **Time-outs:** call one from the pause menu; it's taken at the next stoppage. Your team gets back most of its energy. Skaters slowly tire from hard skating and sprinting (up to 15% slower), and recover during stoppages, intermissions and time-outs. AI teams take a time-out when tired, or when trailing by 1–2 goals in the last 2 minutes.
+- **Face-off draw:** the centre who presses SHOOT or PASS first after the drop wins it back to a teammate. Pressing before the drop loses the draw.
 - **Not modelled yet:**
-  - time-outs (World Skate: 1 per team per period; USARS: 1 per game)
-  - majors and misconducts
+  - misconducts and game misconducts
   - delay-of-game situations, such as holding the puck against the boards

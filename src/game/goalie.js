@@ -108,8 +108,9 @@ export class Goalie {
   draw(ctx, ox, oy) {
     const p = project(this.pos.x, this.pos.y);
     const right = this.out > 0;
-    const img = right ? this.sprites.right : this.sprites.left;
+    const down = this.diving || this.holdT > 0;
+    const img = down ? (right ? this.sprites.downRight : this.sprites.downLeft) : (right ? this.sprites.right : this.sprites.left);
     const ax = right ? GOALIE_ANCHOR_X : GOALIE_W - 1 - GOALIE_ANCHOR_X;
-    ctx.drawImage(img, Math.round(p.x + ox - ax), Math.round(p.y + oy - GOALIE_ANCHOR_Y + (this.diving ? 2 : 0)));
+    ctx.drawImage(img, Math.round(p.x + ox - ax), Math.round(p.y + oy - GOALIE_ANCHOR_Y));
   }
 }

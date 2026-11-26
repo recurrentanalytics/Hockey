@@ -129,11 +129,14 @@ export class RinkScene {
         case 'whistle': sfx.play('whistle'); break;
         case 'break': case 'final': sfx.play('buzzer'); if (e.type === 'final') sfx.play('cheer'); break;
         case 'attempt': if (!e.scored) sfx.play('save', 0.6); break;
+        case 'faceoffWon': sfx.play('stick', 0.9); break;
+        case 'faceoffEarly': this.notice = { text: 'TOO EARLY - DRAW LOST', t: 1.5 }; break;
+        case 'timeoutRequested': this.notice = { text: `TIME-OUT REQUESTED - ${name(e.side)}`, t: 2 }; break;
       }
       if (e.type === 'goal') this.banner = { text: e.shootout ? 'SCORES!' : 'GOAL!', sub: e.shootout ? name(e.side) : this.goalText(e), t: 2.4 };
       if (e.type === 'save' && !this.banner) this.banner = { text: 'SAVE', t: 0.8, small: true };
       if (e.type === 'foul') this.notice = { text: `${e.name} - ${name(e.offender.sideKey)} #${e.offender.number}`, t: 2.5 };
-      if (e.type === 'penalty') this.banner = { text: 'PENALTY', sub: `${name(e.side)} #${e.skater.number} - ${e.foul} - ${fmt(e.seconds)}`, t: 2.6, small2: true };
+      if (e.type === 'penalty') this.banner = { text: e.major ? 'MAJOR' : 'PENALTY', sub: `${name(e.side)} #${e.skater.number} - ${e.foul} - ${fmt(e.seconds)}`, t: 2.6, small2: true };
       if (e.type === 'penaltyShot') this.banner = { text: 'PENALTY SHOT', sub: `${e.name} ON #${e.shooter.number}`, t: 2.6, small2: true };
       if (e.type === 'attempt' && !e.scored) this.banner = { text: 'NO GOAL', t: 1.4, small: true };
       if (e.type === 'break') this.banner = { text: e.text, t: 3, small2: true };
@@ -181,6 +184,28 @@ export class RinkScene {
       });
     }
     return out;
+  }
+
+  drawStats(ctx, W, y) {
+    const m = this.match, st = m.stats;
+    const a = TEAMS[m.sides.home.team].name, b = TEAMS[m.sides.away.team].name;
+    const rows = [
+      ['SHOTS ON GOAL', m.shots.home, m.shots.away],
+      ['POWER PLAY', `${st.home.ppGoals}/${st.home.ppOpp}`, `${st.away.ppGoals}/${st.away.ppOpp}`],
+      ['PENALTY TIME', fmt(st.home.pim), fmt(st.away.pim)],
+      ['FACE-OFFS WON', st.home.faceoffs, st.away.faceoffs],
+      ['HITS', st.home.hits, st.away.hits],
+    ];
+    const w = 200, x = Math.round(W / 2 - w / 2), h = 12 + rows.length * 8;
+    panel(ctx, x, y, w, h, { fill: PAL.ink, border: PAL.slate, alpha: 0.85 });
+    drawText(ctx, a, x + w - 64, y + 3, { color: PAL.cloud, align: 'right' });
+    drawText(ctx, b, x + w - 6, y + 3, { color: PAL.cloud, align: 'right' });
+    rows.forEach(([label, h1, a1], i) => {
+      const ry = y + 11 + i * 8;
+      drawText(ctx, label, x + 6, ry, { color: PAL.mist });
+      drawText(ctx, String(h1), x + w - 64, ry, { color: PAL.white, align: 'right' });
+      drawText(ctx, String(a1), x + w - 6, ry, { color: PAL.white, align: 'right' });
+    });
   }
 
   finalText(e) {
@@ -289,7 +314,11 @@ export class RinkScene {
         lines.push({ text: `${TEAMS[m.sides.home.team].name} ${mark(ref.so.log.home)}  |  ${TEAMS[m.sides.away.team].name} ${mark(ref.so.log.away)}`, color: PAL.white });
       }
     }
-    if (m.state === 'faceoff' && !ref?.attempt) lines.push({ text: 'FACE-OFF', color: PAL.yellow });
+    if (m.state === 'faceoff' && !ref?.attempt) {
+      const humanCenter = m.draw && Object.values(m.draw.centers).some((c) => c?.human);
+      const key = this.app.input.actionLabel('shoot', m.humans[0]?.controller);
+      lines.push({ text: humanCenter ? `FACE-OFF - PRESS ${key ?? 'SHOOT'} ON THE DROP` : 'FACE-OFF', color: PAL.yellow });
+    }
     if (this.notice) lines.push({ text: this.notice.text, color: PAL.cloud });
     lines.forEach((l, i) => drawText(ctx, l.text, W / 2, 17 + i * 7, { color: l.color, align: 'center', shadow: PAL.ink }));
   }
@@ -308,6 +337,9 @@ export class RinkScene {
     drawText(ctx, b.text, W / 2 + 2, y + 2, { color: PAL.ink, scale, align: 'center' });
     drawText(ctx, b.text, W / 2, y, { color: PAL.yellow, scale, align: 'center' });
     if (b.sub) drawText(ctx, b.sub, W / 2, y + scale * 5 + 4, { color: PAL.white, align: 'center' });
-    if (b.final) drawText(ctx, `${this.app.input.confirmLabel()} TO CONTINUE`, W / 2, y + scale * 5 + 14, { color: PAL.mist, align: 'center' });
+    if (b.final) {
+      drawText(ctx, `${this.app.input.confirmLabel()} TO CONTINUE`, W / 2, y + scale * 5 + 14, { color: PAL.mist, align: 'center' });
+      this.drawStats(ctx, W, y + h + 2);
+    }
   }
 }

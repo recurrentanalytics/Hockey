@@ -60,6 +60,13 @@ ES modules need HTTP; opening `index.html` straight from disk won't work.
 - Team choice for both sides in VS AI and in the 2-player lobby. There are 4 made-up teams.
 - Goal moments: goal light, crowd jumping in the stands, camera shake on goals, post hits and big hits.
 
+**After phase 6:**
+- Rulebook time-outs and fatigue
+- Majors for checking from behind
+- A face-off timing draw
+- Animations: goalie butterfly, knockdowns from checks, the scorer raising the stick
+- A stats table on the final screen
+
 ## Default controls
 
 | Action | Keyboard 1 | Keyboard 2 | Gamepad (position) |

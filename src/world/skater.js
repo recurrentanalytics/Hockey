@@ -59,10 +59,21 @@ export class Skater {
   }
 
   update(dt, { move = { x: 0, y: 0 }, sprint = false, limit = 1 } = {}) {
+    // Knocked down: no skating until back on the wheels.
+    this.downT = Math.max(0, (this.downT ?? 0) - dt);
+    this.celebrateT = Math.max(0, (this.celebrateT ?? 0) - dt);
+    if (this.downT > 0) {
+      move = { x: 0, y: 0 };
+      sprint = false;
+      this.noPickup = Math.max(this.noPickup, 0.1);
+    }
     const mlen = Math.hypot(move.x, move.y);
     this.sprinting = sprint && mlen > 0.2 && this.stamina > 0.02;
     let max = this.sprinting ? SKATE.sprintSpeed : SKATE.maxSpeed;
     max *= limit;
+    // Fatigue builds with hard skating and costs up to 15% top speed; time-outs and breaks restore it.
+    this.fatigue = this.fatigue ?? 0;
+    max *= 1 - 0.15 * this.fatigue;
     if (this.hasPuck) max *= 0.92;
     if (this.charging) max *= 0.8;
     this.stamina = Math.max(0, Math.min(1, this.stamina + (this.sprinting ? -0.28 : 0.16) * dt));
@@ -101,6 +112,9 @@ export class Skater {
     this.protectT = Math.max(0, (this.protectT ?? 0) - dt);
     this.hitCd = Math.max(0, (this.hitCd ?? 0) - dt);
 
+    const effort = (this.speed / SKATE.maxSpeed) ** 2;
+    this.fatigue = Math.min(1, Math.max(0, this.fatigue + (0.004 * effort + (this.sprinting ? 0.006 : 0) - (this.speed < 2 ? 0.01 : 0)) * dt));
+
     this.pushing = mlen > 0.05 && this.speed > 0.6;
     if (this.pushing) this.anim += dt * (2.2 + this.speed * 0.45);
   }
@@ -113,6 +127,7 @@ export class Skater {
   }
 
   bladeReach() {
+    if (this.celebrateT > 0) return 0.25;
     if (this.pokeT > 0) return REACH + 0.65 * Math.sin(Math.PI * (1 - this.pokeT / POKE_TIME));
     if (this.charging) return REACH - 0.45 * this.charge;
     if (this.followT > 0) return REACH + 0.3;
@@ -120,6 +135,7 @@ export class Skater {
   }
 
   bladeHeight() {
+    if (this.celebrateT > 0) return 2.3;
     if (this.charging) return 0.55 * this.charge;
     if (this.followT > 0) return 0.45;
     return 0;
@@ -223,10 +239,19 @@ export class Skater {
     const img = (right ? this.sprites.right : this.sprites.left)[frame];
     const ax = right ? ANCHOR_X : SPRITE_W - 1 - ANCHOR_X;
     const x = Math.round(p.x + ox - ax), y = Math.round(p.y + oy - ANCHOR_Y);
-    const behind = this.bladePoint().y < this.pos.y - 0.05;
-    if (behind) this.drawStick(ctx, p, ox, oy);
-    ctx.drawImage(img, x, y);
-    if (!behind) this.drawStick(ctx, p, ox, oy);
+    if (this.downT > 0) {
+      // On the floor: the sprite turned 90° (exact quarter turns stay pixel-crisp).
+      ctx.save();
+      ctx.translate(Math.round(p.x + ox), Math.round(p.y + oy));
+      ctx.rotate(right ? Math.PI / 2 : -Math.PI / 2);
+      ctx.drawImage(img, -ax, -ANCHOR_Y + 4);
+      ctx.restore();
+    } else {
+      const behind = this.bladePoint().y < this.pos.y - 0.05;
+      if (behind) this.drawStick(ctx, p, ox, oy);
+      ctx.drawImage(img, x, y);
+      if (!behind) this.drawStick(ctx, p, ox, oy);
+    }
 
     const h = this.human;
     if (!h) return;

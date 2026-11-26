@@ -1,8 +1,9 @@
 // The referee: game clock, periods, stoppages, penalties, power plays,
 // penalty shots, overtime and the shootout. Reads its numbers from a ruleset.
-import { RINK } from '../config.js';
+import { RINK, TEAMS } from '../config.js';
 
 const END_SPOT = { x: RINK.endCircle.x, y: RINK.endCircle.y };
+const TEAM_NAME = (m, side) => TEAMS[m.sides[side].team].name;
 const ATTEMPT_TIME = 9;
 
 export class Referee {
@@ -17,6 +18,56 @@ export class Referee {
     this.attempt = null;         // live penalty shot / shootout attempt
     this.so = null;              // shootout tally
     this.result = null;
+    this.timeoutsLeft = { home: this.timeoutQuota(), away: this.timeoutQuota() };
+    this.timeoutRequest = { home: false, away: false };
+  }
+
+  // ------------------------------------------------------------------ time-outs
+
+  timeoutQuota() {
+    return this.r.timeouts ? 1 : 0;
+  }
+
+  timeoutAllowed(side) {
+    if (this.timeoutsLeft[side] <= 0 || this.phase === 'shootout' || this.phase === 'final') return false;
+    if (this.phase === 'overtime' && !this.r.timeouts?.inOvertime) return false;
+    return true;
+  }
+
+  /** Ask for a time-out; it is taken at the next stoppage of play. */
+  requestTimeout(side) {
+    if (!this.timeoutAllowed(side)) return false;
+    this.timeoutRequest[side] = true;
+    this.m.events.push({ type: 'timeoutRequested', side });
+    return true;
+  }
+
+  /** Called at every stoppage: take a requested time-out (AI teams decide here too). */
+  stoppage() {
+    const m = this.m;
+    for (const side of ['home', 'away']) {
+      if (!m.humans.some((h) => h.side === side) && this.aiWantsTimeout(side)) this.timeoutRequest[side] = true;
+      if (!this.timeoutRequest[side] || !this.timeoutAllowed(side)) { this.timeoutRequest[side] = false; continue; }
+      this.timeoutRequest[side] = false;
+      this.timeoutsLeft[side] -= 1;
+      for (const s of m.roster) if (s.sideKey === side) s.fatigue = (s.fatigue ?? 0) * 0.3;
+      m.events.push({ type: 'timeout', side, seconds: this.r.timeouts.seconds });
+      const spot = m.nextSpot;
+      this.breakThen(`TIME-OUT ${TEAM_NAME(m, side)}`, () => m.faceoff(spot ?? undefined));
+      return true;
+    }
+    return false;
+  }
+
+  aiWantsTimeout(side) {
+    const m = this.m;
+    if (!this.timeoutAllowed(side)) return false;
+    const other = side === 'home' ? 'away' : 'home';
+    const behind = m.score[other] - m.score[side];
+    const late = this.phase === 'regulation' && this.period === this.r.periods && this.clock < 120;
+    const team = m.roster.filter((s) => s.sideKey === side);
+    const tired = team.reduce((a, s) => a + (s.fatigue ?? 0), 0) / team.length > 0.6;
+    return (late && behind >= 1 && behind <= 2) || tired;
   }
 
   // ------------------------------------------------------------------ labels for the HUD
@@ -87,6 +138,7 @@ export class Referee {
     const queued = this.box.find((b) => b.side === side && !b.active);
     if (queued && onIce > this.r.minSkaters) {
       queued.active = true;
+      this.m.stats[side === 'home' ? 'away' : 'home'].ppOpp += 1;
       this.m.offIce(queued.skater);
     }
   }
@@ -126,7 +178,7 @@ export class Referee {
 
   // ------------------------------------------------------------------ penalties
 
-  foul(offender, victim, name) {
+  foul(offender, victim, name, severity = 'minor') {
     const m = this.m;
     if (m.state !== 'play' || this.attempt || this.phase === 'shootout') return;
     if (this.pending || offender.offIce) return;
@@ -142,21 +194,25 @@ export class Referee {
       this.whistleForPenaltyShot(victim);
       return;
     }
-    this.pending = { offender, side: offender.sideKey, foul: name };
+    this.pending = { offender, side: offender.sideKey, foul: name, major: severity === 'major' };
     const owner = m.puck.carrier?.sideKey ?? m.puck.holder?.sideKey;
     if (owner === offender.sideKey || !owner) this.whistle('PENALTY');
   }
 
   assess(pen) {
-    const seconds = Math.round(this.r.minor * 60 * this.r.penaltyScale);
-    const entry = { skater: pen.offender, side: pen.side, t: seconds, total: seconds, foul: pen.foul, active: false };
+    const minutes = pen.major ? this.r.major : this.r.minor;
+    const seconds = Math.round(minutes * 60 * this.r.penaltyScale);
+    const entry = { skater: pen.offender, side: pen.side, t: seconds, total: seconds, foul: pen.foul, major: pen.major, active: false };
     this.box.push(entry);
+    const st = this.m.stats;
+    st[pen.side].pim += seconds;
     const onIce = this.m.skaters.filter((s) => s.sideKey === pen.side).length;
     if (onIce > this.r.minSkaters) {
       entry.active = true;
       this.m.offIce(pen.offender);
+      st[pen.side === 'home' ? 'away' : 'home'].ppOpp += 1;
     }
-    this.m.events.push({ type: 'penalty', skater: pen.offender, side: pen.side, foul: pen.foul, seconds });
+    this.m.events.push({ type: 'penalty', skater: pen.offender, side: pen.side, foul: pen.foul, seconds, major: pen.major });
   }
 
   onGoal(scorer) {
@@ -169,7 +225,9 @@ export class Referee {
       const other = scorer === 'home' ? 'away' : 'home';
       const mine = m.skaters.filter((s) => s.sideKey === scorer).length;
       const theirs = m.skaters.filter((s) => s.sideKey === other).length;
-      const pen = this.penaltiesOf(other)[0];
+      // Majors are always served in full.
+      const pen = this.penaltiesOf(other).find((p) => !p.major);
+      if (mine > theirs) m.stats[scorer].ppGoals += 1;
       if (pen && mine > theirs) this.release(pen);
     }
     if (this.phase === 'overtime' && this.r.overtime?.suddenDeath) {
@@ -189,6 +247,8 @@ export class Referee {
       this.breakThen(`END OF ${this.r.periodName} ${this.period}`, () => {
         this.period += 1;
         this.clock = this.r.periodSeconds;
+        if (this.r.timeouts?.per === 'period') this.timeoutsLeft = { home: 1, away: 1 };
+        for (const s of m.roster) s.fatigue = (s.fatigue ?? 0) * 0.3; // intermission
         if (this.r.switchEnds) m.switchEnds();
         m.faceoff();
       });
@@ -198,6 +258,7 @@ export class Referee {
     if (this.phase === 'regulation' && this.r.overtime) {
       this.breakThen('OVERTIME', () => {
         this.phase = 'overtime';
+        if (this.r.timeouts?.per === 'period') this.timeoutsLeft = { home: 1, away: 1 };
         this.clock = this.r.overtimeSeconds;
         if (this.r.overtime.switchEnds) m.switchEnds();
         m.faceoff();
