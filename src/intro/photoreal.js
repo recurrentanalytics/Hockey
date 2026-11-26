@@ -37,7 +37,7 @@ function loadCesium(base) {
 /** Camera state at time t (seconds) for a canvas of the given aspect ratio. */
 function cameraAt(t, aspect) {
   const wStart = 1150 * Math.min(1, aspect);
-  const wEnd = COURT.long / (aspect >= 1 ? 0.5 : 0.86);
+  const wEnd = COURT.long / (aspect >= 1 ? 0.78 : 0.95);
   const width = Math.exp(Math.log(wStart) + (Math.log(wEnd) - Math.log(wStart)) * phase(t, T.zoom));
   const fovx = FOV_START + (FOV_END - FOV_START) * phase(t, T.tilt);
   return {
@@ -45,7 +45,7 @@ function cameraAt(t, aspect) {
     tilt: FINAL_TILT * phase(t, T.tilt),
     fovx,
     range: width / (2 * Math.tan(fovx / 2)),
-    lift: width * 0.06 * phase(t, T.tilt), // court sits a little below the middle at the end
+    lift: width * 0.025 * phase(t, T.tilt), // court sits a little below the middle at the end
   };
 }
 
@@ -63,6 +63,9 @@ export async function run({ token, cesiumBase }) {
   });
   const { scene, camera } = viewer;
   scene.skyAtmosphere.show = true;
+  // fixed early-summer afternoon light for the court model (the Google mesh has its light baked in)
+  viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-06-12T13:30:00Z');
+  viewer.clock.shouldAnimate = false;
   scene.screenSpaceCameraController.enableInputs = false;
   viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -112,37 +115,18 @@ export async function run({ token, cesiumBase }) {
   };
   buildFrame();
 
-  // ---------------------------------------------------------------- the game rink, fading in
-  let rinkAlpha = 0;
-  const col = (css, k = 1) => new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(() => Cesium.Color.fromCssColorString(css).withAlpha(rinkAlpha * k), false));
-  const dyn = (fn) => new Cesium.CallbackProperty(fn, false);
-  const rink = () => {
-    const L = frame.halfLong * 2 - 0.8, W = frame.halfShort * 2 - 0.8, r = 3;
-    const pts = [];
-    for (const [ca, cb, a0] of [[L / 2 - r, W / 2 - r, 0], [-(L / 2 - r), W / 2 - r, 90], [-(L / 2 - r), -(W / 2 - r), 180], [L / 2 - r, -(W / 2 - r), 270]]) {
-      for (let k = 0; k <= 8; k++) { const ang = ((a0 + (k * 90) / 8) * Math.PI) / 180; pts.push([ca + r * Math.cos(ang), cb + r * Math.sin(ang)]); }
-    }
-    return { L, W, pts };
+  // ---------------------------------------------------------------- the real court, fading in
+  // assets/intro/boni_platz.glb (tools/intro/court_glb.py): asphalt with markings and dappled
+  // light, double-rod fence, football goals, street-hockey goals. Local axes: a (long side A→D),
+  // b (across A→B), up; glTF is Y-up, Cesium turns it Z-up.
+  const courtMatrix = () => {
+    const { u, v, C } = frame;
+    const local = new Cesium.Matrix4(u.x, v.x, 0, C.x, u.y, v.y, 0, C.y, 0, 0, 1, 0.03, 0, 0, 0, 1);
+    return Cesium.Matrix4.multiply(frame.enu, local, new Cesium.Matrix4());
   };
-  const ring = (z) => dyn(() => { const { pts } = rink(); return [...pts, pts[0]].map(([a, b]) => frame.at(a, b, z)); });
-  const rinkEntities = [
-    viewer.entities.add({ polygon: { hierarchy: dyn(() => new Cesium.PolygonHierarchy(rink().pts.map(([a, b]) => frame.at(a, b, 0.04)))), perPositionHeight: true, material: col('#cdd8f6') } }),
-    viewer.entities.add({ wall: { positions: ring(0), minimumHeights: dyn(() => rink().pts.concat([rink().pts[0]]).map(() => ground)), maximumHeights: dyn(() => rink().pts.concat([rink().pts[0]]).map(() => ground + 1.0)), material: col('#ffffff', 0.97) } }),
-    viewer.entities.add({ polyline: { positions: ring(1.0), width: 4, material: col('#ffd23f') } }),
-    viewer.entities.add({ polyline: { positions: ring(0.06), width: 2, material: col('#2a1f3d', 0.6) } }),
-    // centre line, goal lines, centre circle
-    viewer.entities.add({ polyline: { positions: dyn(() => { const { W } = rink(); return [frame.at(0, -W / 2, 0.06), frame.at(0, W / 2, 0.06)]; }), width: 3, material: col('#ff5e7a') } }),
-    ...[1, -1].map((sgn) => viewer.entities.add({ polyline: { positions: dyn(() => { const { L, W } = rink(); const a = sgn * (L / 2 - 2.6); return [frame.at(a, -W / 2 + 1.2, 0.06), frame.at(a, W / 2 - 1.2, 0.06)]; }), width: 2, material: col('#ff5e7a') } })),
-    viewer.entities.add({ polyline: { positions: dyn(() => Array.from({ length: 33 }, (_, k) => { const g = (k / 32) * Math.PI * 2; return frame.at(2.5 * Math.cos(g), 2.5 * Math.sin(g), 0.06); })), width: 2, material: col('#4f8dff') } }),
-    // goals: red frame and white net, opening towards the centre
-    ...[1, -1].flatMap((sgn) => {
-      const a = () => sgn * (rink().L / 2 - 2.6), back = () => a() + sgn * 0.9, hw = 0.915, hh = 1.22;
-      return [
-        viewer.entities.add({ polyline: { positions: dyn(() => [frame.at(a(), -hw, 0), frame.at(a(), -hw, hh), frame.at(a(), hw, hh), frame.at(a(), hw, 0)]), width: 5, material: col('#e8343c') } }),
-        viewer.entities.add({ wall: { positions: dyn(() => [frame.at(a(), -hw, 0), frame.at(back(), -hw * 0.9, 0), frame.at(back(), hw * 0.9, 0), frame.at(a(), hw, 0)]), minimumHeights: dyn(() => [ground, ground, ground, ground]), maximumHeights: dyn(() => [ground + hh, ground + 0.5, ground + 0.5, ground + hh]), material: col('#ffffff', 0.55) } }),
-      ];
-    }),
-  ];
+  const court = await Cesium.Model.fromGltfAsync({ url: new URL('../../assets/intro/boni_platz.glb', import.meta.url).href, modelMatrix: courtMatrix(), show: false, forwardAxis: Cesium.Axis.X });
+  scene.primitives.add(court);
+  let rinkAlpha = 0;
 
   // ---------------------------------------------------------------- see-through trees
   // Every fragment of the Google mesh that hides part of the rink from the camera (it sits above
@@ -167,16 +151,16 @@ export async function run({ token, cesiumBase }) {
         vec3 p = (u_ecToEnu * vec4(fsInput.attributes.positionEC, 1.0)).xyz;
         vec3 cam = (u_ecToEnu * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
         vec3 d = p - cam;
-        if (p.z < 0.6 || d.z > -0.001) return;
+        if (p.z < 0.06 || d.z > -0.001) return;
         vec2 hit = (cam + d * (-cam.z / d.z)).xy - u_rect.xy;
         vec2 ay = vec2(-u_axis.y, u_axis.x);
         vec2 q = abs(vec2(dot(hit, u_axis), dot(hit, ay)));
         // only where the ray lands on the rink floor, so the holes always show our court
-        // rounded rink outline (corner radius 3 m, 0.4 m inside the fence) as a signed distance
-        vec2 k = q - (u_rect.zw - vec2(3.4));
-        float sd = length(max(k, 0.0)) + min(max(k.x, k.y), 0.0) - 3.0;
-        float inside = 1.0 - smoothstep(-1.2, -0.3, sd);
-        if (u_fade * 0.72 * inside > bayer4(gl_FragCoord.xy)) discard;
+        // fence rectangle as a signed distance
+        vec2 k = q - (u_rect.zw - vec2(0.1));
+        float sd = length(max(k, 0.0)) + min(max(k.x, k.y), 0.0);
+        float inside = 1.0 - smoothstep(0.3, 3.2, sd);   // fully open over the court, soft over the mulch apron
+        if (u_fade * inside > bayer4(gl_FragCoord.xy)) discard;
       }`,
   });
   const ecToEnu = new Cesium.Matrix4();
@@ -187,7 +171,8 @@ export async function run({ token, cesiumBase }) {
     place(t);
     const fade = phase(t, T.fade);
     rinkAlpha = phase(t, T.rink);
-    for (const e of rinkEntities) e.show = rinkAlpha > 0;
+    court.show = rinkAlpha > 0;
+    court.color = Cesium.Color.WHITE.withAlpha(rinkAlpha);
     // the see-through shader is only switched on for the end of the flight
     const want = fade > 0 ? seeThrough : undefined;
     if (tileset.customShader !== want) tileset.customShader = want;
@@ -212,7 +197,7 @@ export async function run({ token, cesiumBase }) {
   fixedT = END; await loaded();
   try {
     const [p] = await scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(...COURT.center)]);
-    if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); }
+    if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = courtMatrix(); }
   } catch { /* keep the estimate */ }
   await loaded();
   fixedT = 0; await loaded();
