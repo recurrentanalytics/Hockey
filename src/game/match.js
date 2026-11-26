@@ -158,6 +158,9 @@ export class Match {
     this.events.length = 0;
     if (this.state === 'final') return;
     this.ref?.update(dt);
+    // Lined up for a face-off: centres crouch over the dot, the others get ready.
+    const lined = this.state === 'faceoff' || (this.draw?.live ?? false);
+    for (const s of this.skaters) s.stance = lined ? (this.draw?.centers[s.sideKey] === s ? 'draw' : 'ready') : null;
     if (this.state === 'faceoff' || this.state === 'break') {
       for (const g of this.goalies) g.update(dt, this.puck);
       // Moving early on a face-off loses the draw.
@@ -185,7 +188,7 @@ export class Match {
     for (const h of this.humans) {
       const c = input.controller(h.controller);
       const s = h.skater;
-      s.update(dt, live && c ? { move: c.move, sprint: c.down.sprint } : {});
+      s.update(dt, live && c ? { move: c.move, sprint: c.down.sprint } : this.state === 'goal' ? this.ai.celebrate(s) : {});
       if (live && c && !drawing) this.actions(h, c, dt);
     }
     // Fatigue recovers during stoppages, and faster on the bench.
@@ -249,7 +252,7 @@ export class Match {
     }
     victim.vel.x += sx * approach * 0.35;
     victim.vel.y += sy * approach * 0.35;
-    if (legalCheck || approach > 7) victim.downT = 0.8; // knocked off the skates
+    if (legalCheck || approach > 7) { victim.downT = victim.downMax = 1.3; victim.charging = false; } // knocked off the skates
     // Count real checks only: legal checks, knockdowns and hard human hits (not incidental bumps).
     if (legalCheck || approach > 7 || (hitter.human && approach > 5)) this.stats[hitter.sideKey].hits += 1;
     this.events.push({ type: 'hit', hitter, victim, approach });
@@ -415,6 +418,7 @@ export class Match {
     p.shot = { by: s, side: s.sideKey, charge, dist: Math.hypot(goalX - s.pos.x, s.pos.y) };
     p.passTo = null;
     s.followT = 0.22;
+    s.releaseT = 0.38; s.releaseKind = 'shot'; s.releaseCharge = charge;
     this.events.push({ type: 'shot', by: s });
   }
 
@@ -454,6 +458,7 @@ export class Match {
     p.z = 0;
     p.vz = 0;
     s.followT = 0.12;
+    s.releaseT = 0.2; s.releaseKind = 'pass';
     p.passTo = best;
     this.events.push({ type: 'pass', by: s, to: best });
   }
@@ -655,6 +660,9 @@ export class Match {
         p.vel.x = Math.cos(a) * sp; p.vel.y = Math.sin(a) * sp;
         p.vz = Math.max(p.vz, 0) * 0.3;
       }
+      // Show the save that stopped it.
+      g.saveT = 0.5;
+      g.saveKind = p.z < 0.35 ? 'butterfly' : (p.pos.y - g.pos.y) * g.out >= 0 ? 'glove' : 'blocker';
       if (shot) {
         this.shots[p.shot.side] += 1;
         this.events.push({ type: 'save', goalie: g });
@@ -697,7 +705,10 @@ export class Match {
         this.lastGoal = { side: scorer, by };
         this.nextSpot = null;
         if (by && by.sideKey === scorer) by.celebrateT = 2.5;
-        for (const s of this.roster) if (s.sideKey === scorer) s.happyT = 2.6;
+        for (const s of this.roster) {
+          if (s.sideKey === scorer) s.happyT = 2.6;
+          else if (counts) s.sadT = 2.6;
+        }
         this.state = 'goal';
         this.timer = 2.6;
         this.events.push({ type: 'goal', side: scorer, by, shootout: !counts });

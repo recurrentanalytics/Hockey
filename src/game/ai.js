@@ -79,11 +79,41 @@ export class AI {
   think(dt) {
     const m = this.m;
     this.controls.clear();
-    if (m.state !== 'play') return; // face-off and goal celebration: everyone glides
+    if (m.state === 'goal') {
+      for (const s of m.skaters) if (!s.human) this.controls.set(s, this.celebrate(s));
+      return;
+    }
+    if (m.state !== 'play') return; // face-off and stoppages: everyone glides
     for (const key of ['home', 'away']) {
       if (!this.sides.has(key)) continue;
       this.thinkTeam(key, dt);
     }
+  }
+
+  /**
+   * After a goal: the scorer peels away with a fist pump, teammates skate over for the
+   * group hug, and the beaten team coasts off with their heads down.
+   */
+  celebrate(s) {
+    const g = this.m.lastGoal;
+    if (!g) return {};
+    if (s.sideKey !== g.side) return {};
+    const scorer = g.by && g.by.sideKey === g.side ? g.by : null;
+    if (!scorer) return {};
+    if (s === scorer) {
+      // Keep gliding the way they were going, curling away a little.
+      const v = s.speed;
+      if (v < 1) return {};
+      const a = Math.atan2(s.vel.y, s.vel.x) + 0.6;
+      return { move: { x: Math.cos(a) * 0.5, y: Math.sin(a) * 0.5 }, limit: 0.55 };
+    }
+    const dx = scorer.pos.x - s.pos.x, dy = scorer.pos.y - s.pos.y, d = Math.hypot(dx, dy);
+    if (d < 1.15) {
+      s.celebrateT = Math.max(s.celebrateT ?? 0, 0.4); // arrived: arms up together
+      return {};
+    }
+    const k = Math.min(1, (d - 1.1) / 1.5);
+    return { move: { x: (dx / d) * k, y: (dy / d) * k }, limit: 0.8 };
   }
 
   possession() {

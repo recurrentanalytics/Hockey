@@ -140,10 +140,10 @@ export class RinkScene {
         case 'pass': case 'steal': sfx.play('stick', 0.8); break;
         case 'pickup': sfx.play('stick', 0.4); break;
         case 'boards': sfx.play('boards', e.speed / 15); break;
-        case 'post': sfx.play('post', e.speed / 20); this.shake = Math.max(this.shake, 0.15); break;
+        case 'post': sfx.play('post', e.speed / 20); this.shake = Math.max(this.shake, 0.15); this.app.world.jiggle(Math.sign(m.puck.pos.x), 0.35); break;
         case 'save': sfx.play('save'); this.fx.puff(m.puck.pos.x, m.puck.pos.y); break;
-        case 'hit': sfx.play('hit', e.approach / 8); if (e.approach > 5) { this.shake = Math.max(this.shake, 0.2); this.fx.stars(e.victim.pos.x, e.victim.pos.y); } break;
-        case 'goal': sfx.play('horn'); this.shake = 0.5; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); this.fx.confetti(m.puck.pos.x - Math.sign(m.puck.pos.x) * 3, m.puck.pos.y); break;
+        case 'hit': sfx.play('hit', e.approach / 8); if (e.approach > 5) { this.shake = Math.max(this.shake, 0.2); this.fx.stars(e.victim.pos.x, e.victim.pos.y); } if (e.victim.downT > 0) this.fx.puff(e.victim.pos.x, e.victim.pos.y, 0.1, 9); break;
+        case 'goal': sfx.play('horn'); this.shake = 0.5; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); this.app.world.jiggle(this.lampSide, 1); if (e.side === 'home') this.waveT = 3.5; this.fx.confetti(m.puck.pos.x - Math.sign(m.puck.pos.x) * 3, m.puck.pos.y); break;
         case 'whistle': sfx.play('whistle'); break;
         case 'break': case 'final': sfx.play('buzzer'); if (e.type === 'final') sfx.play('cheer'); break;
         case 'attempt': if (!e.scored) sfx.play('save', 0.6); break;
@@ -189,7 +189,14 @@ export class RinkScene {
       if (e.type === 'release') this.notice = { text: `${name(e.side)} BACK TO FULL STRENGTH`, t: 2 };
     }
     // Wheel sparkles on fast skaters, a glowing trail behind hard shots.
-    for (const s of m.skaters) if (s.speed > 6 && Math.random() < 0.3) this.fx.spray(s);
+    for (const s of m.skaters) {
+      if (s.speed > 6 && Math.random() < 0.3) this.fx.spray(s);
+      // Hockey stops kick up a spray ahead of the skates.
+      if (s.brakeT > 0 && s.speed > 3 && Math.random() < 0.7) this.fx.spray(s, true);
+    }
+    // La-Ola: after home goals, and now and then when the game is flowing.
+    if (this.waveT > 0 && (this.waveT -= dt) <= 0) this.app.world.startWave(2);
+    if (m.state === 'play' && Math.random() < dt / 70) this.app.world.startWave(1);
     if (m.puck.loose && m.puck.speed > 14) this.fx.trail(m.puck);
     this.fx.update(dt);
     this.wall.update(dt);

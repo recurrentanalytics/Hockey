@@ -6,7 +6,7 @@ import { pixelLine } from '../engine/draw.js';
 import { drawText } from '../engine/font.js';
 import { RINK_CORE, goalBox } from './rink.js';
 import { project } from './projection.js';
-import { skaterSprites, shadowSprite, ANCHOR_X, ANCHOR_Y, SPRITE_W, HAND } from './sprites.js';
+import { skaterSprites, shadowSprite, ANCHOR_X, ANCHOR_Y, SPRITE_W } from './sprites.js';
 
 export const REACH = 0.72;      // body centre → blade, metres
 export const POKE_TIME = 0.24;
@@ -64,6 +64,11 @@ export class Skater {
     this.downT = Math.max(0, (this.downT ?? 0) - dt);
     this.celebrateT = Math.max(0, (this.celebrateT ?? 0) - dt);
     this.happyT = Math.max(0, (this.happyT ?? 0) - dt);
+    this.sadT = Math.max(0, (this.sadT ?? 0) - dt);
+    this.releaseT = Math.max(0, (this.releaseT ?? 0) - dt);
+    this.brakeT = Math.max(0, (this.brakeT ?? 0) - dt);
+    this.crossT = Math.max(0, (this.crossT ?? 0) - dt);
+    this.t = (this.t ?? Math.random() * 10) + dt;
     if (this.downT > 0) {
       move = { x: 0, y: 0 };
       sprint = false;
@@ -119,6 +124,25 @@ export class Skater {
 
     this.pushing = mlen > 0.05 && this.speed > 0.6;
     if (this.pushing) this.anim += dt * (2.2 + this.speed * 0.45);
+    // Stickhandling: the puck dances from side to side on the blade.
+    if (this.hasPuck) this.dribble = (this.dribble ?? 0) + dt * (6 + this.speed * 0.6);
+
+    // Body language read from the motion: hockey stops and crossovers.
+    const v = this.speed;
+    if (v > 3.5 && this.downT <= 0) {
+      const ux = this.vel.x / v, uy = this.vel.y / v;
+      const against = mlen > 0.05 && (move.x * ux + move.y * uy) / mlen < -0.5;
+      if (mlen <= 0.05 || against) this.brakeT = 0.15;
+      const heading = Math.atan2(uy, ux);
+      if (this.heading != null && mlen > 0.05) {
+        let dh = heading - this.heading;
+        dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+        if (Math.abs(dh) / dt > 1.4 && !against) this.crossT = 0.2;
+      }
+      this.heading = heading;
+    } else {
+      this.heading = null;
+    }
   }
 
   poke() {
@@ -144,8 +168,37 @@ export class Skater {
   }
 
   bladePoint() {
-    const r = this.bladeReach();
-    return { x: this.pos.x + Math.cos(this.dir) * r, y: this.pos.y + Math.sin(this.dir) * r };
+    let r = this.bladeReach();
+    const c = Math.cos(this.dir), sn = Math.sin(this.dir);
+    let side = 0;
+    if (this.hasPuck && !this.charging && this.pokeT <= 0) {
+      // Stickhandling: side to side across the body, with a little toe drag in and out.
+      const d = this.dribble ?? 0;
+      side = Math.sin(d) * 0.17;
+      r += Math.cos(d * 2) * 0.05;
+    }
+    return { x: this.pos.x + c * r - sn * side, y: this.pos.y + sn * r + c * side };
+  }
+
+  /** Where the blade is drawn (shot wind-ups and follow-throughs go well off the ice). */
+  stickPoint() {
+    const c = Math.cos(this.dir), sn = Math.sin(this.dir);
+    const at = (r, z) => ({ x: this.pos.x + c * r, y: this.pos.y + sn * r, z });
+    if (this.celebrateT > 0) return at(0.25, 2.3);
+    if (this.charging) {
+      // Wind-up: the blade swings back behind the skates and up over the shoulder.
+      const k = this.charge;
+      return at(0.45 - 1.55 * k, 0.15 + 1.45 * k);
+    }
+    if (this.releaseT > 0 && this.releaseKind === 'shot') {
+      // Follow-through: blade sweeps through the puck and finishes high toward the target.
+      const u = 1 - this.releaseT / 0.38;
+      return at(REACH + 0.35 * Math.min(1, u * 2), Math.max(0, (u - 0.15) * 1.6) * (0.5 + this.releaseCharge));
+    }
+    if (this.stance === 'draw') return at(0.62, 0);
+    if (this.sadT > 0 && this.speed < 3) return at(0.5, 0);
+    const b = this.bladePoint();
+    return { ...b, z: this.bladeHeight() };
   }
 
   collideBoards() {
@@ -218,63 +271,97 @@ export class Skater {
     ctx.drawImage(shadowSprite(), Math.round(p.x + ox - 7), Math.round(p.y + oy - 2));
   }
 
-  drawStick(ctx, p, ox, oy) {
-    const hx = Math.round(p.x + ox + this.facing * HAND.x), hy = Math.round(p.y + oy + HAND.y);
-    const b = this.bladePoint();
-    const bp = project(b.x, b.y, this.bladeHeight());
+  drawStick(ctx, p, ox, oy, hand) {
+    const hx = Math.round(p.x + ox + this.facing * hand.x), hy = Math.round(p.y + oy + hand.y);
+    const b = this.stickPoint();
+    const bp = project(b.x, b.y, b.z);
     const bx = Math.round(bp.x + ox), by = Math.round(bp.y + oy);
     ctx.fillStyle = PAL.woodDark;
     pixelLine(ctx, hx - this.facing, hy, bx - this.facing, by - 1);
     ctx.fillStyle = PAL.wood;
     pixelLine(ctx, hx, hy, bx, by - 1);
-    const toward = Math.abs(Math.cos(this.dir)) > 0.15 ? Math.sign(Math.cos(this.dir)) : this.facing;
+    // The blade points the way the stick swings: back during a wind-up.
+    let toward = Math.abs(Math.cos(this.dir)) > 0.15 ? Math.sign(Math.cos(this.dir)) : this.facing;
+    if (bx * toward < hx * toward) toward = -toward;
     ctx.fillStyle = PAL.ink;
     ctx.fillRect(toward > 0 ? bx : bx - 3, by, 4, 1);
     ctx.fillStyle = PAL.white;
     ctx.fillRect(toward > 0 ? bx + 1 : bx - 2, by, 2, 1);
   }
 
-  draw(ctx, ox, oy) {
-    // Jump for joy after a goal
-    if (this.happyT > 0 && this.downT <= 0) oy -= Math.round(Math.abs(Math.sin((2.6 - this.happyT) * 9)) * 3);
-    const p = project(this.pos.x, this.pos.y);
-    const frame = this.pushing ? Math.floor(this.anim) % 4 : 0;
-    const right = this.facing >= 0;
-    const sp = this.sprites;
-    // Expressions: dizzy when knocked down, happy after a goal, an occasional blink.
+  /** Which pose to show, from what the skater is doing right now. */
+  pose() {
+    const t = this.t ?? 0;
+    const happy = this.happyT > 0, sad = this.sadT > 0;
+    let mood = happy ? 'happy' : sad ? 'sad' : 'normal';
+    if (this.downT > 0) {
+      const f = this.downT / (this.downMax || 1);
+      if (f > 0.82) return { pose: 'stumble', mood: 'dizzy' };
+      if (f > 0.34) return { pose: 'sprawl', mood: 'dizzy', lying: true };
+      if (f > 0.14) return { pose: 'kneel', mood: 'dizzy' };
+      return { pose: 'rise', mood: 'normal' };
+    }
+    if (this.celebrateT > 0) return { pose: Math.floor(t * 5) % 2 ? 'cheerB' : 'cheerA', mood: 'happy', hop: true };
+    if (this.stance === 'draw') return { pose: 'draw', mood };
+    if (this.stance === 'ready') return { pose: 'ready', mood };
+    if (this.charging) return { pose: 'windup', mood: this.charge > 0.55 ? 'effort' : mood };
+    if (this.releaseT > 0) {
+      if (this.releaseKind === 'shot') return { pose: 'release', mood: this.releaseCharge > 0.5 ? 'effort' : mood };
+      return { pose: 'passOut', mood };
+    }
+    if (this.pokeT > 0) return { pose: 'lunge', mood: 'effort' };
+    if (sad && this.speed < 3) return { pose: 'sad', mood: 'sad' };
+    if (this.brakeT > 0) return { pose: 'stop', mood };
+    if (this.crossT > 0) return { pose: `cross${Math.floor(this.anim * 2) % 4}`, mood };
+    if (this.pushing) return { pose: `${this.sprinting ? 'sprint' : 'stride'}${Math.floor(this.anim * 2) % 8}`, mood, hop: happy };
+    // Blink now and then while gliding or standing.
     this.blinkT = (this.blinkT ?? Math.random() * 4) - 1 / 60;
     if (this.blinkT < -0.12) this.blinkT = 2 + Math.random() * 4;
-    let img = (right ? sp.right : sp.left)[frame];
-    if (this.downT > 0) img = right ? sp.dizzyRight : sp.dizzyLeft;
-    else if (this.celebrateT > 0 || this.happyT > 0) img = right ? sp.happyRight : sp.happyLeft;
-    else if (this.blinkT < 0 && frame === 0) img = right ? sp.blinkRight : sp.blinkLeft;
+    if (mood === 'normal' && this.blinkT < 0) mood = 'blink';
+    if (this.speed > 0.6) return { pose: 'glide', mood, hop: happy };
+    if ((this.fatigue ?? 0) > 0.5 || this.stamina < 0.25) return { pose: Math.floor(t * 3) % 2 ? 'tiredB' : 'tiredA', mood: mood === 'normal' ? 'effort' : mood };
+    // Breathing while standing still
+    return { pose: Math.floor(t / 1.1) % 2 ? 'idleB' : 'idleA', mood, hop: happy };
+  }
+
+  draw(ctx, ox, oy) {
+    const st = this.pose();
+    // Jump for joy after a goal
+    if (st.hop) oy -= Math.round(Math.abs(Math.sin((this.t ?? 0) * 9)) * 3);
+    const p = project(this.pos.x, this.pos.y);
+    const right = this.facing >= 0;
+    const fr = this.sprites.frame(st.pose, st.mood);
+    const img = right ? fr.right : fr.left;
     const ax = right ? ANCHOR_X : SPRITE_W - 1 - ANCHOR_X;
     const x = Math.round(p.x + ox - ax), y = Math.round(p.y + oy - ANCHOR_Y);
-    if (this.downT > 0) {
-      // On the floor: the sprite turned 90° (exact quarter turns stay pixel-crisp).
+    if (st.lying) {
+      // On the floor: the sprawled sprite turned 90° (exact quarter turns stay pixel-crisp).
       ctx.save();
       ctx.translate(Math.round(p.x + ox), Math.round(p.y + oy));
       ctx.rotate(right ? Math.PI / 2 : -Math.PI / 2);
-      ctx.drawImage(img, -ax, -ANCHOR_Y + 4);
+      ctx.drawImage(img, -ax, -ANCHOR_Y + 5);
       ctx.restore();
       // Little stars circling over the dizzy head
-      const t = performance.now() / 180;
-      const hx = Math.round(p.x + ox + (right ? 10 : -10)), hy = Math.round(p.y + oy - 8);
+      const tt = performance.now() / 180;
+      const hx = Math.round(p.x + ox + (right ? 12 : -12)), hy = Math.round(p.y + oy - 8);
       for (let i = 0; i < 3; i++) {
-        const a = t + (i * Math.PI * 2) / 3;
+        const a = tt + (i * Math.PI * 2) / 3;
         ctx.fillStyle = i === 1 ? PAL.white : PAL.yellow;
         ctx.fillRect(hx + Math.round(Math.cos(a) * 5), hy + Math.round(Math.sin(a) * 2), 1, 1);
       }
-    } else {
-      const behind = this.bladePoint().y < this.pos.y - 0.05;
-      if (behind) this.drawStick(ctx, p, ox, oy);
+    } else if (this.downT > 0) {
+      // Stumbling, kneeling, getting up: the stick is dropped on the floor.
       ctx.drawImage(img, x, y);
-      if (!behind) this.drawStick(ctx, p, ox, oy);
+    } else {
+      const behind = this.stickPoint().y < this.pos.y - 0.05;
+      if (behind) this.drawStick(ctx, p, ox, oy, fr.hand);
+      ctx.drawImage(img, x, y);
+      if (!behind) this.drawStick(ctx, p, ox, oy, fr.hand);
     }
 
     const h = this.human;
     if (!h) return;
-    const tx = Math.round(p.x + ox), ty = y - 9;
+    const tx = Math.round(p.x + ox), ty = y - 5;
     drawText(ctx, h.tag, tx, ty, { color: h.color, align: 'center', shadow: PAL.ink });
     ctx.fillStyle = h.color;
     ctx.fillRect(tx - 1, ty + 6, 3, 1);

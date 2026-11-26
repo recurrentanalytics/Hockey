@@ -14,11 +14,12 @@ export class Particles {
   }
 
   /** Tiny sparkles kicked up behind fast skates. */
-  spray(s) {
-    const back = -Math.sign(s.vel.x || s.facing);
+  spray(s, stop = false) {
+    const back = (stop ? 1 : -1) * Math.sign(s.vel.x || s.facing);
+    const k = stop ? 0.45 : -0.15;
     this.add({
       x: s.pos.x + back * 0.2 + (Math.random() - 0.5) * 0.3, y: s.pos.y + (Math.random() - 0.5) * 0.2, z: 0.05,
-      vx: -s.vel.x * 0.15 + (Math.random() - 0.5), vy: -s.vel.y * 0.15 + (Math.random() - 0.5) * 0.5, vz: 0.6 + Math.random(),
+      vx: s.vel.x * k + (Math.random() - 0.5), vy: s.vel.y * k + (Math.random() - 0.5) * 0.5, vz: (stop ? 1.2 : 0.6) + Math.random(),
       g: 5, life: 0.3 + Math.random() * 0.2, color: Math.random() < 0.5 ? PAL.white : PAL.sky,
     });
   }
