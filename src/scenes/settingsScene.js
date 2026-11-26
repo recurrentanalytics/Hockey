@@ -7,10 +7,11 @@ export class SettingsScene extends MenuScene {
   constructor(app) {
     super(app, {
       title: 'SETTINGS',
-      top: 48,
+      top: 46,
       width: 230,
       items: [
         { label: 'CONTROLS', value: () => '>', onSelect: () => app.push(new ControlsScene(app)) },
+        choice('SOUND', 'sound'),
         choice('RULES', 'ruleset'),
         choice('PERIOD LENGTH', 'periodLength'),
         choice('DIFFICULTY', 'difficulty'),

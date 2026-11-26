@@ -2,7 +2,7 @@
 import { PAL } from '../engine/palette.js';
 import { drawText, textWidth } from '../engine/font.js';
 import { panel } from '../engine/draw.js';
-import { PLAYER_COLORS, TEAMS } from '../config.js';
+import { PLAYER_COLORS, TEAMS, RINK, GOAL } from '../config.js';
 import { settings } from '../settings.js';
 import { Camera } from '../world/camera.js';
 import { BAKE } from '../world/rink.js';
@@ -13,6 +13,7 @@ import { hintBar } from '../ui/hud.js';
 import { PauseScene } from './pause.js';
 
 const SPLIT_ZOOM = 0.8;
+const otherTeam = (t) => Object.keys(TEAMS).find((k) => k !== t);
 const fmt = (sec) => { const s = Math.max(0, Math.ceil(sec)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 const LOOKAHEAD = 0.3;
 
@@ -37,8 +38,11 @@ export class RinkScene {
     this.cameraMode = humans.length > 1 ? camera : 'single';
     this.zoom = 1;
     this.rules = mode === 'practice' ? null : resolveRules(settings.ruleset, settings.periodLength);
+    const lineup = MODES[mode];
     this.match = new Match({
-      ...MODES[mode],
+      ...lineup,
+      home: { ...lineup.home, team: settings.homeTeam },
+      away: { ...lineup.away, team: mode === 'practice' ? otherTeam(settings.homeTeam) : settings.awayTeam },
       rules: this.rules,
       difficulty: settings.difficulty,
       humans: humans.map((h, i) => ({ ...h, tag: `P${i + 1}`, color: PLAYER_COLORS[i] })),
@@ -111,7 +115,21 @@ export class RinkScene {
     }
     m.update(dt, input);
     const name = (side) => TEAMS[m.sides[side].team].name;
+    const sfx = this.app.audio;
     for (const e of m.events) {
+      switch (e.type) {
+        case 'shot': sfx.play('shot', 0.5 + (m.puck.shot?.charge ?? 0.5) * 0.5); break;
+        case 'pass': case 'steal': sfx.play('stick', 0.8); break;
+        case 'pickup': sfx.play('stick', 0.4); break;
+        case 'boards': sfx.play('boards', e.speed / 15); break;
+        case 'post': sfx.play('post', e.speed / 20); this.shake = Math.max(this.shake, 0.15); break;
+        case 'save': sfx.play('save'); break;
+        case 'hit': sfx.play('hit', e.approach / 8); if (e.approach > 5) this.shake = Math.max(this.shake, 0.2); break;
+        case 'goal': sfx.play('horn'); this.shake = 0.5; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); break;
+        case 'whistle': sfx.play('whistle'); break;
+        case 'break': case 'final': sfx.play('buzzer'); if (e.type === 'final') sfx.play('cheer'); break;
+        case 'attempt': if (!e.scored) sfx.play('save', 0.6); break;
+      }
       if (e.type === 'goal') this.banner = { text: e.shootout ? 'SCORES!' : 'GOAL!', sub: e.shootout ? name(e.side) : this.goalText(e), t: 2.4 };
       if (e.type === 'save' && !this.banner) this.banner = { text: 'SAVE', t: 0.8, small: true };
       if (e.type === 'foul') this.notice = { text: `${e.name} - ${name(e.offender.sideKey)} #${e.offender.number}`, t: 2.5 };
@@ -122,9 +140,47 @@ export class RinkScene {
       if (e.type === 'final') this.banner = { text: 'FINAL', sub: this.finalText(e), t: Infinity, final: true };
       if (e.type === 'release') this.notice = { text: `${name(e.side)} BACK TO FULL STRENGTH`, t: 2 };
     }
+    this.shake = Math.max(0, (this.shake ?? 0) - dt);
+    this.cheerT = Math.max(0, (this.cheerT ?? 0) - dt);
     if (this.banner && (this.banner.t -= dt) <= 0) this.banner = null;
     if (this.notice && (this.notice.t -= dt) <= 0) this.notice = null;
     this.updateCameras(dt);
+  }
+
+  /** Goal light over the net and the crowd jumping up after a goal. */
+  effects() {
+    const out = [];
+    const t = performance.now() / 1000;
+    if (this.cheerT > 0) {
+      out.push({
+        sortY: -100,
+        draw: (ctx, ox, oy) => {
+          const colors = [PAL.yellow, PAL.white, PAL.red, PAL.sky, PAL.orange];
+          for (let i = 0; i < 260; i++) {
+            const x = ((i * 97) % 1000) - 500;
+            const y = -140 - ((i * 53) % 70);
+            if (((i * 7 + Math.floor(t * 8)) % 3) !== 0) continue;
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.fillRect(Math.round(x + ox), Math.round(y + oy - (Math.floor(t * 8 + i) % 2)), 2, 1);
+          }
+        },
+      });
+    }
+    if (this.cheerT > 0 && this.lampSide && Math.floor(t * 6) % 2 === 0) {
+      const p = project(this.lampSide * (RINK.goalLineX + GOAL.depth), 0, 1.7);
+      out.push({
+        sortY: 0.01,
+        draw: (ctx, ox, oy) => {
+          ctx.fillStyle = PAL.ink;
+          ctx.fillRect(Math.round(p.x + ox - 3), Math.round(p.y + oy - 3), 7, 5);
+          ctx.fillStyle = PAL.red;
+          ctx.fillRect(Math.round(p.x + ox - 2), Math.round(p.y + oy - 2), 5, 3);
+          ctx.fillStyle = PAL.yellow;
+          ctx.fillRect(Math.round(p.x + ox - 1), Math.round(p.y + oy - 2), 2, 1);
+        },
+      });
+    }
+    return out;
   }
 
   finalText(e) {
@@ -163,7 +219,7 @@ export class RinkScene {
     const { display, world, input } = this.app;
     display.setZoom(this.zoom);
     const ctx = display.wctx, W = display.width, H = display.height;
-    const ents = this.match.entities;
+    const ents = [...this.match.entities, ...this.effects()];
 
     if (this.cameraMode === 'split') {
       const v = this.viewSize();
@@ -172,7 +228,9 @@ export class RinkScene {
       ctx.fillStyle = PAL.ink;
       ctx.fillRect(0, v.h1, display.worldWidth, 2);
     } else {
-      const cam = this.cameraMode === 'shared' ? this.shared : this.cams[0];
+      const base = this.cameraMode === 'shared' ? this.shared : this.cams[0];
+      const s = (this.shake ?? 0) * 8;
+      const cam = s > 0 ? { x: base.x + (Math.random() - 0.5) * s, y: base.y + (Math.random() - 0.5) * s } : base;
       world.draw(ctx, { x: 0, y: 0, w: display.worldWidth, h: display.worldHeight }, cam, ents);
     }
 

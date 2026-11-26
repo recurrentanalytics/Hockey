@@ -10,6 +10,7 @@ import { InputManager } from './input/manager.js';
 import { WorldView } from './world/view.js';
 import { Toasts } from './ui/hud.js';
 import { Backdrop } from './scenes/backdrop.js';
+import { Audio } from './engine/audio.js';
 import { TitleScene } from './scenes/title.js';
 
 const canvas = document.getElementById('screen');
@@ -20,6 +21,7 @@ const app = {
   display,
   input,
   toasts: new Toasts(),
+  audio: new Audio(),
   world: new WorldView(),
   scenes: [],
   get top() { return this.scenes[this.scenes.length - 1]; },
@@ -44,6 +46,7 @@ function autoFullscreen() {
   if (settings.autoFullscreen && canFullscreen() && !isFullscreen()) enterFullscreen();
 }
 input.pointers.onDown = (p) => {
+  app.audio.unlock();
   if (canFullscreen() && hit(FS_BUTTON(display.width), p)) {
     autoTried = true;
     toggleFullscreen();
@@ -53,6 +56,7 @@ input.pointers.onDown = (p) => {
   return false;
 };
 input.keyboard.onKeyDown = (code) => {
+  app.audio.unlock();
   if (input.capturing) return;
   const bound = ['kb1', 'kb2'].some((k) => Object.values(input.profile(k)).some((codes) => codes.includes(code)));
   if (code === 'KeyF' && !bound && canFullscreen()) { autoTried = true; toggleFullscreen(); return; }
@@ -88,6 +92,8 @@ function frame(now) {
   }
   if (steps === 10) acc = 0;
 
+  app.audio.tick();
+  app.audio.setAmbient(!!app.top.match && app.top.match.state !== 'final' || !!app.top.under?.match);
   display.beginFrame();
   let base = app.scenes.length - 1;
   while (base > 0 && app.scenes[base].transparent) base--;

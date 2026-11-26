@@ -24,6 +24,16 @@ export function choice(label, key, onChange) {
   };
 }
 
+/** After changing one team, make sure the other side isn't the same team. */
+export function avoidSameTeam(otherKey) {
+  const key = otherKey === 'awayTeam' ? 'homeTeam' : 'awayTeam';
+  if (settings[key] !== settings[otherKey]) return;
+  const opts = OPTIONS[otherKey];
+  const i = opts.findIndex((o) => o.value === settings[otherKey]);
+  settings[otherKey] = opts[(i + 1) % opts.length].value;
+  saveSettings();
+}
+
 export class Menu {
   /**
    * items: { label, value?(): string, onSelect?, onLeft?, onRight?, disabled?(): bool, color? }
@@ -61,14 +71,14 @@ export class Menu {
 
   update(app) {
     const m = app.input.menu;
-    if (m.up) this.moveBy(-1);
-    if (m.down) this.moveBy(1);
+    if (m.up) { this.moveBy(-1); app.audio?.play('menu'); }
+    if (m.down) { this.moveBy(1); app.audio?.play('menu'); }
     this.ensureEnabled(1);
     const it = this.items[this.index];
     if (it && this.enabled(this.index)) {
-      if (m.left) it.onLeft?.();
-      if (m.right) it.onRight?.();
-      if (m.confirm) it.onSelect?.();
+      if (m.left && it.onLeft) { it.onLeft(); app.audio?.play('menu'); }
+      if (m.right && it.onRight) { it.onRight(); app.audio?.play('menu'); }
+      if (m.confirm && it.onSelect) { app.audio?.play('confirm'); it.onSelect(); }
     }
     for (const t of app.input.taps) {
       for (let i = 0; i < this.items.length; i++) {
@@ -76,6 +86,7 @@ export class Menu {
         if (t.x < r.x || t.x >= r.x + r.w || t.y < r.y || t.y >= r.y + r.h + 1 || !this.enabled(i)) continue;
         this.index = i;
         const item = this.items[i];
+        app.audio?.play('confirm');
         if (item.isChoice) (t.x < r.x + r.w / 2 ? item.onLeft : item.onRight)?.();
         else item.onSelect?.();
       }

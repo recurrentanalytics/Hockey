@@ -1,6 +1,6 @@
 import { PAL } from '../engine/palette.js';
 import { drawText } from '../engine/font.js';
-import { choice } from '../ui/menu.js';
+import { choice, avoidSameTeam } from '../ui/menu.js';
 import { MenuScene } from './menuScene.js';
 import { RinkScene } from './rink.js';
 
@@ -11,6 +11,8 @@ export class MatchSetupScene extends MenuScene {
       subtitle: 'MATCH SETUP',
       width: 210,
       items: [
+        choice('YOUR TEAM', 'homeTeam', () => avoidSameTeam('awayTeam')),
+        choice('OPPONENT', 'awayTeam', () => avoidSameTeam('homeTeam')),
         choice('RULES', 'ruleset'),
         choice('PERIOD LENGTH', 'periodLength'),
         choice('DIFFICULTY', 'difficulty'),
@@ -30,7 +32,6 @@ export class MatchSetupScene extends MenuScene {
   }
 
   drawExtra(ctx, W) {
-    drawText(ctx, '4 ON 4 WITH GOALIES. CLOCK, PENALTIES AND THE', W / 2, 136, { color: PAL.mist, align: 'center', shadow: PAL.ink });
-    drawText(ctx, 'CHOSEN RULESET ARRIVE IN PHASE 4.', W / 2, 144, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+    drawText(ctx, '4 ON 4 WITH GOALIES UNDER THE CHOSEN RULESET', W / 2, 136 + 20, { color: PAL.mist, align: 'center', shadow: PAL.ink });
   }
 }

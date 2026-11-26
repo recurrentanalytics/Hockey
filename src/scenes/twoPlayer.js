@@ -2,7 +2,7 @@
 import { PAL, } from '../engine/palette.js';
 import { drawText, fitText } from '../engine/font.js';
 import { panel } from '../engine/draw.js';
-import { choice } from '../ui/menu.js';
+import { choice, avoidSameTeam } from '../ui/menu.js';
 import { settings } from '../settings.js';
 import { PLAYER_COLORS } from '../config.js';
 import { MenuScene } from './menuScene.js';
@@ -17,6 +17,8 @@ export class TwoPlayerScene extends MenuScene {
       width: 210,
       items: [
         choice('MODE', 'twoPlayerMode'),
+        choice('HOME TEAM', 'homeTeam', () => avoidSameTeam('awayTeam')),
+        choice('AWAY TEAM', 'awayTeam', () => avoidSameTeam('homeTeam')),
         choice('CAMERA', 'twoPlayerCamera'),
         { label: 'START', color: PAL.yellow, disabled: () => this.slots.some((s) => !s), onSelect: () => this.start() },
         { label: 'BACK', onSelect: () => app.pop() },
@@ -98,6 +100,6 @@ export class TwoPlayerScene extends MenuScene {
     const kb2 = input.bindingLabel('kb2', input.profile('kb2').shoot[0]);
     const W = this.app.display.width;
     drawText(ctx, `SHOOT: ${kb1} / ${kb2} / PAD ${padShoot}  -  CHECK TO LEAVE`, W / 2, 98 - 0, { color: PAL.mist, align: 'center', shadow: PAL.ink });
-    if (input.pointers.touchSeen) drawText(ctx, 'TOUCH: TAP A SLOT', W / 2, 150, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+    if (input.pointers.touchSeen) drawText(ctx, 'TOUCH: TAP A SLOT', W / 2, 174, { color: PAL.mist, align: 'center', shadow: PAL.ink });
   }
 }

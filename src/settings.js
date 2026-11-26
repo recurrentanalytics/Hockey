@@ -1,5 +1,8 @@
 // Persisted user settings and the option lists the menus offer.
 import { load, save } from './engine/storage.js';
+import { TEAMS } from './config.js';
+
+const TEAM_OPTIONS = Object.entries(TEAMS).map(([value, t]) => ({ value, label: t.name }));
 
 const DEFAULTS = {
   ruleset: 'worldskate',
@@ -12,6 +15,9 @@ const DEFAULTS = {
   confirmButton: 'south',
   pixelPerfect: false,
   autoFullscreen: true,
+  sound: 0.75,
+  homeTeam: 'blazers',
+  awayTeam: 'waves',
 };
 
 export const settings = { ...DEFAULTS, ...load('settings', {}) };
@@ -62,6 +68,15 @@ export const OPTIONS = {
     { value: 'south', label: 'BOTTOM BUTTON' },
     { value: 'east', label: 'RIGHT BUTTON' },
   ],
+  sound: [
+    { value: 0, label: 'OFF' },
+    { value: 0.25, label: '25%' },
+    { value: 0.5, label: '50%' },
+    { value: 0.75, label: '75%' },
+    { value: 1, label: '100%' },
+  ],
+  homeTeam: TEAM_OPTIONS,
+  awayTeam: TEAM_OPTIONS,
   autoFullscreen: [
     { value: true, label: 'ON' },
     { value: false, label: 'OFF' },

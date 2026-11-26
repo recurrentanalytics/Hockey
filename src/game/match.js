@@ -480,7 +480,8 @@ export class Match {
         p.z = 0;
         p.vz = p.vz < -1.2 ? -p.vz * p.phys.groundBounce : 0;
       }
-      if (hitBoards(p, RINK_CORE, p.phys.boardBounce) > 3) this.events.push({ type: 'boards' });
+      const bump = hitBoards(p, RINK_CORE, p.phys.boardBounce);
+      if (bump > 2) this.events.push({ type: 'boards', speed: bump });
       this.collideNets(p);
       if (p.z < 1.7) {
         for (const s of this.skaters) {
@@ -519,7 +520,8 @@ export class Match {
       }
       if (p.z >= GOAL.height) continue;
       for (const py of [-HW, HW]) {
-        if (hitCircle(p, gx, py, 0.06, p.phys.postBounce) > 2) this.events.push({ type: 'post' });
+        const ring = hitCircle(p, gx, py, 0.06, p.phys.postBounce);
+        if (ring > 2) this.events.push({ type: 'post', speed: ring });
       }
       hitSegment(p, gx, -HW, bx, -HW, p.phys.netBounce);
       hitSegment(p, gx, HW, bx, HW, p.phys.netBounce);

@@ -20,6 +20,7 @@ export class MenuScene {
   }
 
   back() {
+    this.app.audio.play('back');
     this.app.pop();
   }
 

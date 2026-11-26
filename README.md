@@ -53,6 +53,13 @@ ES modules need HTTP; opening `index.html` straight from disk won't work.
 - World Skate: 90-second minors, 3-on-3 overtime, and sudden death with the shooting order reversed
 - ISHD: played with a ball, fair checks on the carrier allowed, penalties halved in games under 30 minutes
 
+**Phase 5 (2 players):** versus and co-op on one screen, with shared or split camera and a separate device for each player. These were built during phases 1–3.
+
+**Phase 6 (polish):**
+- Synthesized sound effects with no audio files: stick, shots, post pings, boards, saves, hits, whistle, goal horn with crowd cheer, buzzer, crowd murmur and menu blips. Volume is in Settings → Sound.
+- Team choice for both sides in VS AI and in the 2-player lobby. There are 4 made-up teams.
+- Goal moments: goal light, crowd jumping in the stands, camera shake on goals, post hits and big hits.
+
 ## Default controls
 
 | Action | Keyboard 1 | Keyboard 2 | Gamepad (position) |
