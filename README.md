@@ -36,6 +36,10 @@ The puck, the AI, the rules and the full match engine come in phases 2–4.
 | Pause | Esc | Backspace | Start |
 
 Menus: arrows/WASD + Enter/Esc, the d-pad and face buttons, or tap/click.
+
+**Fullscreen:** the game goes fullscreen on your first tap, click or key press (turn this off under Settings → Auto fullscreen). The corner button or **F** toggles it. On phones it also tries to lock landscape. iPhone Safari doesn't support fullscreen for web pages.
+
+**Touch:** on phones and tablets the stick and buttons show from the start. Menus have a back button in the top-left corner.
 **8BitDo / Nintendo layout:** Settings → Controls → *Button labels* switches the on-screen names, and *Menu confirm* lets you use the right button to confirm. If your controller reports a non-standard mapping, remap it under Settings → Controls → Pad.
 
 ## Layout

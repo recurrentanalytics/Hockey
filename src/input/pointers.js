@@ -5,7 +5,9 @@ export class Pointers {
     this.active = new Map();
     this.downs = [];
     this.taps = [];
-    this.touchSeen = false;
+    // Phones/tablets: show touch controls from the start.
+    this.touchSeen = navigator.maxTouchPoints > 0 && !!window.matchMedia?.('(pointer: coarse)').matches;
+    this.onDown = null; // (rec) => true to swallow the press (runs inside the event)
     this.lastType = null;
 
     canvas.addEventListener('pointerdown', (e) => {
@@ -13,6 +15,8 @@ export class Pointers {
       canvas.setPointerCapture?.(e.pointerId);
       const p = display.toUI(e.clientX, e.clientY);
       const rec = { id: e.pointerId, x: p.x, y: p.y, sx: p.x, sy: p.y, type: e.pointerType, claimed: false, moved: false };
+      if (e.pointerType === 'touch') this.touchSeen = true;
+      if (this.onDown?.(rec)) return;
       this.active.set(e.pointerId, rec);
       this.downs.push(rec);
       this.lastType = e.pointerType;

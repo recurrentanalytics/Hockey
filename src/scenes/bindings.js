@@ -5,6 +5,7 @@ import { drawText, fitText } from '../engine/font.js';
 import { panel } from '../engine/draw.js';
 import { Menu } from '../ui/menu.js';
 import { header, hintBar } from '../ui/hud.js';
+import { BACK_BUTTON, hit, drawBackButton } from '../ui/corner.js';
 import { ACTIONS } from '../input/actions.js';
 
 export class BindingsScene {
@@ -54,6 +55,7 @@ export class BindingsScene {
       if (input.pointers.taps.length) input.finishCapture(null);
       return;
     }
+    if (input.pointers.touchSeen && input.taps.some((t) => hit(BACK_BUTTON, t))) return this.app.pop();
     this.menu.update(this.app);
     if (input.menu.back) this.app.pop();
   }
@@ -64,6 +66,7 @@ export class BindingsScene {
     const ctx = display.uctx, W = display.width, H = display.height;
     header(ctx, W, this.title, 'SELECT AN ACTION, THEN PRESS THE NEW INPUT');
     this.menu.draw(ctx, W);
+    if (input.pointers.touchSeen) drawBackButton(ctx);
 
     // Live input test
     const dev = this.device();

@@ -4,6 +4,8 @@ import { PAL } from './engine/palette.js';
 import { Display } from './engine/display.js';
 import { drawText } from './engine/font.js';
 import { panel } from './engine/draw.js';
+import { canFullscreen, isFullscreen, enterFullscreen, toggleFullscreen } from './engine/fullscreen.js';
+import { FS_BUTTON, hit, drawFullscreenButton } from './ui/corner.js';
 import { InputManager } from './input/manager.js';
 import { WorldView } from './world/view.js';
 import { Toasts } from './ui/hud.js';
@@ -33,6 +35,29 @@ const app = {
   },
 };
 app.backdrop = new Backdrop(app);
+
+// Fullscreen has to be requested inside the input event itself, so these run in the listeners.
+let autoTried = false;
+function autoFullscreen() {
+  if (autoTried) return;
+  autoTried = true;
+  if (settings.autoFullscreen && canFullscreen() && !isFullscreen()) enterFullscreen();
+}
+input.pointers.onDown = (p) => {
+  if (canFullscreen() && hit(FS_BUTTON(display.width), p)) {
+    autoTried = true;
+    toggleFullscreen();
+    return true;
+  }
+  autoFullscreen();
+  return false;
+};
+input.keyboard.onKeyDown = (code) => {
+  if (input.capturing) return;
+  const bound = ['kb1', 'kb2'].some((k) => Object.values(input.profile(k)).some((codes) => codes.includes(code)));
+  if (code === 'KeyF' && !bound && canFullscreen()) { autoTried = true; toggleFullscreen(); return; }
+  autoFullscreen();
+};
 app.push(new TitleScene(app));
 
 function drawPortraitHint() {
@@ -68,6 +93,7 @@ function frame(now) {
   for (let i = base; i < app.scenes.length; i++) {
     app.scenes[i].draw(i === app.scenes.length - 1);
   }
+  if (canFullscreen()) drawFullscreenButton(display.uctx, display.width, isFullscreen());
   app.toasts.draw(display.uctx, display.width, display.height);
   drawPortraitHint();
   display.present();

@@ -13,6 +13,7 @@ export class Keyboard {
       this.down.add(e.code);
       this.hits.add(e.code);
       this.onKey?.(e.code);
+      this.onKeyDown?.(e.code);
     });
     window.addEventListener('keyup', (e) => this.down.delete(e.code));
     window.addEventListener('blur', () => this.down.clear());

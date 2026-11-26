@@ -11,6 +11,7 @@ const DEFAULTS = {
   buttonLabels: 'auto',
   confirmButton: 'south',
   pixelPerfect: false,
+  autoFullscreen: true,
 };
 
 export const settings = { ...DEFAULTS, ...load('settings', {}) };
@@ -60,6 +61,10 @@ export const OPTIONS = {
   confirmButton: [
     { value: 'south', label: 'BOTTOM BUTTON' },
     { value: 'east', label: 'RIGHT BUTTON' },
+  ],
+  autoFullscreen: [
+    { value: true, label: 'ON' },
+    { value: false, label: 'OFF' },
   ],
   pixelPerfect: [
     { value: false, label: 'OFF' },

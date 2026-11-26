@@ -133,8 +133,8 @@ export class RinkScene {
     drawText(ui, 'PHASE 1: SKATING + CAMERAS', 4, 11, { color: PAL.mist, shadow: PAL.ink });
     if (this.cameraMode === 'split') {
       const y2 = Math.round((this.viewSize().h1 + 2) * SPLIT_ZOOM) + 4;
-      drawText(ui, 'P1', W - 4, 4, { color: this.players[0].color, align: 'right', shadow: PAL.ink });
-      drawText(ui, 'P2', W - 4, y2, { color: this.players[1].color, align: 'right', shadow: PAL.ink });
+      drawText(ui, 'P1', W - 50, 4, { color: this.players[0].color, align: 'right', shadow: PAL.ink });
+      drawText(ui, 'P2', W - 50, y2, { color: this.players[1].color, align: 'right', shadow: PAL.ink });
     }
 
     if (!isTop) return;
