@@ -521,6 +521,10 @@ export class Match {
     p.vz = 0;
     s.hasPuck = true;
     s.protectT = 0.45; // a moment to settle the puck before it can be poked away
+    // Possession chain for assists: reset when the other team gets it.
+    const chain = p.chain ?? (p.chain = []);
+    if (chain.length && chain[chain.length - 1].sideKey !== s.sideKey) chain.length = 0;
+    if (chain[chain.length - 1] !== s) chain.push(s);
     this.events.push({ type: 'pickup', by: s, side: s.sideKey });
     if (!s.human) {
       // Control follows the puck to the teammate who received it.
@@ -664,6 +668,8 @@ export class Match {
       g.saveT = 0.5;
       g.saveKind = p.z < 0.35 ? 'butterfly' : (p.pos.y - g.pos.y) * g.out >= 0 ? 'glove' : 'blocker';
       if (shot) {
+        g.saves = (g.saves ?? 0) + 1;
+        if (p.shot.by) p.shot.by.sog = (p.shot.by.sog ?? 0) + 1;
         this.shots[p.shot.side] += 1;
         this.events.push({ type: 'save', goalie: g });
       }
@@ -700,6 +706,20 @@ export class Match {
           this.shots[scorer] += 1;
         }
         const by = p.carrier ?? p.lastTouch;
+        // Credit: scorer plus up to two teammates who handled it before them.
+        let assists = [];
+        if (by && by.sideKey === scorer && by.number != null) {
+          const before = (p.chain ?? []).filter((x) => x.sideKey === scorer && x !== by);
+          assists = [...new Set(before.reverse())].slice(0, 2);
+          if (counts) {
+            by.g = (by.g ?? 0) + 1;
+            by.sog = (by.sog ?? 0) + 1;
+            for (const a of assists) a.a = (a.a ?? 0) + 1;
+          }
+        }
+        const beaten = this.goalies.find((g) => g.sideKey !== scorer);
+        if (beaten && counts) beaten.ga = (beaten.ga ?? 0) + 1;
+        if (p.chain) p.chain.length = 0;
         if (p.carrier) { p.carrier.hasPuck = false; p.carrier = null; }
         p.shot = null;
         this.lastGoal = { side: scorer, by };
@@ -711,7 +731,7 @@ export class Match {
         }
         this.state = 'goal';
         this.timer = 2.6;
-        this.events.push({ type: 'goal', side: scorer, by, shootout: !counts });
+        this.events.push({ type: 'goal', side: scorer, by, assists, shootout: !counts });
         this.ref?.onGoal(scorer);
         return true;
       }

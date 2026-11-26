@@ -18,6 +18,7 @@ const DEFAULTS = {
   sound: 0.75,
   venue: 'arena',
   rumble: true,
+  replays: true,
   homeTeam: 'borstentiere',
   awayTeam: 'blazers',
 };
@@ -79,6 +80,10 @@ export const OPTIONS = {
     { value: 1, label: '100%' },
   ],
   rumble: [
+    { value: true, label: 'ON' },
+    { value: false, label: 'OFF' },
+  ],
+  replays: [
     { value: true, label: 'ON' },
     { value: false, label: 'OFF' },
   ],

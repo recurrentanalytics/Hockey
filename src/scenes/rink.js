@@ -13,6 +13,7 @@ import { VideoWall } from '../ui/videoWall.js';
 import { resolveRules } from '../game/rules.js';
 import { hintBar } from '../ui/hud.js';
 import { PauseScene } from './pause.js';
+import { Recorder, Replay } from '../game/replay.js';
 
 const SPLIT_ZOOM = 0.8;
 const otherTeam = (t) => Object.keys(TEAMS).find((k) => k !== t && !TEAMS[k].hidden);
@@ -61,6 +62,9 @@ export class RinkScene {
     this.banner = null;
     this.fx = new Particles();
     this.wall = new VideoWall();
+    this.recorder = new Recorder(6);
+    this.replay = null;
+    this.replayCam = new Camera();
     const teamsInGame = [this.match.sides.home.team, this.match.sides.away.team];
     app.world.configure({ venue: settings.venue, logo: teamsInGame.some((t) => BOAR_TEAMS.has(t)) ? 'boar' : 'puck' });
     this.snapCameras();
@@ -131,7 +135,14 @@ export class RinkScene {
       }
       else this.finalT = (this.finalT ?? 0) + dt;
     }
+    if (this.replay) return this.updateReplay(dt, input);
+    // Start the replay at the end of the goal celebration, before the next face-off.
+    if (this.replayAt != null && m.state === 'goal' && m.timer <= dt * 1.5) return this.startReplay();
+    if (m.state !== 'goal') this.replayAt = null;
     m.update(dt, input);
+    // Replays start from play, never from the line-up before a face-off.
+    if (m.state === 'faceoff') this.recorder.clear();
+    else this.recorder.capture(m);
     const name = (side) => TEAMS[m.sides[side].team].name;
     const sfx = this.app.audio;
     for (const e of m.events) {
@@ -166,6 +177,8 @@ export class RinkScene {
         this.banner = { text: e.shootout ? 'SCORES!' : boar ? 'TOOORRR!!!' : 'GOAL!', sub: e.shootout ? name(e.side) : this.goalText(e), t: 2.4 };
         // The club hymn is the Borstentiere goal song.
         if (boar && !e.shootout) this.app.audio.song('audio/hymne.mp3', 10);
+        if (!e.shootout) this.notice = { text: this.creditText(e), t: 3 };
+        if (!e.shootout && settings.replays) this.replayAt = this.recorder.last;
         if (!e.shootout) this.wall.start('goal', { team: m.sides[e.side].team, look: e.by?.sideKey === e.side ? e.by.look : {}, text: boar ? 'TOOORRR!' : 'GOAL!' }, 2.6, 2.2);
       }
       if (e.type === 'save' && !this.banner) this.banner = { text: 'SAVE', t: 0.8, small: true };
@@ -243,6 +256,90 @@ export class RinkScene {
     return out;
   }
 
+  // ------------------------------------------------------------------ replay
+
+  startReplay() {
+    const m = this.match;
+    const goal = this.replayAt;
+    this.replayAt = null;
+    // From about three seconds before the goal to a moment after it.
+    const frames = this.recorder.around(goal, 180, 45);
+    const live = [...m.roster, ...m.goalies, m.puck];
+    this.replay = new Replay(frames, live, { speed: 0.55 });
+    this.banner = null;
+    this.wall.show = null;
+    this.cheerT = 0;
+    this.fx.list.length = 0;
+    const p = frames[0]?.ents.find((o) => o.e === m.puck);
+    if (p) { const v = this.viewSize(); const t = project(p.x, p.y); this.replayCam.snap(t.x, t.y - 12, v.w, v.h); }
+  }
+
+  updateReplay(dt, input) {
+    const r = this.replay, m = this.match, sfx = this.app.audio;
+    const skip = input.menu.confirm || input.taps.length || m.humans.some((h) => input.controller(h.controller)?.pressed.shoot);
+    for (const e of r.update(dt)) {
+      if (e.type === 'goal') {
+        const side = Math.sign(m.puck.pos.x);
+        sfx.play('cheer');
+        this.app.world.jiggle(side, 1);
+        this.fx.confetti(m.puck.pos.x - side * 3, m.puck.pos.y, 50);
+      }
+      else if (e.type === 'hit') sfx.play('hit', e.level / 8);
+      else if (e.type === 'boards') sfx.play('boards', e.level / 15);
+      else if (e.type === 'post') sfx.play('post', e.level / 20);
+      else if (e.type === 'pass') sfx.play('stick', 0.8);
+      else sfx.play(e.type);
+    }
+    if (m.puck.speed > 14 && m.puck.z >= 0) this.fx.trail(m.puck);
+    this.fx.update(dt * r.speed);
+    const v = this.viewSize(), p = project(m.puck.pos.x, m.puck.pos.y);
+    this.zoom = 1;
+    this.replayCam.follow(p.x, p.y - 12, dt, v.w, v.h, 3);
+    if (r.done || skip) {
+      r.restore();
+      this.replay = null;
+      this.fx.list.length = 0;
+    }
+  }
+
+  /** "GOAL #61  ASSISTS #7 #10" */
+  creditText(e) {
+    const who = (s) => (s.human ? `${s.human.tag} #${s.number}` : `#${s.number}`);
+    if (!e.by || e.by.sideKey !== e.side) return 'OWN GOAL';
+    const a = e.assists ?? [];
+    return `GOAL ${who(e.by)}${a.length ? `  ASSIST${a.length > 1 ? 'S' : ''} ${a.map(who).join(' ')}` : '  UNASSISTED'}`;
+  }
+
+  /** Three stars of the game: points for goals, assists, shots, saves; a bonus for winning. */
+  stars() {
+    const m = this.match, win = m.ref?.result?.winner;
+    const list = [];
+    for (const s of m.roster) {
+      const score = (s.g ?? 0) * 3 + (s.a ?? 0) * 2 + (s.sog ?? 0) * 0.4 + (s.sideKey === win ? 0.5 : 0);
+      if (score > 0.6) list.push({ who: `#${s.number}${s.human ? ' ' + s.human.tag : ''}`, side: s.sideKey, line: `${s.g ?? 0}G ${s.a ?? 0}A ${s.sog ?? 0} SOG`, score, look: s.look });
+    }
+    for (const g of m.goalies) {
+      const sv = g.saves ?? 0, ga = g.ga ?? 0;
+      const score = sv * 0.35 - ga * 0.8 + (ga === 0 && sv > 0 ? 2 : 0) + (g.sideKey === win ? 0.5 : 0);
+      if (sv > 0) list.push({ who: 'GOALIE', side: g.sideKey, line: `${sv} SAVES ${sv + ga ? Math.round((sv / (sv + ga)) * 1000) / 1000 : 0} SV%`.replace(' 0.', ' .'), score });
+    }
+    return list.sort((a, b) => b.score - a.score).slice(0, 3);
+  }
+
+  drawStars(ctx, W, y) {
+    const m = this.match, top = this.stars();
+    if (!top.length) return;
+    const w = 200, x = Math.round(W / 2 - w / 2), h = 11 + top.length * 8;
+    panel(ctx, x, y, w, h, { fill: PAL.ink, border: PAL.yellow, alpha: 0.85 });
+    drawText(ctx, 'THREE STARS', W / 2, y + 3, { color: PAL.yellow, align: 'center' });
+    top.forEach((st, i) => {
+      const ry = y + 11 + i * 8;
+      for (let k = 0; k <= 2 - i; k++) drawText(ctx, '*', x + 6 + k * 4, ry, { color: PAL.yellow });
+      drawText(ctx, `${TEAMS[m.sides[st.side].team].name} ${st.who}`, x + 20, ry, { color: PAL.white });
+      drawText(ctx, st.line, x + w - 6, ry, { color: PAL.mist, align: 'right' });
+    });
+  }
+
   drawStats(ctx, W, y) {
     const m = this.match, st = m.stats;
     const a = TEAMS[m.sides.home.team].name, b = TEAMS[m.sides.away.team].name;
@@ -307,6 +404,7 @@ export class RinkScene {
     display.setZoom(this.zoom);
     world.cheer = (this.cheerT ?? 0) > 0 || this.match.state === 'final';
     const ctx = display.wctx, W = display.width, H = display.height;
+    if (this.replay) return this.drawReplay();
     const ents = [...this.match.entities, ...this.effects(), ...this.fx.entities()];
 
     if (this.cameraMode === 'split') {
@@ -337,7 +435,7 @@ export class RinkScene {
     if (!isTop) return;
     if (input.touch.enabled) {
       input.touch.draw(ui, W, H);
-    } else if (this.match.humans.length === 1) {
+    } else if (this.match.humans.length === 1 && this.match.state !== 'final') {
       const id = this.match.humans[0].controller;
       const pairs = [
         [input.moveLabel(id), 'SKATE'],
@@ -348,6 +446,31 @@ export class RinkScene {
       if (W >= 360) pairs.push([input.actionLabel('sprint', id), 'SPRINT'], [input.actionLabel('switch', id), 'SWAP']);
       hintBar(ui, W, H, pairs);
     }
+  }
+
+  drawReplay() {
+    const { display, world } = this.app;
+    display.setZoom(1);
+    world.cheer = false;
+    const ctx = display.wctx;
+    const ents = [...this.replay.entities, ...this.fx.entities()];
+    world.draw(ctx, { x: 0, y: 0, w: display.worldWidth, h: display.worldHeight }, this.replayCam, ents);
+    const ui = display.uctx, W = display.width, H = display.height;
+    // TV look: letterbox bars, a blinking red dot, a progress bar
+    ui.fillStyle = PAL.ink;
+    ui.fillRect(0, 0, W, 14);
+    ui.fillRect(0, H - 14, W, 14);
+    if (Math.floor(performance.now() / 400) % 2 === 0) { ui.fillStyle = PAL.red; ui.fillRect(6, 4, 5, 5); }
+    drawText(ui, 'REPLAY', 14, 4, { color: PAL.white, big: true });
+    const m = this.match;
+    const a = TEAMS[m.sides.home.team].name, b = TEAMS[m.sides.away.team].name;
+    drawText(ui, `${a} ${m.score.home} - ${m.score.away} ${b}`, W - 30, 5, { color: PAL.cloud, align: 'right' });
+    ui.fillStyle = PAL.slate;
+    ui.fillRect(6, H - 9, W - 12, 2);
+    ui.fillStyle = PAL.yellow;
+    ui.fillRect(6, H - 9, Math.round((W - 12) * Math.min(1, this.replay.progress)), 2);
+    drawText(ui, `${this.app.input.confirmLabel()} TO SKIP`, W - 6, H - 7, { color: PAL.mist, align: 'right' });
+    if (this.notice) drawText(ui, this.notice.text, 6, H - 7, { color: PAL.white });
   }
 
   drawScoreboard(ctx, W) {
@@ -405,6 +528,7 @@ export class RinkScene {
     if (b.final) {
       drawText(ctx, `${this.app.input.confirmLabel()} TO CONTINUE`, W / 2, y + th + 15, { color: PAL.mist, align: 'center' });
       this.drawStats(ctx, W, y + h + 2);
+      if (this.mode !== 'practice') this.drawStars(ctx, W, y + h + 2 + 12 + 5 * 8 + 3);
     }
   }
 }

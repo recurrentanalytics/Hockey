@@ -48,6 +48,7 @@ export class Puck {
     this.carrier = null; this.holder = null;
     this.lastTouch = null; this.shot = null;
     this.passTo = null;
+    this.chain = [];       // skaters of one team who handled it in turn (for assists)
   }
 
   get loose() {

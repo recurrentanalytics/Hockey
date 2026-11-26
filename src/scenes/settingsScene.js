@@ -16,6 +16,7 @@ export class SettingsScene extends MenuScene {
         choice('RULES', 'ruleset'),
         choice('PERIOD LENGTH', 'periodLength'),
         choice('DIFFICULTY', 'difficulty'),
+        choice('GOAL REPLAYS', 'replays'),
         choice('2P CAMERA', 'twoPlayerCamera'),
         choice('TOUCH CONTROLS', 'touchControls'),
         choice('PIXEL PERFECT', 'pixelPerfect', () => app.display.resize()),
