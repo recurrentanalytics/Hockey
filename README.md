@@ -34,7 +34,15 @@ ES modules need HTTP; opening `index.html` straight from disk won't work.
   - 2P versus: 1-on-1 with goalies
   - 2P co-op: two players attacking one goalie
 
-**Next:** AI teammates and opponents (phase 3), then rulesets, penalties, clock and overtime (phase 4).
+**Phase 3 (team AI):** every skater nobody controls is played by the team AI.
+- Loose puck: the closest skater chases it, and the others hold a formation that shifts with the puck.
+- Attacking: the carrier drives to the slot, dodges defenders, and shoots away from the goalie or passes into open lanes. Teammates get open: back door, high slot, points, and breakout outlets.
+- Defending: one skater pressures and pokes, and the others mark opponents goal-side.
+- Pass receivers skate into the puck's path. Goalies make outlet passes to open teammates.
+- Difficulty changes opponent speed, reaction time, pokes, passing and aim. Teammates of human players always play at normal.
+- 4-on-4 with goalies in VS AI, 2P versus (each player has 3 AI teammates) and 2P co-op.
+
+**Next:** rulesets, clock, penalties, power plays and overtime/shootouts (phase 4).
 
 ## Default controls
 

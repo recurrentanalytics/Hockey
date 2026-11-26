@@ -32,6 +32,7 @@ export class Puck {
     this.z = 0; this.vz = 0;
     this.carrier = null; this.holder = null;
     this.lastTouch = null; this.shot = null;
+    this.passTo = null;
   }
 
   get loose() {

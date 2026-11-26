@@ -5,9 +5,9 @@ import { goalieSprites, shadowSprite, GOALIE_W, GOALIE_ANCHOR_X, GOALIE_ANCHOR_Y
 
 // react: seconds before moving on a shot · err: how far off the read can be (m)
 const SKILL = {
-  easy:   { react: 0.3,  speed: 2.2, dive: 2.4, err: 0.45 },
-  normal: { react: 0.25, speed: 2.5, dive: 2.9, err: 0.35 },
-  hard:   { react: 0.19, speed: 2.9, dive: 3.6, err: 0.24 },
+  easy:   { react: 0.28, speed: 2.3, dive: 2.6, err: 0.4 },
+  normal: { react: 0.22, speed: 2.6, dive: 3.0, err: 0.28 },
+  hard:   { react: 0.17, speed: 3.0, dive: 3.6, err: 0.2 },
 };
 const HW = GOAL.width / 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -38,7 +38,7 @@ export class Goalie {
 
   /** Blocking radius; high pucks find more gaps between glove, blocker and shoulders. */
   blockRadius(z = 0) {
-    const r = this.diving ? 0.44 : 0.36;
+    const r = this.diving ? 0.45 : 0.38;
     return z > 0.8 ? r * 0.8 : r;
   }
 

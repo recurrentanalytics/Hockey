@@ -58,10 +58,11 @@ export class Skater {
     this.pokeT = 0; this.followT = 0; this.noPickup = 0;
   }
 
-  update(dt, { move = { x: 0, y: 0 }, sprint = false } = {}) {
+  update(dt, { move = { x: 0, y: 0 }, sprint = false, limit = 1 } = {}) {
     const mlen = Math.hypot(move.x, move.y);
     this.sprinting = sprint && mlen > 0.2 && this.stamina > 0.02;
     let max = this.sprinting ? SKATE.sprintSpeed : SKATE.maxSpeed;
+    max *= limit;
     if (this.hasPuck) max *= 0.92;
     if (this.charging) max *= 0.8;
     this.stamina = Math.max(0, Math.min(1, this.stamina + (this.sprinting ? -0.28 : 0.16) * dt));
@@ -97,6 +98,7 @@ export class Skater {
     this.pokeCd = Math.max(0, this.pokeCd - dt);
     this.followT = Math.max(0, this.followT - dt);
     this.noPickup = Math.max(0, this.noPickup - dt);
+    this.protectT = Math.max(0, (this.protectT ?? 0) - dt);
 
     this.pushing = mlen > 0.05 && this.speed > 0.6;
     if (this.pushing) this.anim += dt * (2.2 + this.speed * 0.45);

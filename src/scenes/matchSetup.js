@@ -19,7 +19,7 @@ export class MatchSetupScene extends MenuScene {
           label: 'START',
           color: PAL.yellow,
           onSelect: () => app.push(new RinkScene(app, {
-            title: 'VS AI PREVIEW',
+            title: 'VS AI',
             mode: 'ai',
             humans: [{ controller: 'any', side: 'home' }],
           })),
@@ -30,7 +30,7 @@ export class MatchSetupScene extends MenuScene {
   }
 
   drawExtra(ctx, W) {
-    drawText(ctx, 'AI OPPONENTS AND RULES ARRIVE IN PHASES 3-4.', W / 2, 136, { color: PAL.mist, align: 'center', shadow: PAL.ink });
-    drawText(ctx, 'START OPENS SHOOTING PRACTICE FOR NOW.', W / 2, 144, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+    drawText(ctx, '4 ON 4 WITH GOALIES. CLOCK, PENALTIES AND THE', W / 2, 136, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+    drawText(ctx, 'CHOSEN RULESET ARRIVE IN PHASE 4.', W / 2, 144, { color: PAL.mist, align: 'center', shadow: PAL.ink });
   }
 }

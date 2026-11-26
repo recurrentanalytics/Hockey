@@ -14,12 +14,12 @@ import { PauseScene } from './pause.js';
 const SPLIT_ZOOM = 0.8;
 const LOOKAHEAD = 0.3;
 
-/** Line-ups per mode. Phase 2 has no AI: extra skaters stand still and take passes. */
+/** Line-ups per mode. `ai` lists the sides the team AI plays for. */
 const MODES = {
-  practice: { home: { team: 'blazers', skaters: 2 }, away: { team: 'waves', skaters: 0 } },
-  ai:       { home: { team: 'blazers', skaters: 2 }, away: { team: 'waves', skaters: 0 } },
-  versus:   { home: { team: 'blazers', skaters: 1 }, away: { team: 'waves', skaters: 1 } },
-  coop:     { home: { team: 'blazers', skaters: 2 }, away: { team: 'waves', skaters: 0 } },
+  practice: { home: { team: 'blazers', skaters: 2 }, away: { team: 'waves', skaters: 0 }, ai: [] },
+  ai:       { home: { team: 'blazers', skaters: 4 }, away: { team: 'waves', skaters: 4 }, ai: ['home', 'away'] },
+  versus:   { home: { team: 'blazers', skaters: 4 }, away: { team: 'waves', skaters: 4 }, ai: ['home', 'away'] },
+  coop:     { home: { team: 'blazers', skaters: 4 }, away: { team: 'waves', skaters: 4 }, ai: ['home', 'away'] },
 };
 
 export class RinkScene {
@@ -102,7 +102,7 @@ export class RinkScene {
     this.match.update(dt, input);
     for (const e of this.match.events) {
       if (e.type === 'goal') this.banner = { text: 'GOAL!', sub: this.goalText(e), t: 2.4, color: TEAMS[this.match.sides[e.side].team].main };
-      if (e.type === 'save' && this.mode !== 'versus') this.banner = { text: 'SAVE', sub: null, t: 0.8, color: PAL.cloud, small: true };
+      if (e.type === 'save') this.banner = { text: 'SAVE', sub: null, t: 0.8, color: PAL.cloud, small: true };
     }
     if (this.banner && (this.banner.t -= dt) <= 0) this.banner = null;
     this.updateCameras(dt);
@@ -179,7 +179,7 @@ export class RinkScene {
   drawScoreboard(ctx, W) {
     const m = this.match;
     let text;
-    if (this.mode === 'practice' || this.mode === 'ai') {
+    if (this.mode === 'practice') {
       text = `GOALS ${m.score.home}   SHOTS ${m.shots.home}`;
     } else {
       const a = TEAMS[m.sides.home.team], b = TEAMS[m.sides.away.team];
