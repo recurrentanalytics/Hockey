@@ -19,6 +19,29 @@ function turnToward(a, b, max) {
   return a + Math.max(-max, Math.min(max, d));
 }
 
+const rings = new Map();
+/** Pixel ellipse ring (19×7) with a darker back half, cached per colour. */
+function ringSprite(color) {
+  let c = rings.get(color);
+  if (c) return c;
+  c = document.createElement('canvas');
+  c.width = 19; c.height = 7;
+  const g = c.getContext('2d');
+  for (let y = 0; y < 7; y++) {
+    for (let x = 0; x < 19; x++) {
+      const dx = (x + 0.5 - 9.5) / 9, dy = (y + 0.5 - 3.5) / 3;
+      const r = dx * dx + dy * dy;
+      if (r <= 1 && r > 0.45) {
+        g.globalAlpha = y < 3 ? 0.55 : 1;
+        g.fillStyle = color;
+        g.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  rings.set(color, c);
+  return c;
+}
+
 export class Skater {
   constructor({ team, x = 0, y = 0, facing = 1, number = 0, look = {} }) {
     this.team = TEAMS[team];
@@ -269,6 +292,8 @@ export class Skater {
   drawShadow(ctx, ox, oy) {
     const p = project(this.pos.x, this.pos.y);
     ctx.drawImage(shadowSprite(), Math.round(p.x + ox - 7), Math.round(p.y + oy - 2));
+    // Controlled player: a ring in the player's colour round the skates.
+    if (this.human) ctx.drawImage(ringSprite(this.human.color), Math.round(p.x + ox - 9), Math.round(p.y + oy - 3));
   }
 
   drawStick(ctx, p, ox, oy, hand) {

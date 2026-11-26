@@ -5,9 +5,9 @@ import { goalieSprites, shadowSprite, GOALIE_W, GOALIE_ANCHOR_X, GOALIE_ANCHOR_Y
 
 // react: seconds before moving on a shot · err: how far off the read can be (m)
 const SKILL = {
-  easy:   { react: 0.28, speed: 3.0, dive: 2.6, err: 0.4 },
-  normal: { react: 0.22, speed: 3.8, dive: 3.0, err: 0.28 },
-  hard:   { react: 0.17, speed: 4.4, dive: 3.6, err: 0.2 },
+  easy:   { react: 0.26, speed: 3.1, dive: 2.7, err: 0.36 },
+  normal: { react: 0.2, speed: 3.9, dive: 3.2, err: 0.22 },
+  hard:   { react: 0.16, speed: 4.5, dive: 3.7, err: 0.17 },
 };
 const HW = GOAL.width / 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

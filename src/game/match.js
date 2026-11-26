@@ -253,9 +253,12 @@ export class Match {
     }
     victim.vel.x += sx * approach * 0.35;
     victim.vel.y += sy * approach * 0.35;
-    if (legalCheck || approach > 7) { victim.downT = victim.downMax = 1.3; victim.charging = false; } // knocked off the skates
+    // Knocked off the skates: by a real check, a hard human hit, or a genuine high-speed crash.
+    // Ordinary bumps in puck battles only stagger (the push above).
+    const down = legalCheck ? approach > 4.5 : hitter.human ? approach > 7 : approach > 10;
+    if (down) { victim.downT = victim.downMax = 1.3; victim.charging = false; }
     // Count real checks only: legal checks, knockdowns and hard human hits (not incidental bumps).
-    if (legalCheck || approach > 7 || (hitter.human && approach > 5)) this.stats[hitter.sideKey].hits += 1;
+    if (legalCheck || down || (hitter.human && approach > 5)) this.stats[hitter.sideKey].hits += 1;
     this.events.push({ type: 'hit', hitter, victim, approach });
     if (!this.ref || legalCheck) return;
     // Only a deliberate, hard hit is called: the hitter must drive through at speed.
@@ -672,7 +675,7 @@ export class Match {
         g.saves = (g.saves ?? 0) + 1;
         if (p.shot.by) p.shot.by.sog = (p.shot.by.sog ?? 0) + 1;
         this.shots[p.shot.side] += 1;
-        this.events.push({ type: 'save', goalie: g });
+        this.events.push({ type: 'save', goalie: g, speed: p.speed, dist: p.shot.dist });
       }
       p.shot = null;
       return !!p.holder;
@@ -682,13 +685,15 @@ export class Match {
 
   pickups() {
     const p = this.puck;
-    let best = null, bd = PICKUP_RANGE;
+    let best = null, bd = Infinity;
     for (const s of this.skaters) {
       if (s.noPickup > 0) continue;
       const b = s.bladePoint();
       const d = Math.hypot(p.pos.x - b.x, p.pos.y - b.y);
       const rel = Math.hypot(p.vel.x - s.vel.x, p.vel.y - s.vel.y);
-      if (d < bd && rel < PICKUP_MAX_REL_SPEED) { bd = d; best = s; }
+      // The intended receiver reaches out with the stick for a pass.
+      const range = s === p.passTo ? PICKUP_RANGE + 0.3 : PICKUP_RANGE;
+      if (d < Math.min(bd, range) && rel < PICKUP_MAX_REL_SPEED) { bd = d; best = s; }
     }
     if (best) this.gainPossession(best);
   }

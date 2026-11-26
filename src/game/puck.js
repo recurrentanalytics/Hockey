@@ -75,12 +75,12 @@ export class Puck {
     ctx.restore();
   }
 
-  draw(ctx, ox, oy) {
+  draw(ctx, ox, oy, ghost = false) {
     const p = project(this.pos.x, this.pos.y, this.z);
     const x = Math.round(p.x + ox), y = Math.round(p.y + oy);
     // Distance rolled, for the spinning seam and pegs.
     const sp = this.speed;
-    this.roll = ((this.roll ?? 0) + sp / 60 / 0.035) % (Math.PI * 2);
+    if (!ghost) this.roll = ((this.roll ?? 0) + sp / 60 / 0.035) % (Math.PI * 2);
     const px = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, w, h); };
     if (this.ball) {
       // 5×5 ball with an ink outline, shading and a shine; a dark seam spot rolls round it.

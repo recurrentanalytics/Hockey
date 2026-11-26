@@ -372,6 +372,16 @@ export function skaterSprites(team, look = {}) {
   };
   s = {
     frame,
+    /** Bake the everyday frames up front so nothing is baked mid-game (no hitches). */
+    warm() {
+      for (const pose of Object.keys(POSES)) frame(pose, 'normal');
+      for (const pose of ['glide', 'idleA', 'idleB']) frame(pose, 'blink');
+      for (const pose of ['windup', 'release', 'lunge', 'tiredA', 'tiredB']) frame(pose, 'effort');
+      for (const pose of ['stumble', 'sprawl', 'kneel']) frame(pose, 'dizzy');
+      for (const pose of ['cheerA', 'cheerB', 'glide', 'idleA', 'idleB']) frame(pose, 'happy');
+      for (let i = 0; i < 8; i++) frame(`stride${i}`, 'happy');
+      frame('sad', 'sad'); frame('glide', 'sad');
+    },
     // Celebration frames for the video wall
     get happyRight() { return frame('cheerA', 'happy').right; },
     get happyLeft() { return frame('cheerB', 'happy').left; },

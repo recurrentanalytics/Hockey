@@ -2,7 +2,7 @@
 // Browsers only allow audio after a tap/click/key press, so unlock() is called from input events.
 import { settings } from '../settings.js';
 
-const MIN_GAP = { stick: 0.05, boards: 0.08, hit: 0.1, post: 0.15, menu: 0.03 };
+const MIN_GAP = { stick: 0.05, boards: 0.08, hit: 0.1, post: 0.15, menu: 0.03, ooh: 1.5 };
 
 export class Audio {
   constructor() {
@@ -127,6 +127,12 @@ export class Audio {
         break;
       case 'cheer':
         this.cheer(t, 1.6 * v);
+        break;
+      case 'ooh':     // the crowd's "oooh!" on a post or a big save: vowel formants that sag
+        for (const [f0, f1, g] of [[520, 430, 0.22], [900, 720, 0.14], [2400, 2200, 0.04]]) {
+          const n = this.noise(t, 1.3, { freq: f0, q: 6, gain: g * v, attack: 0.18 });
+          n.f.frequency.linearRampToValueAtTime(f1, t + 1.2);
+        }
         break;
       case 'menu':
         this.tone(t, 0.05, { type: 'square', freq: 880, gain: 0.06 });

@@ -95,6 +95,12 @@ export class Menu {
   }
 
   draw(ctx, W) {
+    // A soft dark card behind the list keeps it readable over the moving rink.
+    const shown = this.items.map((it, i) => (it.spacer ? null : this.rect(i, W))).filter(Boolean);
+    if (shown.length) {
+      const a = shown[0], z = shown[shown.length - 1];
+      panel(ctx, a.x - 5, a.y - 5, a.w + 10, z.y + z.h - a.y + 10, { fill: PAL.ink, border: null, alpha: 0.55 });
+    }
     this.items.forEach((it, i) => {
       if (it.spacer) return;
       const r = this.rect(i, W);

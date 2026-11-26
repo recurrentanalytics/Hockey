@@ -58,6 +58,7 @@ export class RinkScene {
       difficulty: settings.difficulty,
       humans: humans.map((h, i) => ({ ...h, tag: `P${i + 1}`, color: PLAYER_COLORS[i] })),
     });
+    for (const sk of this.match.roster) sk.sprites.warm();
     this.cams = this.match.humans.map(() => new Camera());
     this.shared = new Camera();
     this.banner = null;
@@ -141,6 +142,7 @@ export class RinkScene {
     if (this.replayAt != null && m.state === 'goal' && m.timer <= dt * 1.5) return this.startReplay();
     if (m.state !== 'goal') this.replayAt = null;
     m.update(dt, input);
+    if (m.state === 'play') this.playT = (this.playT ?? 0) + dt;
     // Replays start from play, never from the line-up before a face-off.
     if (m.state === 'faceoff') this.recorder.clear();
     else this.recorder.capture(m);
@@ -152,9 +154,9 @@ export class RinkScene {
         case 'pass': case 'steal': sfx.play('stick', 0.8); break;
         case 'pickup': sfx.play('stick', 0.4); break;
         case 'boards': sfx.play('boards', e.speed / 15); break;
-        case 'post': sfx.play('post', e.speed / 20); this.shake = Math.max(this.shake, 0.15); this.app.world.jiggle(Math.sign(m.puck.pos.x), 0.35); break;
-        case 'save': sfx.play('save'); this.fx.puff(m.puck.pos.x, m.puck.pos.y); break;
-        case 'hit': sfx.play('hit', e.approach / 8); if (e.approach > 5) { this.shake = Math.max(this.shake, 0.2); this.fx.stars(e.victim.pos.x, e.victim.pos.y); } if (e.victim.downT > 0) this.fx.puff(e.victim.pos.x, e.victim.pos.y, 0.1, 9); break;
+        case 'post': sfx.play('post', e.speed / 20); sfx.play('ooh'); this.shake = Math.max(this.shake, 0.15); this.app.world.jiggle(Math.sign(m.puck.pos.x), 0.35); break;
+        case 'save': sfx.play('save'); this.fx.puff(m.puck.pos.x, m.puck.pos.y); if (e.speed > 20 || e.dist < 5) sfx.play('ooh', 0.8); break;
+        case 'hit': if (e.approach > 4.5 || e.victim.downT > 0) sfx.play('hit', e.approach / 8); if (e.approach > 5) { this.shake = Math.max(this.shake, 0.2); this.fx.stars(e.victim.pos.x, e.victim.pos.y); } if (e.victim.downT > 0) this.fx.puff(e.victim.pos.x, e.victim.pos.y, 0.1, 9); break;
         case 'goal': sfx.play('horn'); this.shake = 0.5; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); this.app.world.jiggle(this.lampSide, 1); if (e.side === 'home') this.waveT = 3.5; this.fx.confetti(m.puck.pos.x - Math.sign(m.puck.pos.x) * 3, m.puck.pos.y); break;
         case 'whistle': sfx.play('whistle'); break;
         case 'break': case 'final': sfx.play('buzzer'); if (e.type === 'final') sfx.play('cheer'); break;
@@ -341,6 +343,41 @@ export class RinkScene {
     });
   }
 
+  /** The ball drawn once more, faintly, over everything: you can see it behind players. */
+  ballGhost() {
+    const p = this.match.puck;
+    return {
+      sortY: Infinity,
+      draw: (ctx, ox, oy) => {
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        p.draw(ctx, ox, oy, true);
+        ctx.restore();
+      },
+    };
+  }
+
+  /** Arrow at the screen edge pointing to the ball when the camera can't see it. */
+  drawBallArrow(ctx, cam, W, H) {
+    const { display } = this.app;
+    const p = this.match.puck;
+    const wp = project(p.pos.x, p.pos.y, p.z);
+    const k = W / display.worldWidth;
+    const sx = (wp.x - cam.x) * k + W / 2, sy = (wp.y - cam.y) * k + H / 2;
+    const m = 10;
+    if (sx > m && sx < W - m && sy > 20 && sy < H - m) return;
+    const cx = Math.max(m, Math.min(W - m, sx)), cy = Math.max(20, Math.min(H - m, sy));
+    const a = Math.atan2(sy - cy || sy - H / 2, sx - cx || sx - W / 2);
+    const blink = Math.floor(performance.now() / 250) % 2;
+    ctx.fillStyle = PAL.ink;
+    ctx.fillRect(Math.round(cx) - 3, Math.round(cy) - 3, 7, 7);
+    ctx.fillStyle = blink ? '#ff2a2a' : PAL.white;
+    ctx.fillRect(Math.round(cx) - 2, Math.round(cy) - 2, 5, 5);
+    // a little pointer toward the ball
+    ctx.fillStyle = PAL.ink;
+    for (let i = 4; i <= 6; i++) ctx.fillRect(Math.round(cx + Math.cos(a) * i), Math.round(cy + Math.sin(a) * i), 1, 1);
+  }
+
   drawStats(ctx, W, y) {
     const m = this.match, st = m.stats;
     const a = TEAMS[m.sides.home.team].name, b = TEAMS[m.sides.away.team].name;
@@ -406,7 +443,7 @@ export class RinkScene {
     world.cheer = (this.cheerT ?? 0) > 0 || this.match.state === 'final';
     const ctx = display.wctx, W = display.width, H = display.height;
     if (this.replay) return this.drawReplay();
-    const ents = [...this.match.entities, ...this.effects(), ...this.fx.entities()];
+    const ents = [...this.match.entities, ...this.effects(), ...this.fx.entities(), this.ballGhost()];
 
     if (this.cameraMode === 'split') {
       const v = this.viewSize();
@@ -422,6 +459,7 @@ export class RinkScene {
     }
 
     const ui = display.uctx;
+    if (this.cameraMode !== 'split' && this.match.state === 'play') this.drawBallArrow(ui, this.cameraMode === 'shared' ? this.shared : this.cams[0], W, H);
     this.drawScoreboard(ui, W);
     if (this.cameraMode === 'split') {
       const y2 = Math.round((this.viewSize().h1 + 2) * SPLIT_ZOOM) + 4;
@@ -445,7 +483,10 @@ export class RinkScene {
         [input.actionLabel('check', id), 'POKE'],
       ];
       if (W >= 360) pairs.push([input.actionLabel('sprint', id), 'SPRINT'], [input.actionLabel('switch', id), 'SWAP']);
-      hintBar(ui, W, H, pairs);
+      // Fades out once you've played a while; comes back during stoppages.
+      const a = Math.max(0, Math.min(1, 1 - ((this.playT ?? 0) - 25) / 2));
+      const show = this.match.state !== 'play' ? 1 : a;
+      if (show > 0.02) { ui.save(); ui.globalAlpha = show; hintBar(ui, W, H, pairs); ui.restore(); }
     }
   }
 
@@ -454,7 +495,7 @@ export class RinkScene {
     display.setZoom(1);
     world.cheer = false;
     const ctx = display.wctx;
-    const ents = [...this.replay.entities, ...this.fx.entities()];
+    const ents = [...this.replay.entities, ...this.fx.entities(), this.ballGhost()];
     world.draw(ctx, { x: 0, y: 0, w: display.worldWidth, h: display.worldHeight }, this.replayCam, ents);
     const ui = display.uctx, W = display.width, H = display.height;
     // TV look: letterbox bars, a blinking red dot, a progress bar
