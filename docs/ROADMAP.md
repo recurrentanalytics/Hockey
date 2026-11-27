@@ -49,7 +49,7 @@ Phase 4 (neue Orte, Reise), Phase 5 (neue Sportarten und gleichwertige Lebensweg
 
 | Schritt | Ziel | Bezug |
 |---|---|---|
-| 0.1 | Android-Assets korrigieren (Ersatzkopie vollständig), Flugmodus-Test | T1 |
+| 0.1 | ✅ Android-Assets korrigieren (Ersatzkopie vollständig, Prüfung im Build-Skript, App 0.8); Flugmodus-Test auf dem Gerät steht noch aus | T1 |
 | 0.2 | Boni-Daten reproduzierbar: Abrufskript für die LGLN-Daten, Quellen dokumentiert | T3 |
 | 0.3 | Tablet- und Handytest: Bildraten-Anzeige `?fps`, einmal messen | T4 |
 | 0.4 | Boni-Test automatisieren: Testplatz und 3D-Standbilder ins Repo | T2 |

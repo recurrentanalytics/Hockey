@@ -13,7 +13,7 @@ Nichts davon ist umgesetzt. Jede Position ist ein eigener kleiner Auftrag.
 
 | # | Thema | Prio | Aufwand | Nutzen |
 |---|---|---|---|---|
-| T1 | Android-Ersatzkopie unvollständig | 🔴 | S | App offline wieder vollständig |
+| T1 | ✅ Android-Ersatzkopie unvollständig (App 0.8) | – | S | App offline wieder vollständig |
 | T2 | Kein Test für den Boni-Pfad (3D und Testplatz) | 🔴 | M | jeder Umbau prüfbar |
 | T3 | Ortsdaten nicht reproduzierbar | 🔴 | M | Boni neu baubar, zweiter Ort möglich |
 | T4 | Keine Messung auf echten Geräten | 🔴 | S–M | Grundlage aller Performance-Entscheidungen |
@@ -35,9 +35,9 @@ Nichts davon ist umgesetzt. Jede Position ist ein eigener kleiner Auftrag.
 
 ## Details
 
-### T1 🔴 Android-Ersatzkopie unvollständig (S)
+### T1 ✅ Android-Ersatzkopie unvollständig (S) – erledigt in App 0.8
 `tools/android/build.sh` kopiert nur `assets/intro` und `assets/app` in die App. Es fehlen `assets/pixel`, `assets/fonts`, `assets/voice`, außerdem `test.html` und `src/test/`. Ohne Netz zeigt die App deshalb vermutlich keine Pixel-Grafiken (Logo, Bonny, „TOOOR!“), keine Pixelify-Schrift und keinen Kommentar.
-**Vorschlag:** `cp -r assets "$WWW/"` statt einzelner Ordner, `test.html` mitnehmen. Danach einmal im Flugmodus prüfen.
+**Erledigt:** `build.sh` kopiert jetzt alle Asset-Ordner und alle drei Seiten und bricht ab, wenn eine referenzierte Datei in der App fehlt. Die mitgelieferte Kopie lief im Test (nur dieser Ordner serviert) ohne fehlende Dateien. Offen: einmal im Flugmodus auf dem Gerät prüfen.
 
 ### T2 🔴 Kein Test für den Boni-Pfad (M)
 `tools/test/playthrough.cjs` prüft nur die Halle. Für `test.html` und `intro.html` gibt es keinen eingecheckten Test. Die Prüfskripte der letzten Wochen lagen nur in der Arbeitsumgebung.
