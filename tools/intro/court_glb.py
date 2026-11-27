@@ -8,7 +8,7 @@ at both ends, and red street-hockey goals with white nets.
 Local frame: a along the long side (A->D, 25.2 m), b across (A->B, 18 m), up. The glTF is Y-up:
 X = a, Y = up, Z = -b. src/intro/photoreal.js places it on the fence rectangle.
 
-Usage: python3 tools/intro/court_glb.py <clean_asphalt_diff_2k.jpg> <out.glb>
+Usage: python3 tools/intro/court_glb.py <clean_asphalt_diff_2k.jpg> <props.glb> <ground.glb> <flecks.png>
 """
 import io, json, math, struct, sys
 import numpy as np
@@ -52,7 +52,9 @@ def court_texture(asphalt_path, px_per_m=82):
     flecks *= (0.7 + 0.3 * lowfreq(30)[..., None])
     fine = (RNG.random((h, w, 1)).astype(np.float32) - 0.5) * 16          # aggregate grain
     col = shade * (0.9 + 0.2 * wear[..., None]) + grain * 2.2 + fine
-    col = col * (1 - flecks) + (sun * (0.95 + 0.1 * wear[..., None]) + grain * 2.4 + fine * 1.3) * flecks
+    # the dappled light is no longer baked in: it is a separate mask the game lights by sun and weather
+    flecks_mask = Image.fromarray((np.clip(flecks[..., 0], 0, 1) * 255).astype(np.uint8))
+    del sun
     # dirt and leaves along the fence
     yy, xx = np.mgrid[0:h, 0:w]
     edge = np.minimum.reduce([xx, w - 1 - xx, yy, h - 1 - yy]).astype(np.float32) / px_per_m
@@ -80,9 +82,9 @@ def court_texture(asphalt_path, px_per_m=82):
     paint = np.asarray(lines.filter(ImageFilter.GaussianBlur(0.8))).astype(np.float32)[..., None] / 255
     paint *= np.clip(0.55 + 0.6 * lowfreq(6)[..., None], 0, 1)          # worn paint
     col = np.asarray(img).astype(np.float32)
-    lit = 0.78 + 0.22 * flecks
+    lit = 0.8
     col = col * (1 - paint * 0.85) + np.array([222, 222, 216], np.float32) * lit * paint * 0.85
-    return Image.fromarray(np.clip(col, 0, 255).astype(np.uint8))
+    return Image.fromarray(np.clip(col, 0, 255).astype(np.uint8)), flecks_mask
 
 
 def mulch_texture(asphalt_path, px=512):
@@ -211,14 +213,17 @@ class Geo:
             self.quad(r0[k], r0[(k + 1) % 4], r1[(k + 1) % 4], r1[k])
 
 
-def build(asphalt, out):
+def build(asphalt, out, out_ground, out_flecks):
     g = Gltf()
-    t_court = g.image(court_texture(asphalt), 'JPEG')
+    gg = Gltf()  # ground (asphalt + mulch) in its own model: the game lights it by sun and weather
+    court_img, flecks_img = court_texture(asphalt)
+    flecks_img.resize((1024, round(1024 * W / L)), Image.LANCZOS).save(out_flecks, optimize=True)
+    t_court = gg.image(court_img, 'JPEG')
     t_mesh = g.image(mesh_texture(), 'PNG')
     t_net = g.image(net_texture(), 'PNG')
-    t_mulch = g.image(mulch_texture(asphalt), 'JPEG')
-    m_court = g.material('asphalt', tex=t_court, unlit=True)
-    m_mulch = g.material('mulch', tex=t_mulch, color=(0.92, 0.92, 0.92, 1), unlit=True)
+    t_mulch = gg.image(mulch_texture(asphalt), 'JPEG')
+    m_court = gg.material('asphalt', tex=t_court, unlit=True)
+    m_mulch = gg.material('mulch', tex=t_mulch, color=(0.92, 0.92, 0.92, 1), unlit=True)
     m_fence = g.material('fence mesh', tex=t_mesh, blend=True, double=True, metal=0.3, rough=0.6)
     m_fence_near = g.material('fence mesh (camera side)', tex=t_mesh, color=(1, 1, 1, 0.28), blend=True, double=True, metal=0.3, rough=0.6)
     m_post = g.material('fence posts', color=(0.36, 0.42, 0.37, 1), metal=0.4, rough=0.55)
@@ -232,7 +237,7 @@ def build(asphalt, out):
     # ground
     geo = Geo()
     geo.quad((-ga, -gb, 0), (ga, -gb, 0), (ga, gb, 0), (-ga, gb, 0), uv=((0, 1), (1, 1), (1, 0), (0, 0)))
-    g.mesh('court', geo.p, geo.n, geo.t, geo.i, m_court)
+    gg.mesh('court', geo.p, geo.n, geo.t, geo.i, m_court)
     # 3.5 m apron of mulch around the fence, 1 cm lower (the Google mesh has no ground under the
     # tree crowns, and the see-through trees would otherwise show the void)
     ap, e = Geo(), 3.5
@@ -243,7 +248,7 @@ def build(asphalt, out):
         o0, o1 = outer[k], outer[(k + 1) % 4]
         pts = [(*o0, -0.01), (*o1, -0.01), (*i1, -0.01), (*i0, -0.01)]
         ap.quad(*pts, uv=tuple((p[0] / 2, p[1] / 2) for p in pts))
-    g.mesh('apron', ap.p, ap.n, ap.t, ap.i, m_mulch)
+    gg.mesh('apron', ap.p, ap.n, ap.t, ap.i, m_mulch)
 
     # fence panels (texture: 1 m tiles) and posts every 2.5 m, top rail, diagonal struts outside
     fence, near, posts = Geo(), Geo(), Geo()
@@ -304,8 +309,9 @@ def build(asphalt, out):
     g.mesh('hockey goal base', white.p, white.n, white.t, white.i, m_white)
     g.mesh('hockey nets', net.p, net.n, net.t, net.i, m_net)
     g.save(out)
+    gg.save(out_ground)
 
 
 if __name__ == '__main__':
-    build(sys.argv[1], sys.argv[2])
-    print('ok', sys.argv[2])
+    build(*sys.argv[1:5])
+    print('ok')

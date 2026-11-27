@@ -35,6 +35,16 @@
     #voiceHint { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); max-width: 80vw; font: 13px Arial, sans-serif; color: #fff; background: rgba(14,15,26,.75);
                  border-radius: 8px; padding: 6px 10px; opacity: 0; transition: opacity .6s; text-align: center; }
     #voiceHint.on { opacity: 1; }
+    #weatherFx { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+    #wxBtn { position: absolute; left: 10px; top: 34px; pointer-events: auto; font-size: 20px; line-height: 1; padding: 6px 8px; border-radius: 10px;
+             background: rgba(14,15,26,.6); border: 2px solid rgba(255,210,63,.8); cursor: pointer; }
+    #wx { position: absolute; left: 10px; top: 76px; pointer-events: auto; width: min(300px, 80vw); padding: 10px; border-radius: 12px; background: rgba(14,15,26,.9);
+          border: 2px solid #ffd23f; font: 600 14px 'Pixelify Sans', Arial, sans-serif; color: #fff; }
+    #wx .row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+    #wx button { font: inherit; font-size: 15px; color: #fff; background: #2a2b3d; border: 2px solid #4a4b60; border-radius: 8px; padding: 4px 9px; cursor: pointer; }
+    #wx button.on { border-color: #ffd23f; background: #4a3d14; }
+    #wx label { display: block; margin: 4px 0 8px; } #wx input[type=range] { width: 100%; } #wx input[type=date] { font: inherit; }
+    #wxInfo { color: #ffd23f; font-size: 13px; }
     #ui { position: fixed; inset: 0; pointer-events: none; font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif; color: #fff; }
     #title { position: absolute; left: 0; right: 0; top: 7%; text-align: center; opacity: 0; transition: opacity .8s, transform .8s; transform: translateY(-12px);
              text-shadow: 0 3px 0 #16110d, 0 0 18px rgba(0,0,0,.55); }
@@ -64,10 +74,20 @@
   <div id="cesium"></div>
   <canvas id="gl"></canvas>
   <canvas id="screen" tabindex="0" style="display:none"></canvas>
+  <canvas id="weatherFx"></canvas>
   <div id="cover"><img class="logo" src="assets/pixel/logo.png" alt="BORSTENBOOM!" /><div id="coverText"></div><div id="coverTrack"><div id="coverBar"></div></div></div>
   <div id="ui">
     <div id="title"><div class="club" id="titleName"></div><div class="sub" id="titleSub"></div></div>
     <div id="caption"></div>
+    <button id="wxBtn" type="button" hidden title="Wetter und Uhrzeit">⛅</button>
+    <div id="wx" hidden>
+      <div class="row"><button data-mode="live">Live</button><button data-mode="pick">Wählen</button><button data-mode="hist">Damals</button></div>
+      <div id="wxPick"><div class="row"><button data-look="sun">☀️</button><button data-look="partly">🌤️</button><button data-look="clouds">☁️</button><button data-look="rain">🌧️</button><button data-look="snow">❄️</button><button data-look="fog">🌫️</button></div>
+        <label>Uhrzeit <span id="wxHourLbl"></span><input id="wxHour" type="range" min="0" max="24" step="0.25" /></label></div>
+      <div id="wxHist"><label>Datum <input id="wxDate" type="date" min="1940-01-01" /></label>
+        <label>Uhrzeit <span id="wxHourLbl2"></span><input id="wxHour2" type="range" min="0" max="23" step="1" /></label></div>
+      <div id="wxInfo"></div>
+    </div>
     <div id="voiceHint"></div>
     <button id="skip" type="button">Überspringen ›</button>
     <button id="go" type="button">Spiel starten</button>

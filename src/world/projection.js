@@ -18,7 +18,8 @@ export function project(x, y, z = 0) {
 /** Zoom that keeps sprites at their usual size in metres on the 3D court (PROJ.x px per metre). */
 export function fixedZoom(fallback) {
   if (!B?.display) return fallback;
+  if (B.zoomLock) return B.zoomLock;
   const a = B.toCss(-5, 0, 0), b = B.toCss(5, 0, 0), d = B.display;
   const uiPerMetre = (Math.hypot(b.x - a.x, b.y - a.y) * d.dpr) / d.scale / 10;
-  return uiPerMetre / PROJ.x;
+  return (B.zoom = uiPerMetre / PROJ.x);
 }

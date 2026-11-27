@@ -3,6 +3,8 @@
 // Germany, Hannover, the List and onto the Boni court, told in short spoken lines, then turning so
 // the court lies sideways and tilting into the game's camera angle (60° from vertical).
 
+import { createEnvironment, weatherPanel } from './environment.js';
+
 const CESIUM_VERSION = '1.147.0';
 const GOOGLE_3D_TILES = 2275207; // Cesium ion asset: Google Photorealistic 3D Tiles
 
@@ -140,9 +142,22 @@ export async function run({ token, cesiumBase }) {
 
   let fixedT = null, start = null, skip = false, started = false;
   const now = () => (fixedT ?? (skip ? END : start === null ? 0 : (performance.now() - start) / 1000));
+  let orbit = null;
   const place = (t) => {
     const aspect = scene.canvas.clientWidth / Math.max(1, scene.canvas.clientHeight);
     const c = cameraAt(t, aspect);
+    if (orbit) {
+      // goal: the camera circles the court once, lower and a little further out, then lands again
+      const k = (performance.now() - orbit.t0) / orbit.dur;
+      if (k >= 1) { orbit = null; if (globalThis.BONI_3D) globalThis.BONI_3D.zoomLock = null; scene.requestRenderMode = !RECORD_MODE; }
+      else {
+        const e = ease(k), bump = Math.sin(Math.PI * e);
+        c.heading += Math.PI * 2 * e;
+        c.tilt -= 0.32 * bump;
+        c.range *= 1 + 0.55 * bump;
+        c.lift *= 1 - bump;
+      }
+    }
     camera.frustum.fov = aspect >= 1 ? c.fovx : 2 * Math.atan(Math.tan(c.fovx / 2) / aspect);
     camera.frustum.near = Math.max(1, c.range * 0.02);
     camera.lookAt(target(c.lift, c.heading), new Cesium.HeadingPitchRange(c.heading, c.tilt - Math.PI / 2, c.range));
@@ -178,6 +193,10 @@ export async function run({ token, cesiumBase }) {
   };
   const court = await Cesium.Model.fromGltfAsync({ url: new URL('../../assets/intro/boni_platz.glb', import.meta.url).href, modelMatrix: courtMatrix(), show: false, forwardAxis: Cesium.Axis.X });
   scene.primitives.add(court);
+  // the floor (asphalt, mulch) is a model of its own: environment.js lights it by sun and weather
+  const floorModel = await Cesium.Model.fromGltfAsync({ url: new URL('../../assets/intro/boni_boden.glb', import.meta.url).href, modelMatrix: courtMatrix(), show: false, forwardAxis: Cesium.Axis.X });
+  scene.primitives.add(floorModel);
+  const env = createEnvironment({ Cesium, viewer, ground: floorModel });
   let rinkAlpha = 0;
 
   // ---------------------------------------------------------------- see-through trees
@@ -296,8 +315,8 @@ export async function run({ token, cesiumBase }) {
     narrate(t);
     const fade = phase(t, T.fade);
     rinkAlpha = phase(t, T.rink);
-    court.show = rinkAlpha > 0;
-    court.color = Cesium.Color.WHITE.withAlpha(rinkAlpha);
+    court.show = floorModel.show = rinkAlpha > 0;
+    court.color = floorModel.color = Cesium.Color.WHITE.withAlpha(rinkAlpha);
     // the see-through shader stays attached all the time (switching it recompiles every tile and
     // stutters); it does nothing while u_fade is 0
     if (fade > 0) {
@@ -327,7 +346,7 @@ export async function run({ token, cesiumBase }) {
     await loaded();
     try {
       const [p] = await scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(...COURT.center)]);
-      if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = courtMatrix(); }
+      if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = floorModel.modelMatrix = courtMatrix(); }
     } catch { /* keep the measured default */ }
     await loaded();
   }
@@ -383,11 +402,22 @@ export async function run({ token, cesiumBase }) {
     document.getElementById('skip').style.display = 'none';
     document.getElementById('hint').style.display = 'none';
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // final view drawn → matrix ready
-    globalThis.BONI_3D = { toCss };
+    globalThis.BONI_3D = {
+      toCss,
+      // called by the game on a goal (src/scenes/rink.js)
+      onGoal() {
+        if (orbit || RECORD_MODE) return;
+        globalThis.BONI_3D.zoomLock = globalThis.BONI_3D.zoom ?? null;
+        orbit = { t0: performance.now() + 600, dur: 5200 };
+        scene.requestRenderMode = false;
+      },
+    };
+    weatherPanel(env);
     document.getElementById('screen').style.display = 'block';
     await import('../main.js');
   };
   window.introDebug.startGame = startGame;
+  window.introDebug.env = env;
 
   // settle into request-render mode once the flight is over (and wake up again for a replay)
   const RECORD = new URLSearchParams(location.search).has('record');
