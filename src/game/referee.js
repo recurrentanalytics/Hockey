@@ -5,6 +5,7 @@ import { RINK, TEAMS } from '../config.js';
 const END_SPOT = { x: RINK.endCircle.x, y: RINK.endCircle.y };
 const TEAM_NAME = (m, side) => TEAMS[m.sides[side].team].name;
 const ATTEMPT_TIME = 9;
+const DEAD_PUCK_TIME = 5;   // seconds a loose puck may lie still in open play
 
 export class Referee {
   constructor(match, rules) {
@@ -20,6 +21,7 @@ export class Referee {
     this.result = null;
     this.timeoutsLeft = { home: this.timeoutQuota(), away: this.timeoutQuota() };
     this.timeoutRequest = { home: false, away: false };
+    this.deadT = 0;              // how long the loose puck has been lying still
   }
 
   // ------------------------------------------------------------------ time-outs
@@ -116,6 +118,26 @@ export class Referee {
     }
 
     if (this.attempt && m.state === 'play') this.watchAttempt(dt);
+    this.watchDeadPuck(dt);
+  }
+
+  /**
+   * Safety net for an unplayable puck: when it lies loose and still for a few seconds of open
+   * play, stop the game and face off nearby. Never counts during a stoppage, a face-off draw,
+   * a penalty shot or the shootout.
+   */
+  watchDeadPuck(dt) {
+    const m = this.m, p = m.puck;
+    const openPlay = m.state === 'play' && !this.attempt && !m.draw?.live &&
+      (this.phase === 'regulation' || this.phase === 'overtime');
+    this.deadT = openPlay && p.loose && p.speed < 0.05 ? this.deadT + dt : 0;
+    if (this.deadT < DEAD_PUCK_TIME) return;
+    this.deadT = 0;
+    const inEnd = Math.abs(p.pos.x) > 10;
+    // whistle() also assesses a delayed penalty and then moves the face-off to the offender's end.
+    this.whistle('DEAD PUCK', inEnd
+      ? { x: Math.sign(p.pos.x) * END_SPOT.x, y: (p.pos.y >= 0 ? 1 : -1) * END_SPOT.y }
+      : { x: 0, y: 0 });
   }
 
   releaseExpired() {

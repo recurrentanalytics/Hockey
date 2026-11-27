@@ -30,9 +30,8 @@ function segDist(p, a, b) {
   return Math.hypot(p.x - (a.x + abx * t), p.y - (a.y + aby * t));
 }
 
-/** Keep a target on the rink and out of both creases. */
-function legal(x, y) {
-  const m = 1.0;
+/** Keep a target on the rink and out of both creases. `m` is the distance kept from the boards. */
+function legal(x, y, m = 1.0) {
   const hx = RINK_CORE.halfX, hy = RINK_CORE.halfY, r = RINK_CORE.radius - m;
   const cx = clamp(x, -hx, hx), cy = clamp(y, -hy, hy);
   const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
@@ -174,7 +173,9 @@ export class AI {
     } else {
       // ---------------------------------------------------------------- loose puck
       const lead = 0.35 + lv.read * 0.3;
-      const pp = legal(p.pos.x + p.vel.x * lead, p.pos.y + p.vel.y * lead);
+      // Chasers go for the puck itself, right up to the boards: a target held a metre off them
+      // left opposing chasers pinning each other there, with neither stick reaching the puck.
+      const pp = legal(p.pos.x + p.vel.x * lead, p.pos.y + p.vel.y * lead, 0);
       let chaser = this.closest(team, pp);
       const rcv = p.passTo;
       if (rcv && rcv.sideKey === key) {
@@ -184,7 +185,7 @@ export class AI {
           const sp = Math.hypot(p.vel.x, p.vel.y) || 1;
           const ux = p.vel.x / sp, uy = p.vel.y / sp;
           const along = Math.max(0, (rcv.pos.x - p.pos.x) * ux + (rcv.pos.y - p.pos.y) * uy);
-          const meet = legal(p.pos.x + ux * along, p.pos.y + uy * along);
+          const meet = legal(p.pos.x + ux * along, p.pos.y + uy * along, 0);
           targets.set(rcv, { ...meet, chase: true });
         }
       }

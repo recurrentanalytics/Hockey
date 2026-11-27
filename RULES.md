@@ -71,6 +71,7 @@ None of the three rulebooks has icing or offside.
   - nearest end-zone spot after the goalie covers the puck
   - the offending team's end after a penalty
 - **Shortened periods:** World Skate and USARS shrink penalties in proportion to the period length (to a quarter at least). ISHD uses its own halving rule.
+- **Dead puck:** if the puck lies loose and still for 5 seconds of open play, play is stopped. The face-off is at the nearest end-zone spot, or at centre from the neutral zone. A delayed penalty is assessed as on any whistle.
 - **Majors** are served in full: a power-play goal doesn't end them.
 - **Time-outs:** call one from the pause menu; it's taken at the next stoppage. Your team gets back most of its energy. Skaters slowly tire from hard skating and sprinting (up to 15% slower), and recover during stoppages, intermissions and time-outs. AI teams take a time-out when tired, or when trailing by 1–2 goals in the last 2 minutes.
 - **Face-off draw:** the centre who presses SHOOT or PASS first after the drop wins it back to a teammate. Pressing before the drop loses the draw.

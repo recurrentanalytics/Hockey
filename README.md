@@ -11,6 +11,14 @@ python3 -m http.server 8000
 
 ES modules need HTTP; opening `index.html` straight from disk won't work.
 
+## Tests
+
+```sh
+npm test          # or: node --test
+```
+
+Needs Node 20 or newer and no packages. The tests run the game logic headless: AI pickups on the boards, the dead-puck whistle, and seeded AI-vs-AI matches (`SIM_GAMES=180 npm test` for a longer run).
+
 ## Status
 
 **Phase 1 (foundation):**
