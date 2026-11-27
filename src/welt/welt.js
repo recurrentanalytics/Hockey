@@ -8,6 +8,7 @@ import { placeLibrary, usable, frameImages } from './bibliothek.js';
 import { hain, kronenkarte, baumbilder, pflanze } from './baeume.js';
 import { starte } from './spieler.js';
 import { pixelboden } from './pixelboden.js';
+import { baueHindernisse } from './hindernisse.js';
 import { platzmeter } from './baeume.js';
 
 const CESIUM_VERSION = '1.147.0';    // keep in step with src/intro/photoreal.js
@@ -66,6 +67,8 @@ async function main() {
   const figur = manifest.assets.find((a) => a.id === 'character.skater.stride' && (a.approved || preview));
   const figurBilder = figur ? { rechts: await frameImages(figur), links: await frameImages(figur, true), seiten: figur.frame.w / figur.frame.h } : null;
   let grove = { baeume: baumListe, zeige() {} };
+  const hindernisse = baueHindernisse({ gebaeude, einfriedungen, platz, frame });
+  const haeuser = []; // drawn building volumes, so the ones hiding the player can turn see-through
   let spieler = null;
   status('Lade 3D-Ansicht …');
   const Cesium = await loadCesium(Q.get('cesiumBase') || `https://cdn.jsdelivr.net/npm/cesium@${CESIUM_VERSION}/Build/Cesium/`);
@@ -132,13 +135,15 @@ async function main() {
         outline: true, outlineColor: css('#1d1a16', 0.55) }, properties: { text: describe('Nutzung (ALKIS)', f.properties) } });
     }
     const blocks = layer('gebaeude');
+    haeuser.length = 0;
     for (const f of gebaeude.features) {
       const p = f.properties, part = p.art === 'Bauteil';      // passages and arcades: open at street level
       const h = p.hoehe_m ?? (part ? 4 : FALLBACK_HEIGHT), known = p.hoehe_m != null;
       const colour = part ? '#b9a48f' : p.name ? '#a8452f' : known ? '#c8664d' : '#d9b9a8';
       for (const poly of polygons(f.geometry)) {
-        blocks.add({ polygon: { hierarchy: hierarchy(poly, 0), perPositionHeight: true, extrudedHeight: ground + h, material: css(colour, google.on ? 0.45 : 1),
+        const haus = blocks.add({ polygon: { hierarchy: hierarchy(poly, part ? 3.2 : 0), perPositionHeight: true, extrudedHeight: ground + (part ? Math.max(h, 7) : h), material: css(colour, google.on ? 0.45 : 1),
           outline: true, outlineColor: css('#2a1d1a') }, properties: { text: describe(known ? 'Gebäude (ALKIS)' : 'Gebäude (ALKIS), Höhe unbekannt: angenommen', { ...p, dargestellte_hoehe_m: h }) } });
+        haeuser.push({ id: p.oid, colour, haus, durch: false });
       }
     }
     const lines = layer('wege');
@@ -168,6 +173,10 @@ async function main() {
     const library = layer('bibliothek');
     placeLibrary({ Cesium, entities: library, manifest, geo, frame, pos, preview, skip: (a) => a.place.layer === 'baeume' || a.id === figur?.id }).then((n) => { $('bibliothek').textContent = `${n} Sprites aus der Art-Bibliothek` + (preview ? ' (mit wartenden)' : ''); });
     scene.requestRender();
+  }
+
+  function zeigeHaeuser(ids) {
+    for (const h of haeuser) { const durch = ids.has(h.id); if (durch !== h.durch) { h.durch = durch; h.haus.polygon.material = css(h.colour, durch ? 0.2 : google.on ? 0.45 : 1); } }
   }
 
   // ---- Google photorealistic 3D tiles (the intro's 3D context), only with the club's token
@@ -279,7 +288,8 @@ async function main() {
   if (figurBilder) {
     const eigene = new Cesium.CustomDataSource('spieler'); // kept apart from the layers build() replaces
     viewer.dataSources.add(eigene);
-    spieler = starte({ Cesium, viewer, entities: eigene.entities, frame, pos, bilder: figurBilder, hoehe: figur.worldHeight ?? 1.4, hain: () => grove, bodenpunkt: groundPoint });
+    spieler = starte({ Cesium, viewer, entities: eigene.entities, frame, pos, bilder: figurBilder, hoehe: figur.worldHeight ?? 1.4, hain: () => grove, bodenpunkt: groundPoint, welt: hindernisse, zeigeHaeuser,
+      aufPlatz: (drin) => { $('spielstart').style.display = drin ? 'block' : 'none'; } });
   }
   view(Q.get('sicht') in VIEWS ? Q.get('sicht') : 'schraeg');
   status('bereit');

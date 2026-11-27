@@ -1,11 +1,12 @@
 // The player in the world view: the approved skater sprite, steered with keys or by tapping the
 // ground, held out of tree trunks, followed by the game camera. Positions are court metres.
 import { ausweichen, KAMERA } from './baeume.js';
+import { loese, davor, aufDemPlatz } from './hindernisse.js';
 
 export const TEMPO = 5.5; // metres per second
 
 /** One step of movement: towards the keys' direction or the tapped target, then out of the trunks. */
-export function schritt(z, dt, baeume) {
+export function schritt(z, dt, baeume, welt = null) {
   let [ra, rb] = z.tasten;
   if (!ra && !rb && z.ziel) {
     const da = z.ziel[0] - z.ab[0], db = z.ziel[1] - z.ab[1], d = Math.hypot(da, db);
@@ -15,6 +16,7 @@ export function schritt(z, dt, baeume) {
   if (z.faehrt) {
     const vor = z.ab;
     z.ab = ausweichen([z.ab[0] + ra * TEMPO * dt, z.ab[1] + rb * TEMPO * dt], baeume);
+    if (welt) z.ab = loese(z.ab, vor, welt); // walls, fences, buildings
     if (Math.abs(ra) > 0.05) z.rechts = ra > 0;
     z.phase += dt * 9;
     if (z.ziel && Math.hypot(z.ab[0] - vor[0], z.ab[1] - vor[1]) < TEMPO * dt * 0.15) z.ziel = null; // stuck on a trunk: stop pushing
@@ -22,7 +24,7 @@ export function schritt(z, dt, baeume) {
   return z;
 }
 
-export function starte({ Cesium, viewer, entities, frame, pos, bilder, hoehe, hain, bodenpunkt }) {
+export function starte({ Cesium, viewer, entities, frame, pos, bilder, hoehe, hain, bodenpunkt, welt = null, zeigeHaeuser = () => {}, aufPlatz = () => {} }) {
   const z = { ab: [0, 0], tasten: [0, 0], ziel: null, rechts: true, faehrt: false, phase: 0, folgt: false };
   const zuGitter = ([a, b]) => [frame.ursprung_utm32[0] + a * frame.achse_a[0] + b * frame.achse_b[0], frame.ursprung_utm32[1] + a * frame.achse_a[1] + b * frame.achse_b[1]];
   const n = bilder.rechts.length;
@@ -40,8 +42,11 @@ export function starte({ Cesium, viewer, entities, frame, pos, bilder, hoehe, ha
   const blick = [0, 1]; // the game camera looks along court axis b
   let zuletzt = performance.now();
   const takt = (dt) => {
-    schritt(z, dt, hain().baeume);
+    schritt(z, dt, hain().baeume, welt);
     hain().zeige(z.ab, blick);
+    if (welt && z.folgt) zeigeHaeuser(davor(z.ab, welt, blick, KAMERA.neigung));
+    const drin = z.folgt && aufDemPlatz(z.ab);
+    if (drin !== z.aufPlatz) { z.aufPlatz = drin; aufPlatz(drin); }
     if (z.folgt) {
       viewer.camera.lookAt(pos(zuGitter(z.ab), 1), new Cesium.HeadingPitchRange(Cesium.Math.toRadians(KAMERA.richtung), Cesium.Math.toRadians(-(90 - KAMERA.neigung)), 22));
     }
@@ -49,7 +54,7 @@ export function starte({ Cesium, viewer, entities, frame, pos, bilder, hoehe, ha
   viewer.scene.preUpdate.addEventListener(() => { const jetzt = performance.now(); takt(Math.min(0.1, (jetzt - zuletzt) / 1000)); zuletzt = jetzt; });
   return {
     zustand: z, takt,
-    folge(an) { z.folgt = an; if (!an) viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); },
+    folge(an) { z.folgt = an; if (!an) { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); zeigeHaeuser(new Set()); z.aufPlatz = false; aufPlatz(false); } },
     tippe(bildpunkt) { if (!z.folgt) return false; const en = bodenpunkt(bildpunkt); if (!en) return false; const de = en[0] - frame.ursprung_utm32[0], dn = en[1] - frame.ursprung_utm32[1]; z.ziel = [de * frame.achse_a[0] + dn * frame.achse_a[1], de * frame.achse_b[0] + dn * frame.achse_b[1]]; return true; },
   };
 }

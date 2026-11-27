@@ -184,3 +184,18 @@ Rund um den Bolzplatz wird das Luftbild selbst zu Pixelart; das Viertel außen b
 - **Grenzen:** Das Luftbild ist eine Winteraufnahme; Grün entsteht nicht, wo das Foto keins hat. Mit den Google-3D-Kacheln ist der Pixel-Boden nicht zu sehen (die Kacheln ersetzen den Boden). Häuser sind weiter schlichte Volumen, Straßen und Autos außerhalb der Maske unverändert Foto.
 
 Bilder: `docs/ort/boni_hybrid_platz.jpg`, `docs/ort/boni_hybrid_viertel.png` (Luftbild © GeoBasis-DE / LGLN, CC BY 4.0).
+
+## Das Viertel befahren und ein Spiel starten (`src/welt/hindernisse.js`)
+
+`welt.html` → „Losfahren“: Der Spieler startet auf dem Bolzplatz und fährt durch das echte Viertel (Pfeiltasten oder WASD, am Handy auf den Boden tippen). Auf dem Platz erscheint „Spiel starten“ und öffnet das Hockeyspiel auf dem Boni (`test.html`, 3 gegen 3).
+
+- **Tempo:** 5,5 m/s, alle Maße in echten Metern.
+- **Hauswände:** jeder ALKIS-Grundriss samt Innenhöfen. Durchfahrten und Arkaden (ALKIS „Bauteil“) bleiben offen und sind ab 3,2 m Höhe gezeichnet, darunter fährt man durch.
+- **Mauern, Zäune, Hecken:** die in OSM kartierten Linien. An jedem kartierten Tor bleibt eine 3 m breite Öffnung.
+- **Zaun des Bolzplatzes:** die vier Seiten zwischen den Ecken des Vereins. **Die Eingänge sind angenommen** (Mitte der beiden kurzen Seiten, je 3 m); wo sie wirklich liegen, steht in keinem Datensatz (`PLATZ_EINGAENGE`).
+- **Bäume:** wie zuvor, Stamm mit Wurzelanlauf.
+- **Tiefe:** Häuser, Bäume und Spieler verdecken sich nach ihrer Lage. Häuser und Kronen, die aus Sicht der Spielkamera vor dem Spieler stehen, werden durchscheinend, solange er dahinter ist.
+- **Ausschnitt:** alles im Datensatz (400 × 400 m): Platz, Park und die Blöcke ringsum. Außerhalb gibt es weder Wände noch Grenze.
+- **Noch nicht:** Der Rückweg aus dem Hockeyspiel in die Welt, Türen und Hauseingänge, parkende Autos, andere Figuren. Die Zäune um den Sandspielplatz und die Schale fehlen in den Daten und halten deshalb niemanden auf.
+
+Bild: `docs/ort/boni_viertel_strasse.jpg`.
