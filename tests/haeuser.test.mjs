@@ -3,7 +3,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { viertel, netz, trianguliere, rechteck, flaeche, saeubere, dachhoehe, achsen, steckbrief, lichtvektor, hoehen, PUTZ, KLINKER, DURCHFAHRT, ACHSE } from '../src/welt/haeuser.js';
+import { viertel, netz, trianguliere, rechteck, flaeche, saeubere, dachhoehe, achsen, steckbrief, lichtvektor, hoehen, fuege, kleide, packe, PUTZ, KLINKER, DURCHFAHRT, ACHSE } from '../src/welt/haeuser.js';
+import { decodePng } from '../tools/assets/png.mjs';
 
 const json = (n) => JSON.parse(fs.readFileSync(`locations/boni/geo/${n}`, 'utf8'));
 const frame = json('rahmen.json'), gebaeude = json('gebaeude.geojson'), wege = json('wege.geojson');
@@ -31,15 +32,15 @@ function pruefe(h, m) {
     if (l < 1e-9) continue; // a wall running out to nothing under a gable
     const dot = (n[0] * N[a * 3] + n[1] * N[a * 3 + 1] + n[2] * N[a * 3 + 2]) / l;
     assert.ok(dot > 0.99, `${h.oid}: a triangle faces the way its normal says (${dot.toFixed(3)})`);
-    const art = W[a * 4 + 3] % 8;
-    if (art === 4 || art === 5) dach += n[2] / 2;
+    const art = W[a * 4 + 3] % 16;
+    if ([4, 5, 10, 11].includes(art)) dach += n[2] / 2;
     if (art === 6) boden += -n[2] / 2;
-    for (const q of [A, B, C]) assert.ok(q[2] >= -1e-9 && q[2] <= h.first + 1e-6, `${h.oid}: between ground and ridge`);
+    for (const q of [A, B, C]) assert.ok(q[2] >= -1e-9 && q[2] <= h.first + (art === 8 ? 3 : 1e-6), `${h.oid}: between ground and ridge (chimneys a little above)`);
   }
   assert.ok(Math.abs(dach - h.flaeche) < Math.max(0.05, h.flaeche * 1e-4), `${h.oid}: the roof covers the footprint exactly (${dach.toFixed(2)} of ${h.flaeche} m²)`);
   return { dach, boden };
 }
-const arten = (m) => new Set(Array.from({ length: m.wand.length / 4 }, (_, i) => m.wand[i * 4 + 3] % 8));
+const arten = (m) => new Set(Array.from({ length: m.wand.length / 4 }, (_, i) => m.wand[i * 4 + 3] % 16));
 const hoechste = (m) => Math.max(...Array.from({ length: m.positionen.length / 3 }, (_, i) => m.positionen[i * 3 + 2]));
 
 test('houses: a flat roof stays at the eaves', () => {
@@ -77,7 +78,7 @@ test('houses: a hipped roof slopes on all four sides', () => {
   assert.ok(Math.abs(dachhoehe(h.dach, [2.5, 5]) - 1.4) < 1e-9, 'the hip rises from the short side');
   const m = netz(h);
   pruefe(h, m);
-  const waende = Array.from({ length: m.wand.length / 4 }, (_, i) => i).filter((i) => m.wand[i * 4 + 3] % 8 < 4);
+  const waende = Array.from({ length: m.wand.length / 4 }, (_, i) => i).filter((i) => m.wand[i * 4 + 3] % 16 < 4);
   for (const i of waende) assert.ok(m.positionen[i * 3 + 2] <= h.traufe + 1e-6, 'no wall rises above the eaves');
 });
 
@@ -114,7 +115,7 @@ test('houses: a gateway opens the wall up to its clear height and gets tunnel wa
   // nothing of the outer wall stands in the opening below the clear height
   for (let i = 0; i < m.indizes.length; i += 3) {
     const e = [0, 1, 2].map((k) => m.indizes[i + k]);
-    if (m.wand[e[0] * 4 + 3] % 8 > 1) continue;
+    if (m.wand[e[0] * 4 + 3] % 16 > 1) continue;
     const xs = e.map((j) => m.positionen[j * 3]), ys = e.map((j) => m.positionen[j * 3 + 1]), zs = e.map((j) => m.positionen[j * 3 + 2]);
     if (ys.every((y) => Math.abs(y) < 1e-6) && Math.min(...xs) > 8 - 1e-6 && Math.max(...xs) < 12 + 1e-6) assert.ok(Math.min(...zs) >= DURCHFAHRT - 1e-6, 'the street wall is open under the gateway');
   }
@@ -207,6 +208,40 @@ test('houses: the whole Bonifatiusplatz dataset becomes houses without a gap', (
   assert.ok(zaehle((h) => h.kanten.some((k) => k.stuecke.some((s) => s.art === 'strasse'))) > 120, 'street fronts are found');
   for (const h of liste) assert.ok(h.first <= 30 && h.traufe >= 2.6 && h.first >= h.traufe, `${h.oid}: plausible heights`);
   assert.ok(ecken < 120000 && dreiecke < 80000, `a mesh a tablet can draw (${ecken} corners, ${dreiecke} triangles)`);
+});
+
+test('houses: a façade kit is set together for the real wall length, pixel for pixel, and dresses the house it names', () => {
+  const kit = JSON.parse(fs.readFileSync('assets/welt/haeuser/bausatz.json', 'utf8')), f = kit.fassade;
+  for (const teil of [f, kit.ziegel, kit.putz]) { const bild = decodePng(fs.readFileSync(`assets/welt/haeuser/${teil.datei}`)); assert.deepEqual([bild.width, bild.height], [teil.breite, teil.hoehe], `${teil.datei}: the size the kit says`); }
+  assert.ok(Math.abs(f.hoehe / f.hoehe_m - kit.px_je_m) < 0.01, 'the picture is as tall as its storeys');
+  const stuecke = [f.links, ...f.achsen, f.mitte, f.rechts].map(String);
+  // a front of 18 m: both edges, the middle with the door once, plain axes in between; no column is scaled
+  const lang = fuege(f, 18, kit.px_je_m, true, 0.4);
+  assert.deepEqual([lang.spalten[0], lang.spalten.at(-1)], [f.links, f.rechts]);
+  assert.equal(lang.spalten.filter((s) => s === f.mitte).length, 1);
+  for (const s of lang.spalten) assert.ok(stuecke.includes(String(s)), `column ${s} is a piece of the kit`);
+  assert.equal(lang.breite, lang.spalten.reduce((s, [a, b]) => s + b - a, 0));
+  assert.ok(Math.abs(lang.breite / (18 * kit.px_je_m) - 1) < 0.06, `within 6 % of the true length (${lang.breite} px for ${(18 * kit.px_je_m).toFixed(0)})`);
+  assert.equal(fuege(f, 9, kit.px_je_m, false).spalten.includes(f.mitte), false, 'no door where none is asked for');
+  assert.deepEqual(fuege(f, 2, kit.px_je_m, true), { spalten: [[f.pfeiler, f.pfeiler + 1]], breite: 4, gestreckt: true }, 'a short wall is the pier between two windows');
+  assert.deepEqual(fuege(f, 18, kit.px_je_m, true, 0.4), lang, 'the same wall, the same façade');
+
+  const liste = viertel(gebaeude, frame, { wege }), haus = liste.find((h) => h.adresse === kit.haeuser[0]), nachbar = liste.find((h) => h.adresse === 'Bonifatiusplatz 4');
+  assert.equal(haus.etagen, f.geschosse, 'the kit fits the house it names');
+  const kleid = kleide(haus, kit), front = kleid.laeufe.filter((l) => l.art === 'strasse');
+  assert.equal(front.length, 1, 'the front goes on round its slight bend as one run');
+  assert.ok(Math.abs(front[0].laenge - 18) < 0.1, `18 m of front (${front[0].laenge.toFixed(2)})`);
+  assert.ok(front[0].bild.spalten.includes(f.mitte) && kleid.laeufe.filter((l) => l.bild.spalten.includes(f.mitte)).length === 1, 'one door, on the street');
+  assert.ok(kleid.aufbauten.some((a) => a.art === 'schornstein') && kleid.aufbauten.some((a) => a.art === 'dachfenster'));
+  const blatt = packe(liste, kit), kaesten = [...kleid.laeufe.map((l) => l.rechteck), ...Object.values(kleid.teile)];
+  for (const [x, y, w, h] of kaesten) assert.ok(x >= 1 && y >= 1 && x + w < blatt.breite && y + h < blatt.hoehe && w > 0 && h > 0, 'every picture lies on the sheet');
+  for (let i = 0; i < kaesten.length; i++) for (let j = i + 1; j < kaesten.length; j++) { const [a, b] = [kaesten[i], kaesten[j]]; assert.ok(a[0] + a[2] < b[0] || b[0] + b[2] < a[0] || a[1] + a[3] < b[1] || b[1] + b[3] < a[1], 'pictures do not overlap'); }
+  assert.equal(blatt.zeichne.length, kaesten.length);
+  const m = netz(haus);
+  pruefe(haus, m);
+  for (const art of [7, 8, 9, 10]) assert.ok(arten(m).has(art), `the mesh shows sprites of kind ${art}`);
+  for (const art of [0, 1, 2, 4]) assert.ok(!arten(m).has(art), 'nothing of a dressed house is drawn by rule');
+  assert.ok(!nachbar.kleid && arten(netz(nachbar)).has(0), 'a house the kit does not name stays as it was');
 });
 
 test('houses: triangles fill a footprint with a yard exactly; the rectangle and the light are right', () => {
