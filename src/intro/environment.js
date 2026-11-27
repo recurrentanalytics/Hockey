@@ -31,6 +31,14 @@ export function lookOf(code) {
   if (code >= 51) return 'rain';
   return 'clouds';
 }
+/** A plausible temperature for a picked season, weather and hour (°C). */
+function guessTemp(season, look, hour) {
+  const base = { fruehling: 13, sommer: 24, herbst: 12, winter: 1 }[season] ?? 15;
+  const day = Math.cos(((hour - 15) / 24) * 2 * Math.PI) * (look === 'sun' ? 5 : 2.5);  // warmest mid afternoon
+  const t = base + day + ({ rain: -3, clouds: -1.5, fog: -2, snow: -4 }[look] ?? 0);
+  return look === 'snow' ? Math.min(t, -1) : t;
+}
+
 /** Seasons to pick by hand: a typical day of each. */
 export const SEASONS = {
   fruehling: { name: 'Frühling', day: [4, 8] }, sommer: { name: 'Sommer', day: [5, 21] },
@@ -126,17 +134,17 @@ export function treeUniforms(Cesium) {
 async function fetchWeather(date = null) {
   const base = `latitude=${LAT}&longitude=${LON}&timezone=Europe%2FBerlin`;
   if (!date) {
-    const j = await (await fetch(`https://api.open-meteo.com/v1/forecast?${base}&current=temperature_2m,weather_code,precipitation,snowfall,cloud_cover`)).json();
+    const j = await (await fetch(`https://api.open-meteo.com/v1/forecast?${base}&current=temperature_2m,weather_code,precipitation,snowfall,cloud_cover,wind_speed_10m,wind_direction_10m&wind_speed_unit=ms`)).json();
     const c = j.current;
-    return { code: c.weather_code, temp: c.temperature_2m, amount: Math.max(c.precipitation ?? 0, c.snowfall ?? 0), when: new Date() };
+    return { code: c.weather_code, temp: c.temperature_2m, wind: c.wind_speed_10m ?? 0, windDir: c.wind_direction_10m ?? 240, amount: Math.max(c.precipitation ?? 0, c.snowfall ?? 0), when: new Date() };
   }
   const day = date.toISOString().slice(0, 10);
   const recent = Date.now() - date.getTime() < 60 * 86400000;
   const host = recent ? 'https://api.open-meteo.com/v1/forecast' : 'https://archive-api.open-meteo.com/v1/archive';
-  const j = await (await fetch(`${host}?${base}&start_date=${day}&end_date=${day}&hourly=temperature_2m,weather_code,precipitation,snowfall`)).json();
+  const j = await (await fetch(`${host}?${base}&start_date=${day}&end_date=${day}&hourly=temperature_2m,weather_code,precipitation,snowfall,wind_speed_10m,wind_direction_10m&wind_speed_unit=ms`)).json();
   const h = Math.min(23, date.getHours());
   const H = j.hourly;
-  return { code: H.weather_code[h], temp: H.temperature_2m[h], amount: Math.max(H.precipitation[h] ?? 0, H.snowfall[h] ?? 0), when: date };
+  return { code: H.weather_code[h], temp: H.temperature_2m[h], wind: H.wind_speed_10m?.[h] ?? 0, windDir: H.wind_direction_10m?.[h] ?? 240, amount: Math.max(H.precipitation[h] ?? 0, H.snowfall[h] ?? 0), when: date };
 }
 
 // ------------------------------------------------------------------ the environment
@@ -231,7 +239,8 @@ export function createEnvironment({ Cesium, viewer, ground, onChange }) {
   let state = { mode: 'live', look: 'sun', hour: 15, date: null, info: '' };
   try { Object.assign(state, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { /* defaults */ }
 
-  function apply(look, date, amt = 0) {
+  let lastAir = null;
+  function apply(look, date, amt = 0, air = {}) {
     const v = visuals(look, date, amt);
     viewer.clock.currentTime = Cesium.JulianDate.fromDate(date);
     const u = grade.uniforms;
@@ -255,7 +264,10 @@ export function createEnvironment({ Cesium, viewer, ground, onChange }) {
     const screen = document.getElementById('screen');
     if (screen) screen.style.filter = `brightness(${(0.25 + v.exposure * 0.75).toFixed(2)}) saturate(${v.sat.toFixed(2)}) sepia(${(v.golden * 0.3).toFixed(2)})`;
     scene.requestRender();
-    onChange?.({ ...state, look, date, visuals: v });
+    // the air for the game's physics (temperature, wind) and the leaves lying on the court
+    const leaves = v.snow ? 0 : Math.min(1, v.season.autumn * 0.7 + v.season.bare * v.season.autumn * 2);
+    lastAir = { temp: 15, wind: 2, windDir: 240, amount: amt, leaves, ...air };
+    onChange?.({ ...state, look, date, visuals: v, air: lastAir });
   }
 
   async function refresh() {
@@ -264,25 +276,26 @@ export function createEnvironment({ Cesium, viewer, ground, onChange }) {
         // picked by hand: a midsummer day, so noon has high sun and the evening golden light
         const [mo, dd] = SEASONS[state.season ?? 'sommer'].day;
         const d = new Date(new Date().getFullYear(), mo, dd, Math.floor(state.hour), Math.round((state.hour % 1) * 60));
-        state.info = `${SEASONS[state.season ?? 'sommer'].name} · ${LOOKS[state.look]} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} Uhr`;
-        apply(state.look, d);
+        const air = { temp: state.temp ?? guessTemp(state.season ?? 'sommer', state.look, state.hour), wind: state.wind ?? { sun: 2, partly: 3, clouds: 4, rain: 6, snow: 5, fog: 1 }[state.look], windDir: 240 };
+        state.info = `${SEASONS[state.season ?? 'sommer'].name} · ${LOOKS[state.look]} · ${Math.round(air.temp)} °C · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} Uhr`;
+        apply(state.look, d, state.look === 'rain' || state.look === 'snow' ? 1 : 0, air);
       } else {
         const when = state.mode === 'hist' && state.date ? new Date(`${state.date}T${String(Math.floor(state.hour)).padStart(2, '0')}:00`) : null;
         const w = await fetchWeather(when);
         const look = lookOf(w.code);
         const t = w.when;
         state.info = `${state.mode === 'live' ? 'Live' : t.toLocaleDateString('de-DE')} · ${LOOKS[look]} · ${Math.round(w.temp)} °C · ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')} Uhr`;
-        apply(look, t, w.amount);
+        apply(look, t, w.amount, { temp: w.temp, wind: w.wind, windDir: w.windDir });
       }
     } catch {
       state.info = 'Wetterdaten nicht erreichbar – Sonne';
       apply('sun', new Date(new Date().setHours(15, 0, 0, 0)));
     }
-    try { localStorage.setItem(KEY, JSON.stringify({ mode: state.mode, look: state.look, hour: state.hour, date: state.date, season: state.season })); } catch { /* ignore */ }
+    try { localStorage.setItem(KEY, JSON.stringify({ mode: state.mode, look: state.look, hour: state.hour, date: state.date, season: state.season, temp: state.temp, wind: state.wind })); } catch { /* ignore */ }
   }
   setInterval(() => { if (state.mode === 'live') refresh(); }, 10 * 60 * 1000);
   refresh();
-  return { floor, get state() { return state; }, set(p) { Object.assign(state, p); return refresh(); } };
+  return { floor, surfaceLabel: '', get air() { return lastAir; }, get state() { return state; }, set(p) { Object.assign(state, p); return refresh(); } };
 }
 
 /** The little weather panel (button ⛅ top left). */
@@ -296,6 +309,10 @@ export function weatherPanel(env) {
     for (const b of box.querySelectorAll('[data-season]')) b.classList.toggle('on', b.dataset.season === (s.season ?? 'sommer'));
     $('wxPick').hidden = s.mode !== 'pick'; $('wxHist').hidden = s.mode !== 'hist';
     $('wxHour').value = s.hour; $('wxHour2').value = s.hour;
+    const air = env.air ?? {};
+    if (air.temp != null) { $('wxTemp').value = Math.round(air.temp); $('wxTempLbl').textContent = `${Math.round(air.temp)} °C`; }
+    if (air.wind != null) { $('wxWind').value = Math.round(air.wind); $('wxWindLbl').textContent = `${Math.round(air.wind * 3.6)} km/h`; }
+    $('wxSurf').textContent = env.surfaceLabel ? `Platz: ${env.surfaceLabel}` : '';
     $('wxHourLbl').textContent = $('wxHourLbl2').textContent = `${String(Math.floor(s.hour)).padStart(2, '0')}:${String(Math.round((s.hour % 1) * 60)).padStart(2, '0')}`;
     if (s.date) $('wxDate').value = s.date;
     $('wxInfo').textContent = s.info;
@@ -303,14 +320,17 @@ export function weatherPanel(env) {
   btn.addEventListener('click', () => { box.hidden = !box.hidden; render(); });
   box.addEventListener('click', async (e) => {
     const m = e.target.closest('[data-mode]')?.dataset.mode, l = e.target.closest('[data-look]')?.dataset.look, y = e.target.closest('[data-season]')?.dataset.season;
-    if (y) await env.set({ season: y });
+    if (y) await env.set({ season: y, temp: null, wind: null });
     if (m) { if (m === 'hist' && !env.state.date) env.state.date = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10); await env.set({ mode: m }); }
-    if (l) await env.set({ look: l });
+    if (l) await env.set({ look: l, temp: null, wind: null });
     render();
   });
   $('wxHour').addEventListener('input', (e) => { env.set({ hour: +e.target.value }).then(render); render(); });
   $('wxHour2').addEventListener('change', (e) => { env.set({ hour: +e.target.value }).then(render); });
   $('wxHour2').addEventListener('input', (e) => { env.state.hour = +e.target.value; render(); });
+  // temperature and wind by hand (picked weather)
+  $('wxTemp').addEventListener('input', (e) => { env.set({ temp: +e.target.value }).then(render); render(); });
+  $('wxWind').addEventListener('input', (e) => { env.set({ wind: +e.target.value }).then(render); render(); });
   $('wxDate').addEventListener('change', (e) => { env.set({ date: e.target.value }).then(render); });
   setInterval(render, 2000);
   btn.hidden = false;

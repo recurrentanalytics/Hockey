@@ -4,6 +4,7 @@
 // the court lies sideways and tilting into the game's camera angle (60° from vertical).
 
 import { createEnvironment, weatherPanel, TREE_LIGHT, treeUniforms } from './environment.js';
+import { surfaceFor, setSurface } from '../game/surface.js';
 
 const CESIUM_VERSION = '1.147.0';
 const GOOGLE_3D_TILES = 2275207; // Cesium ion asset: Google Photorealistic 3D Tiles
@@ -315,7 +316,18 @@ export async function run({ token, cesiumBase }) {
   const underground = await Cesium.Model.fromGltfAsync({ url: new URL('../../assets/intro/boni_schatten_luftboden.glb', import.meta.url).href, modelMatrix: courtMatrix(), forwardAxis: Cesium.Axis.X, shadows: Cesium.ShadowMode.DISABLED, show: false });
   scene.primitives.add(underground);
   let seasonNow = null;
-  let lastVisuals = null;
+  let lastVisuals = null, lastAirSt = null;
+  // the weather also changes how the court plays (src/game/surface.js)
+  const onAir = (air, look) => {
+    const to = ((air.windDir + 180) * Math.PI) / 180;           // wind blows towards (from + 180°)
+    const dE = Math.sin(to), dN = Math.cos(to);
+    const a = dE * frame.u.x + dN * frame.u.y, b = dE * frame.v.x + dN * frame.v.y;
+    const surf = surfaceFor({ look, temp: air.temp, wind: air.wind, windTo: { x: a, y: -b }, leaves: air.leaves, amount: air.amount });
+    setSurface(surf);
+    if (env) env.surfaceLabel = surf.label;
+    const pill = document.getElementById('surface');
+    if (pill) pill.textContent = surf.label;
+  };
   const onEnv = (v) => {
     lastVisuals = v;
     setSunShadow(v);
@@ -330,8 +342,9 @@ export async function run({ token, cesiumBase }) {
     applySeason?.();
   };
   let applySeason = null;
-  env = createEnvironment({ Cesium, viewer, ground: floorModel, onChange: (st) => onEnv(st.visuals) });
-  if (lastVisuals) onEnv(lastVisuals);                          // first call came before env existed
+  env = createEnvironment({ Cesium, viewer, ground: floorModel, onChange: (st) => { onEnv(st.visuals); onAir(st.air, st.look); lastAirSt = st; } });
+  if (lastVisuals) onEnv(lastVisuals);
+  if (lastAirSt) onAir(lastAirSt.air, lastAirSt.look);                          // first call came before env existed
   let rinkAlpha = 0;
 
   // ---------------------------------------------------------------- see-through trees
@@ -582,6 +595,7 @@ export async function run({ token, cesiumBase }) {
       },
     };
     weatherPanel(env);
+    document.getElementById('surface').hidden = false;
     document.getElementById('screen').style.display = 'block';
     await import('../main.js');
   };

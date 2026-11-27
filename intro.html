@@ -36,6 +36,8 @@
                  border-radius: 8px; padding: 6px 10px; opacity: 0; transition: opacity .6s; text-align: center; }
     #voiceHint.on { opacity: 1; }
     #weatherFx { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+    #surface { position: absolute; left: 62px; top: 40px; pointer-events: none; font: 600 13px 'Pixelify Sans', sans-serif; color: #fff; background: rgba(20, 18, 30, 0.72); border-radius: 8px; padding: 4px 8px; text-shadow: 0 1px 0 #000; }
+    #wxSurf { margin-top: 4px; color: #ffd23f; }
     #wxBtn { position: absolute; left: 10px; top: 34px; pointer-events: auto; font-size: 20px; line-height: 1; padding: 6px 8px; border-radius: 10px;
              background: rgba(14,15,26,.6); border: 2px solid rgba(255,210,63,.8); cursor: pointer; }
     #wx { position: absolute; left: 10px; top: 76px; pointer-events: auto; width: min(300px, 80vw); padding: 10px; border-radius: 12px; background: rgba(14,15,26,.9);
@@ -81,14 +83,18 @@
     <div id="title"><div class="club" id="titleName"></div><div class="sub" id="titleSub"></div></div>
     <div id="caption"></div>
     <button id="wxBtn" type="button" hidden title="Wetter und Uhrzeit">⛅</button>
+    <div id="surface" hidden></div>
     <div id="wx" hidden>
       <div class="row"><button data-mode="live">Live</button><button data-mode="pick">Wählen</button><button data-mode="hist">Damals</button></div>
       <div id="wxPick"><div class="row"><button data-look="sun">☀️</button><button data-look="partly">🌤️</button><button data-look="clouds">☁️</button><button data-look="rain">🌧️</button><button data-look="snow">❄️</button><button data-look="fog">🌫️</button></div>
         <div class="row season"><button data-season="fruehling">Frühling</button><button data-season="sommer">Sommer</button><button data-season="herbst">Herbst</button><button data-season="winter">Winter</button></div>
-        <label>Uhrzeit <span id="wxHourLbl"></span><input id="wxHour" type="range" min="0" max="24" step="0.25" /></label></div>
+        <label>Uhrzeit <span id="wxHourLbl"></span><input id="wxHour" type="range" min="0" max="24" step="0.25" /></label>
+        <label>Temperatur <span id="wxTempLbl"></span><input id="wxTemp" type="range" min="-10" max="36" step="1" /></label>
+        <label>Wind <span id="wxWindLbl"></span><input id="wxWind" type="range" min="0" max="20" step="1" /></label></div>
       <div id="wxHist"><label>Datum <input id="wxDate" type="date" min="1940-01-01" /></label>
         <label>Uhrzeit <span id="wxHourLbl2"></span><input id="wxHour2" type="range" min="0" max="23" step="1" /></label></div>
       <div id="wxInfo"></div>
+      <div id="wxSurf"></div>
     </div>
     <div id="voiceHint"></div>
     <button id="skip" type="button">Überspringen ›</button>

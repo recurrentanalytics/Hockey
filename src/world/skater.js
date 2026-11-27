@@ -6,6 +6,7 @@ import { pixelLine } from '../engine/draw.js';
 import { drawText } from '../engine/font.js';
 import { RINK_CORE, goalBox } from './rink.js';
 import { FIXED } from './projection.js';
+import { SURF } from '../game/surface.js';
 import { project } from './projection.js';
 import { skaterFigures, SK_W, SK_AX, SK_AY } from './sprites.js';
 
@@ -126,7 +127,7 @@ export class Skater {
     const mlen = Math.hypot(move.x, move.y);
     this.sprinting = sprint && mlen > 0.2 && this.stamina > 0.02;
     let max = this.sprinting ? SKATE.sprintSpeed : SKATE.maxSpeed;
-    max *= limit;
+    max *= limit * SURF.speed;
     // Fatigue builds with hard skating and costs up to 15% top speed; time-outs and breaks restore it.
     this.fatigue = this.fatigue ?? 0;
     max *= 1 - 0.15 * this.fatigue;
@@ -135,13 +136,21 @@ export class Skater {
     this.stamina = Math.max(0, Math.min(1, this.stamina + (this.sprinting ? -0.28 : 0.16) * dt));
 
     if (mlen > 0.05) {
-      const accel = SKATE.accel * (this.sprinting ? 1.15 : 1);
+      const accel = SKATE.accel * SURF.accel * (this.sprinting ? 1.15 : 1);
       this.vel.x += move.x * accel * dt;
       this.vel.y += move.y * accel * dt;
       // grip: sideways drift (relative to where the player steers) dies away quickly, so turns bite
       const ux = move.x / mlen, uy = move.y / mlen;
       const along = this.vel.x * ux + this.vel.y * uy;
-      const g = Math.exp(-SKATE.grip * dt);
+      // slippery court (wet, snow, ice, wet leaves): a hard turn at speed can take the skates away
+      const sp0 = this.speed;
+      if (SURF.slip > 0 && this.downT <= 0 && sp0 > SKATE.maxSpeed * SURF.speed * 0.6) {
+        const turn = 1 - along / sp0;                         // 0 straight on … 2 full reversal
+        if (turn > 0.7 && Math.random() < SURF.slip * (turn - 0.6) * 1.2 * (sp0 / SKATE.maxSpeed) ** 2 * dt) {
+          this.downT = this.downMax = 0.9; this.charging = false; this.slipped = true;
+        }
+      }
+      const g = Math.exp(-SKATE.grip * SURF.grip * dt);
       this.vel.x = along * ux + (this.vel.x - along * ux) * g;
       this.vel.y = along * uy + (this.vel.y - along * uy) * g;
       const rate = (this.hasPuck ? CARRY_TURN_RATE : TURN_RATE) * dt;
@@ -151,7 +160,7 @@ export class Skater {
     if (c > 0.2) this.facing = 1;
     else if (c < -0.2) this.facing = -1;
 
-    const drag = mlen > 0.05 ? SKATE.glideDrag : SKATE.brakeDrag;
+    const drag = mlen > 0.05 ? SKATE.glideDrag * SURF.glide : SKATE.brakeDrag * SURF.brake;
     const k = Math.exp(-drag * dt);
     this.vel.x *= k;
     this.vel.y *= k;
@@ -175,7 +184,7 @@ export class Skater {
     this.hitCd = Math.max(0, (this.hitCd ?? 0) - dt);
 
     const effort = (this.speed / SKATE.maxSpeed) ** 2;
-    this.fatigue = Math.min(1, Math.max(0, this.fatigue + (0.004 * effort + (this.sprinting ? 0.006 : 0) - (this.speed < 2 ? 0.01 : 0)) * dt));
+    this.fatigue = Math.min(1, Math.max(0, this.fatigue + ((0.004 * effort + (this.sprinting ? 0.006 : 0)) * SURF.tire - (this.speed < 2 ? 0.01 : 0)) * dt));
 
     this.pushing = mlen > 0.05 && this.speed > 0.6;
     if (this.pushing) this.anim += dt * (2.2 + this.speed * 0.45);

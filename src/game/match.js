@@ -10,6 +10,7 @@ import { Skater } from '../world/skater.js';
 import { Goalie } from './goalie.js';
 import { Puck } from './puck.js';
 import { hitSegment, hitCircle, hitBoards } from './physics.js';
+import { SURF } from './surface.js';
 
 const PASS = { min: 9, max: 19 };
 const PICKUP_RANGE = 0.5;
@@ -197,6 +198,17 @@ export class Match {
     for (const s of this.roster) if (s.benched) s.fatigue = Math.max(0, (s.fatigue ?? 0) - 0.02 * dt);
     this.ai.think(dt);
     for (const s of this.skaters) if (!s.human) s.update(dt, this.ai.controls.get(s) ?? {});
+    // slipped on a wet, snowy or icy court: the ball squirts away
+    for (const s of this.skaters) {
+      if (!s.slipped) continue;
+      s.slipped = false;
+      if (s.hasPuck) {
+        const p = this.puck;
+        p.carrier = null; s.hasPuck = false; s.noPickup = 0.6; p.lastTouch = s;
+        p.vel.x = s.vel.x * 0.8 + (Math.random() - 0.5) * 2; p.vel.y = s.vel.y * 0.8 + (Math.random() - 0.5) * 2;
+      }
+      this.events.push({ type: 'slip', skater: s });
+    }
 
     for (let i = 0; i < this.skaters.length; i++) {
       for (let j = i + 1; j < this.skaters.length; j++) {
@@ -608,11 +620,13 @@ export class Match {
       p.pos.y += p.vel.y * h;
       p.z += p.vz * h;
       p.vz -= p.phys.gravity * h;
+      // wind pushes the light ball, mostly in the air
+      if (p.z > 0 || p.speed > 0.2) { const w = p.z > 0 ? 1 : 0.3; p.vel.x += SURF.wind.x * w * h; p.vel.y += SURF.wind.y * w * h; }
       if (p.z <= 0) {
         p.z = 0;
-        p.vz = p.vz < -1.2 ? -p.vz * p.phys.groundBounce : 0;
+        p.vz = p.vz < -1.2 ? -p.vz * Math.min(0.75, p.phys.groundBounce * SURF.ballBounce) : 0;
       }
-      const bump = hitBoards(p, RINK_CORE, p.phys.boardBounce);
+      const bump = hitBoards(p, RINK_CORE, Math.min(0.85, p.phys.boardBounce * SURF.boardBounce));
       if (bump > 2) this.events.push({ type: 'boards', speed: bump });
       this.collideNets(p);
       if (p.z < 1.7) {
@@ -629,10 +643,10 @@ export class Match {
     }
 
     if (p.z === 0) {
-      const k = Math.exp(-p.phys.drag * dt);
+      const k = Math.exp(-p.phys.drag * SURF.ballDrag * dt);
       p.vel.x *= k; p.vel.y *= k;
       const sp = p.speed;
-      const ns = Math.max(0, sp - p.phys.friction * dt);
+      const ns = Math.max(0, sp - p.phys.friction * SURF.ballFriction * dt);
       if (sp > 0) { p.vel.x *= ns / sp; p.vel.y *= ns / sp; }
       if (ns < 0.05) { p.vel.x = 0; p.vel.y = 0; }
     }
