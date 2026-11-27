@@ -46,7 +46,8 @@ const LAYERS = [
   { id: 'wege', name: 'Wegelinien (OSM)', on: false },
   { id: 'baeume', name: 'Bäume mit Schatten (OSM-Standorte)', on: true },
   { id: 'einfriedungen', name: 'Zäune, Mauern (OSM)', on: true },
-  { id: 'platz', name: 'Bolzplatz (Verein)', on: true },
+  { id: 'platz', name: 'Bolzplatz: Zaun und Tore (Modell des Intros)', on: true },
+  { id: 'platzmarken', name: 'Platz-Ecken und Achsen (Prüfung)', on: false },
   { id: 'bibliothek', name: 'Art-Bibliothek (SpriteCook)', on: true },
 ];
 const USE_COLOR = { 'Straßenverkehr': '#8d8a85', 'Weg': '#d9c79a', 'Wohnbaufläche': '#e8dcc0', 'Sport-, Freizeit- und Erholungsfläche': '#8fbf6a' };
@@ -162,7 +163,8 @@ async function main() {
       if (f.geometry.type === 'LineString') fences.add({ wall: { positions: f.geometry.coordinates.map((p) => pos(p, 1.4)), minimumHeights: f.geometry.coordinates.map(() => ground), material: css('#7a1fa2', 0.7) }, properties: { text: describe('Einfriedung (OSM), Höhe angenommen 1,4 m', f.properties) } });
       else fences.add({ position: pos(f.geometry.coordinates, 0.6), point: { pixelSize: 6, color: css('#7a1fa2') }, properties: { text: describe('Einfriedung (OSM)', f.properties) } });
     }
-    const court = layer('platz');
+    const court = layer('platzmarken');
+    stelleModell();
     for (const f of platz.features) {
       const p = f.properties;
       if (p.art === 'zaun') court.add({ polyline: { positions: f.geometry.coordinates[0].map((q) => pos(q, 0.35)), width: 4, material: css('#e00000') }, properties: { text: describe('Bolzplatz: Zaun (Verein, ±1 m)', p) } });
@@ -174,6 +176,21 @@ async function main() {
     placeLibrary({ Cesium, entities: library, manifest, geo, frame, pos, preview, skip: (a) => a.place.layer === 'baeume' || a.id === figur?.id }).then((n) => { $('bibliothek').textContent = `${n} Sprites aus der Art-Bibliothek` + (preview ? ' (mit wartenden)' : ''); });
     scene.requestRender();
   }
+
+  // The court as the intro shows it at its end: fence, football goals and street-hockey goals
+  // (assets/intro/boni_platz.glb, tools/intro/court_glb.py), set on the same fence rectangle.
+  let platzModell = null;
+  function modellMatrix() {
+    const enu = Cesium.Transforms.eastNorthUpToFixedFrame(pos([E0, N0], 0)), inv = Cesium.Matrix4.inverse(enu, new Cesium.Matrix4());
+    const lokal = (en) => Cesium.Matrix4.multiplyByPoint(inv, pos(en, 0), new Cesium.Cartesian3());
+    const o = lokal([E0, N0]), pa = lokal([E0 + 10 * A[0], N0 + 10 * A[1]]), pb = lokal([E0 + 10 * B[0], N0 + 10 * B[1]]);
+    const u = { x: (pa.x - o.x) / 10, y: (pa.y - o.y) / 10 }, v = { x: (pb.x - o.x) / 10, y: (pb.y - o.y) / 10 };
+    return Cesium.Matrix4.multiply(enu, new Cesium.Matrix4(u.x, v.x, 0, o.x, u.y, v.y, 0, o.y, 0, 0, 1, 0.03, 0, 0, 0, 1), new Cesium.Matrix4());
+  }
+  function stelleModell() { if (platzModell) platzModell.modelMatrix = modellMatrix(); }
+  Cesium.Model.fromGltfAsync({ url: new URL('intro/boni_platz.glb', ASSETS).href, modelMatrix: modellMatrix(), forwardAxis: Cesium.Axis.X })
+    .then((m) => { platzModell = scene.primitives.add(m); platzModell.show = LAYERS.find((l) => l.id === 'platz').on; })
+    .catch((e) => status('Platzmodell nicht geladen: ' + e.message));
 
   function zeigeHaeuser(ids) {
     for (const h of haeuser) { const durch = ids.has(h.id); if (durch !== h.durch) { h.durch = durch; h.haus.polygon.material = css(h.colour, durch ? 0.2 : google.on ? 0.45 : 1); } }
@@ -231,6 +248,7 @@ async function main() {
     label.querySelector('input').onchange = async (ev) => {
       l.on = ev.target.checked;
       if (l.id === 'pixelboden') { if (pixelLayer) pixelLayer.show = l.on; }
+      else if (l.id === 'platz') { if (platzModell) platzModell.show = l.on; }
       else if (l.id === 'luftbild') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
       else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); scene.globe.show = true; } }
       else sources[l.id].show = l.on;
@@ -256,11 +274,15 @@ async function main() {
       try { localStorage.setItem(TOKEN_KEY, value); } catch { /* private window: kept until the page closes */ }
       token = value; google.available = true;
       googleCheck.disabled = false; googleCheck.parentElement.querySelector('small')?.remove();
+      spielziel();
       tokenUi(false);
       status('Token gespeichert. Jetzt „Google-3D-Kacheln“ anhaken.');
     };
   }
   tokenUi(false);
+  // with the club's token the match runs on the real court in 3D, where the intro ends; otherwise on the plain test court
+  function spielziel() { $('spielstart').href = token ? 'intro.html?quick' : 'test.html'; }
+  spielziel();
   for (const b of document.querySelectorAll('[data-sicht]')) b.onclick = () => view(b.dataset.sicht);
 
   // ---- pointer: position in the grid and in court metres; click shows what is there

@@ -29,18 +29,19 @@ export function maske(abstand, aufDemPlatz) {
 
 /** Asphalt tones for the court floor: the photo's light and dark survive, its colour noise does not. */
 export const ASPHALT = ['#b9b3a4', '#9a958c', '#8f8b86', '#7d7868', '#5d5a57'].map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)));
-const LINIE = { weiss: [247, 239, 220], rot: [200, 85, 61] };
+const LINIE = { weiss: [247, 239, 220] };
 /**
- * The game's own floor markings inside the fence, in court metres (play area 22.8 x 17.2 m, goal lines at
- * 9.2 m, as in the game on the real court). Returns a colour or null. `zelle` is the pixel size in metres.
+ * The court's real floor markings in court metres, as reconstructed from the club's photos for the intro's
+ * court model (tools/intro/court_glb.py): a white frame half a metre inside the fence, centre line,
+ * centre circle of 3 m and arcs of 6 m in front of both goals. Returns a colour or null.
  */
-export function markierung(a, b, zelle = 0.25, feld = { halbA: 11.4, halbB: 8.6, torlinie: 9.2 }) {
-  const aa = Math.abs(a), bb = Math.abs(b), w = zelle * 1.01;
+export function markierung(a, b, zelle = 0.25, feld = { halbA: 12.1, halbB: 8.5, kreis: 3, bogen: 6 }) {
+  const aa = Math.abs(a), bb = Math.abs(b), w = zelle * 0.75;
   if (aa > feld.halbA + w || bb > feld.halbB + w) return null;
-  if (aa > feld.halbA - w || bb > feld.halbB - w) return LINIE.weiss;            // edge of the play area
-  if (aa < w / 2 + zelle / 2) return LINIE.rot;                                   // centre line
-  if (Math.abs(aa - feld.torlinie) < w / 2 + zelle / 2 && bb < feld.halbB) return LINIE.rot; // goal lines
-  if (Math.hypot(a, b) < 0.45) return LINIE.rot;                                  // centre spot
+  if (aa > feld.halbA - w || bb > feld.halbB - w) return LINIE.weiss;        // frame
+  if (aa < w) return LINIE.weiss;                                             // centre line
+  if (Math.abs(Math.hypot(a, b) - feld.kreis) < w) return LINIE.weiss;        // centre circle
+  if (Math.abs(Math.hypot(aa - feld.halbA, b) - feld.bogen) < w) return LINIE.weiss; // arcs in front of the goals
   return null;
 }
 
@@ -90,7 +91,7 @@ export async function pixelboden({ frame, linien = [], platzRing = null, halb = 
     const t = (schwelle(x, y) - 0.5) * 26;      // ordered dither between neighbouring palette colours
     const aufPlatz = Math.abs(a) <= 12.6 && Math.abs(b) <= 9;
     const strich = aufPlatz ? markierung(a, b, (2 * halb) / px) : null;
-    // inside the fence the floor is the game's: asphalt tones only, and the play area's lines on top
+    // inside the fence: asphalt tones only, and the court's real markings on top
     const [r, gr, bl] = strich ?? (aufPlatz ? naechste(d[i] + t, d[i + 1] + t, d[i + 2] + t, ASPHALT) : naechste(d[i] + t, d[i + 1] + t, d[i + 2] + t));
     d[i] = r; d[i + 1] = gr; d[i + 2] = bl; d[i + 3] = 255;
   }

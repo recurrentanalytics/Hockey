@@ -20,11 +20,13 @@ test('obstacles: a gate cuts an opening into a fence, nothing else does', () => 
 
 test('obstacles: the court fence holds on the long sides and lets the player out at the entrances', () => {
   assert.ok(welt.segmente.length > 1000 && welt.haeuser.length > 200);
-  const lang = gehe([0, 0], [0, 1], 4);                       // straight at the long side
+  const lang = gehe([6, 0], [0, 1], 4);                       // straight at a long side, away from the entrance
   assert.ok(lang[1] < 9 - KOERPER + 0.4, `went through the fence: b = ${lang[1]}`);
+  const kurz = gehe([0, 0], [-1, 0], 4);                      // the short sides hold the goals: closed
+  assert.ok(kurz[0] > -12.6 + KOERPER - 0.4, `went through the goal end: a = ${kurz[0]}`);
   assert.ok(aufDemPlatz([0, 0]) && !aufDemPlatz([14, 0]));
-  const raus = gehe([0, 0], [-1, 0], 4);                      // through the entrance in the short side
-  assert.ok(raus[0] < -14, `stopped at the entrance: a = ${raus[0]}`);
+  const raus = gehe([0, 0], [0, -1], 4);                      // through the assumed entrance in the long side
+  assert.ok(raus[1] < -10.5, `stopped at the entrance: b = ${raus[1]}`);
 });
 
 test('obstacles: buildings stop the player from every side', () => {

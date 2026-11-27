@@ -24,12 +24,12 @@ test('pixel ground: full pixel art on and next to the court, none far away, furt
   let last = 1; for (let d = 0; d <= 70; d += 2) { const m = maske(d, true); assert.ok(m <= last + 1e-12, 'falls monotonically'); last = m; }
 });
 
-test('pixel ground: the game markings sit on the play area, symmetric about both axes', () => {
-  assert.equal(markierung(5, 3), null);
-  assert.deepEqual(markierung(0, 4), markierung(0, -4));          // centre line
-  assert.ok(markierung(0, 4));
-  assert.deepEqual(markierung(9.2, 2), markierung(-9.2, -2));     // goal lines
-  assert.ok(markierung(11.4, 0) && markierung(0.1, 8.6));         // edge of the play area
-  assert.equal(markierung(12.4, 0), null);                        // between play area and fence
+test('pixel ground: the court markings are the real ones (frame, centre line, circle, goal arcs), symmetric', () => {
+  assert.equal(markierung(5, 4.5), null);
+  assert.ok(markierung(0, 4) && markierung(0, -4));               // centre line
+  assert.ok(markierung(3, 0) && markierung(0, 3) && markierung(-3, 0)); // centre circle, 3 m
+  assert.ok(markierung(6.1, 0) && markierung(-6.1, 0));           // arcs 6 m in front of both goals
+  assert.ok(markierung(12.1, 4) && markierung(4, 8.5));           // frame half a metre inside the fence
+  assert.equal(markierung(12.5, 4), null);                        // between frame and fence
   assert.ok(imVieleck([1, 1], [[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]]) && !imVieleck([5, 1], [[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]]));
 });

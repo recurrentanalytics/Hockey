@@ -179,7 +179,7 @@ Rund um den Bolzplatz wird das Luftbild selbst zu Pixelart; das Viertel außen b
 - **Kantenvereinfachung:** leichte Glättung vor der Farbreduktion, damit Kleinteiliges (Äste, Rauschen) zu Flächen wird.
 - **Palette und Dithering:** die warme Palette des Art-Standards (17 Farben) mit geordnetem 4×4-Raster zwischen benachbarten Tönen.
 - **Umrisse:** dunkle Linie nur entlang echter, kartierter Kanten: Zaun des Bolzplatzes, Umriss des Spielplatzes (OSM), Wegeflächen (ALKIS), und nur dort, wo der Stil schon überwiegt.
-- **Platzboden:** innerhalb des Zauns nur Asphalttöne; Hell und Dunkel des Fotos bleiben, Farbrauschen nicht. Darauf die Markierung des Spiels (Spielfläche 22,8 × 17,2 m, Mittellinie, Torlinien bei 9,2 m).
+- **Platzboden:** innerhalb des Zauns nur Asphalttöne; Hell und Dunkel des Fotos bleiben, Farbrauschen nicht. Darauf die echten Markierungen, wie sie für das Platzmodell des Intros aus den Vereinsfotos rekonstruiert wurden (weißer Rahmen 0,5 m innerhalb des Zauns, Mittellinie, Mittelkreis 3 m, Bögen 6 m vor den Toren).
 - **Maske:** volle Pixelart bis 6 m um den Zaun, dann weich abnehmend bis 26 m, auf der Spielplatzfläche bis 62 m. Der Übergang ist selbst gerastert (2×2-Pixel-Punkte lösen sich ins Foto auf), es gibt keine gerade Kante und kein Rechteck.
 - **Grenzen:** Das Luftbild ist eine Winteraufnahme; Grün entsteht nicht, wo das Foto keins hat. Mit den Google-3D-Kacheln ist der Pixel-Boden nicht zu sehen (die Kacheln ersetzen den Boden). Häuser sind weiter schlichte Volumen, Straßen und Autos außerhalb der Maske unverändert Foto.
 
@@ -187,15 +187,17 @@ Bilder: `docs/ort/boni_hybrid_platz.jpg`, `docs/ort/boni_hybrid_viertel.png` (Lu
 
 ## Das Viertel befahren und ein Spiel starten (`src/welt/hindernisse.js`)
 
-`welt.html` → „Losfahren“: Der Spieler startet auf dem Bolzplatz und fährt durch das echte Viertel (Pfeiltasten oder WASD, am Handy auf den Boden tippen). Auf dem Platz erscheint „Spiel starten“ und öffnet das Hockeyspiel auf dem Boni (`test.html`, 3 gegen 3).
+`welt.html` → „Losfahren“: Der Spieler startet auf dem Bolzplatz und fährt durch das echte Viertel (Pfeiltasten oder WASD, am Handy auf den Boden tippen). Auf dem Platz erscheint „Spiel starten“: mit gespeichertem Cesium-Token das Spiel auf dem echten Platz in 3D, dort wo das Intro endet (`intro.html?quick`), sonst das Spiel auf dem schlichten Testplatz (`test.html`), jeweils 3 gegen 3.
 
 - **Tempo:** 5,5 m/s, alle Maße in echten Metern.
 - **Hauswände:** jeder ALKIS-Grundriss samt Innenhöfen. Durchfahrten und Arkaden (ALKIS „Bauteil“) bleiben offen und sind ab 3,2 m Höhe gezeichnet, darunter fährt man durch.
 - **Mauern, Zäune, Hecken:** die in OSM kartierten Linien. An jedem kartierten Tor bleibt eine 3 m breite Öffnung.
-- **Zaun des Bolzplatzes:** die vier Seiten zwischen den Ecken des Vereins. **Die Eingänge sind angenommen** (Mitte der beiden kurzen Seiten, je 3 m); wo sie wirklich liegen, steht in keinem Datensatz (`PLATZ_EINGAENGE`).
+- **Zaun des Bolzplatzes:** zu sehen ist das Platzmodell des Intros (`assets/intro/boni_platz.glb`: Doppelstabzaun, Fußballtore in den Stirnseiten, rote Streethockey-Tore), auf demselben Zaunrechteck wie im Intro. Aufgehalten wird man an den vier Seiten zwischen den Ecken. **Die Eingänge sind angenommen** (Mitte der beiden langen Seiten, je 3 m; die Stirnseiten tragen die Tore); wo sie wirklich liegen, steht weder in einem Datensatz noch im Modell (`PLATZ_EINGAENGE`). Dort fährt man durch den gezeichneten Zaun.
 - **Bäume:** wie zuvor, Stamm mit Wurzelanlauf.
 - **Tiefe:** Häuser, Bäume und Spieler verdecken sich nach ihrer Lage. Häuser und Kronen, die aus Sicht der Spielkamera vor dem Spieler stehen, werden durchscheinend, solange er dahinter ist.
 - **Ausschnitt:** alles im Datensatz (400 × 400 m): Platz, Park und die Blöcke ringsum. Außerhalb gibt es weder Wände noch Grenze.
 - **Noch nicht:** Der Rückweg aus dem Hockeyspiel in die Welt, Türen und Hauseingänge, parkende Autos, andere Figuren. Die Zäune um den Sandspielplatz und die Schale fehlen in den Daten und halten deshalb niemanden auf.
 
 Bild: `docs/ort/boni_viertel_strasse.jpg`.
+
+Bild mit dem Platzmodell des Intros in der Weltansicht: `docs/ort/boni_welt_introplatz.jpg`.

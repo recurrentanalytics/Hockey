@@ -5,8 +5,9 @@ import { platzmeter } from './baeume.js';
 
 export const KOERPER = 0.3;          // the player's radius, m
 export const TORBREITE = 3;          // opening left at a mapped gate, m
-/** Entrances of the court fence. Not in any dataset: assumed in the middle of both short sides (A–B and C–D). */
-export const PLATZ_EINGAENGE = [[-12.6, 0], [12.6, 0]];
+/** Entrances of the court fence. Not in any dataset and not on the intro's court model: assumed in the
+ *  middle of both long sides. The short sides carry the football goals. */
+export const PLATZ_EINGAENGE = [[0, -9], [0, 9]];
 const ZELLE = 8;
 
 /** Cut an opening of TORBREITE into a segment where a gate lies on it. Returns the remaining pieces. */
