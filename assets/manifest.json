@@ -159,7 +159,10 @@
         "model": "gemini-nano-banana-2.1",
         "prompt": "docs/art/prompts/set.md"
       },
-      "sha12": "9333cd9a61b1"
+      "sha12": "9333cd9a61b1",
+      "approved": {
+        "date": "2026-11-27"
+      }
     },
     {
       "id": "equipment.puck",
@@ -187,7 +190,10 @@
         "model": "gemini-nano-banana-2.1",
         "prompt": "docs/art/prompts/set.md"
       },
-      "sha12": "9e50e6b35d26"
+      "sha12": "9e50e6b35d26",
+      "approved": {
+        "date": "2026-11-27"
+      }
     },
     {
       "id": "world.bonifatiusplatz.plane-tree",
@@ -218,6 +224,9 @@
         "match": {
           "natural": "tree"
         }
+      },
+      "approved": {
+        "date": "2026-11-27"
       }
     },
     {
@@ -246,7 +255,10 @@
         "model": "gemini-nano-banana-2.1",
         "prompt": "docs/art/prompts/set.md"
       },
-      "sha12": "a2d9eedc9635"
+      "sha12": "a2d9eedc9635",
+      "approved": {
+        "date": "2026-11-27"
+      }
     },
     {
       "id": "world.bonifatiusplatz.linden",
@@ -274,7 +286,10 @@
         "model": "gemini-nano-banana-2.1",
         "prompt": "docs/art/prompts/set.md"
       },
-      "sha12": "1b2e4b99922e"
+      "sha12": "1b2e4b99922e",
+      "approved": {
+        "date": "2026-11-27"
+      }
     }
   ]
 }

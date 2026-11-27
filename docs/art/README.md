@@ -2,7 +2,7 @@
 
 How art gets from an idea into the running game. SpriteCook produces the art; Claude drives it through the SpriteCook plugin; this repository holds the results, their manifest and the checks.
 
-Status (2026-11-27, Phase 3): the pipeline runs from SpriteCook to the running world view. `tools/assets/library.mjs` takes a generated picture, fits it, names and files it by its id, writes the manifest entry and runs the checks; the entry also says where the asset stands, and `welt.html` puts it there (a tree on every mapped tree, a bench on every mapped bench, skater, stick and puck on the court). The initial set is in the table in section 6a. The owner has approved the skater still and stride; tree, bench, stick and puck wait for approval and show only with `?preview=art`. The 2D match (`index.html`) still draws its own skeleton figures and does not use library sprites; the hooks for the older sprite renderer described further down are gone.
+Status (2026-11-27, Phase 3): the pipeline runs from SpriteCook to the running world view. `tools/assets/library.mjs` takes a generated picture, fits it, names and files it by its id, writes the manifest entry and runs the checks; the entry also says where the asset stands, and `welt.html` puts it there (a tree on every mapped tree, a bench on every mapped bench, skater, stick and puck on the court). The initial set is in the table in section 6a. The owner approved the skater still and stride and, on 2026-11-27, bench, stick, puck, plane tree and linden as well; only the small pilot skater is left unapproved. The 2D match (`index.html`) still draws its own skeleton figures and does not use library sprites; the hooks for the older sprite renderer described further down are gone.
 
 ## 1. What SpriteCook can do
 
@@ -151,11 +151,11 @@ What the pilot showed:
 | --- | --- | --- | --- | --- |
 | Player | `character.skater.glide` | 84×84 | – | approved |
 | Animation: stride, 8 frames | `character.skater.stride` | 84×84 × 8 | court centre, 1.4 m tall, in the Borstentiere kit | approved |
-| Hockey stick | `equipment.stick` | 76×62 | on the court next to the player | waiting |
-| Puck | `equipment.puck` | 36×28 | on the court, true size (7 cm, hard to see) | waiting |
-| Tree: plane tree | `world.bonifatiusplatz.plane-tree` | 80×80 | species of the grove, assigned to mapped trees by their id (see `docs/BONI_ORT.md`, trees) | waiting |
-| Tree: linden | `world.bonifatiusplatz.linden` | 52×80 | second species of the grove | waiting |
-| Environmental object: park bench | `prop.bench` | 70×64 | on each of the 22 benches mapped in `ausstattung.geojson` | waiting |
+| Hockey stick | `equipment.stick` | 76×62 | on the court next to the player | approved 2026-11-27 |
+| Puck | `equipment.puck` | 36×28 | on the court, true size (7 cm, hard to see) | approved 2026-11-27 |
+| Tree: plane tree | `world.bonifatiusplatz.plane-tree` | 80×80 | species of the grove, assigned to mapped trees by their id (see `docs/BONI_ORT.md`, trees) | approved 2026-11-27 |
+| Tree: linden | `world.bonifatiusplatz.linden` | 52×80 | second species of the grove | approved 2026-11-27 |
+| Environmental object: park bench | `prop.bench` | 70×64 | on each of the 22 benches mapped in `ausstattung.geojson` | approved 2026-11-27 |
 
 Pictures: `set/bogen.png` (bench, puck, stick as generated), `set/welt-baeume.jpg`, `set/welt-platz.jpg` (in the world view with `?preview=art`). Prompts: `prompts/set.md`, `prompts/skater.md`, `prompts/pilot.md`. Bench, stick and puck were generated with the chosen skater as style reference (`gemini-nano-banana-2.1`, 12 credits each).
 
