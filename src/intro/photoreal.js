@@ -1,7 +1,7 @@
 // Photorealistic intro flight: Google Photorealistic 3D Tiles via Cesium ion (free Community
-// account, token from the club), rendered with CesiumJS. Same camera path as the aerial version:
-// from 1.2 km above Hannover-List down onto the Boni court, turning so the court lies sideways,
-// tilting into the game's camera angle (60° from vertical) and stopping at the fixed game view.
+// account, token from the club), rendered with CesiumJS. From the whole planet in space down to
+// Germany, Hannover, the List and onto the Boni court, told in short spoken lines, then turning so
+// the court lies sideways and tilting into the game's camera angle (60° from vertical).
 
 const CESIUM_VERSION = '1.147.0';
 const GOOGLE_3D_TILES = 2275207; // Cesium ion asset: Google Photorealistic 3D Tiles
@@ -16,19 +16,46 @@ const Q = new URLSearchParams(location.search);
 const FINAL_HEADING = ((+Q.get('heading') || 118.2) * Math.PI) / 180; // view direction A→B, clockwise from north
 const FINAL_TILT = ((+Q.get('tilt') || 60) * Math.PI) / 180;            // 60° from vertical, like PROJ {x:16, y:8}
 
-// One continuous camera move: a single progress curve u (slow start, long soft landing) drives
-// zoom, turn and tilt together, so the flight reads as one gesture instead of separate moves.
-const T = { flight: [0.2, 10.2], fade: [7.4, 10.6], rink: [8.2, 10.6], title: 10.4, button: 11.0 };
-const END = T.button + 0.2;
+// ------------------------------------------------------------------ the story
+// One continuous camera move. The visible ground width follows keyframes (smooth monotone curve
+// in log space, never stopping), slowing down where a line is told.
+const STORY = [
+  { at: 0.8, until: 6.6, text: 'Ganz weit draußen, im großen, dunklen Weltall … schwebt eine kleine blaue Kugel.' },
+  { at: 7.0, until: 10.2, text: 'Auf dieser Kugel gibt es ein Land.' },
+  { at: 10.6, until: 14.6, text: 'In diesem Land eine Stadt.' },
+  { at: 15.4, until: 20.0, text: 'Und in dieser Stadt … ein kleiner Platz unter großen Bäumen.' },
+  { at: 20.4, until: 25.9, text: 'Hier rollt eine noch viel kleinere Kugel. Ein roter Ball. Klein wie eine Kinderfaust …' },
+  { at: 26.2, until: 30.2, text: '… und für uns das Größte auf der ganzen Welt.' },
+];
+export const GAME_TITLE = { name: 'DIE ROTE KUGEL', sub: 'Das größte kleine Spiel der Welt' };
+const ZOOM = [[0, 'planet'], [6.6, 'drift'], [10.2, 1.25e6], [13.8, 1.4e5], [19.2, 3.6e3], [23.2, 230], [26.2, 'end']];
+const T = { turn: [13.8, 23.4], tilt: [20.0, 26.2], germany: [6.6, 11.2], city: [10.6, 14.8], fade: [22.2, 26.6], rink: [23.2, 26.6], title: 26.2, button: 30.4 };
+const END = T.button + 0.4;
 const ease = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * t * (t * (t * 6 - 15) + 10));
 const phase = (t, [a, b]) => ease((t - a) / (b - a));
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
-/** Flight progress 0..1: gentle start, most of the distance mid-flight, long deceleration. */
-const progress = (t) => { const x = clamp01((t - T.flight[0]) / (T.flight[1] - T.flight[0])); return 1 - Math.pow(1 - ease(x), 1.6); };
-const TURN = (50 * Math.PI) / 180; // the flight starts already turned towards the court; only the last 50° are flown
-// one fixed field of view for the whole flight: changing it while tilting (a dolly zoom) made the
-// camera lurch backwards near the end
-const FOV_START = (20 * Math.PI) / 180, FOV_END = FOV_START;
+/** Fade in, hold, fade out over [a, b]. */
+const window01 = (t, [a, b], f = 0.8) => clamp01(Math.min((t - a) / f, (b - t) / f));
+const FOV = (20 * Math.PI) / 180; // fixed: changing it mid-flight makes the camera lurch
+
+/** Monotone cubic (Fritsch–Carlson) through points [[x, y]], evaluated at x. */
+function monotone(pts, x) {
+  const n = pts.length;
+  if (x <= pts[0][0]) return pts[0][1];
+  if (x >= pts[n - 1][0]) return pts[n - 1][1];
+  const d = [], m = [];
+  for (let i = 0; i < n - 1; i++) d.push((pts[i + 1][1] - pts[i][1]) / (pts[i + 1][0] - pts[i][0]));
+  m[0] = 0; m[n - 1] = 0; // start and land softly
+  for (let i = 1; i < n - 1; i++) {
+    const h0 = pts[i][0] - pts[i - 1][0], h1 = pts[i + 1][0] - pts[i][0];
+    m[i] = d[i - 1] * d[i] <= 0 ? 0 : (3 * (h0 + h1)) / ((2 * h1 + h0) / d[i - 1] + (h1 + 2 * h0) / d[i]);
+  }
+  let k = 0;
+  while (x > pts[k + 1][0]) k++;
+  const h = pts[k + 1][0] - pts[k][0], t = (x - pts[k][0]) / h;
+  const t2 = t * t, t3 = t2 * t;
+  return (2 * t3 - 3 * t2 + 1) * pts[k][1] + (t3 - 2 * t2 + t) * h * m[k] + (-2 * t3 + 3 * t2) * pts[k + 1][1] + (t3 - t2) * h * m[k + 1];
+}
 
 // Performance: phones and tablets fly at reduced resolution and coarser tiles; once landed, the
 // view is drawn once at full resolution and then only when something changes (request render
@@ -37,6 +64,7 @@ const MOBILE = !!window.BoniAndroid || /Android|iPhone|iPad|Mobile/i.test(naviga
 // one setting for the whole flight and the landed view: no visible jump in sharpness at the end
 const FLIGHT = { res: MOBILE ? 0.8 : 1, sse: MOBILE ? 14 : 8, msaa: MOBILE ? 1 : 4 };
 const STILL = FLIGHT;
+const RECORD_MODE = new URLSearchParams(location.search).has('record');
 
 function loadCesium(base) {
   window.CESIUM_BASE_URL = base;
@@ -52,17 +80,17 @@ function loadCesium(base) {
 
 /** Camera state at time t (seconds) for a canvas of the given aspect ratio. */
 function cameraAt(t, aspect) {
-  const wStart = 1150 * Math.min(1, aspect);
+  // the whole planet (12 700 km) fits the screen height at the start
+  const planet = 16.5e6 * Math.max(1, aspect);
   const wEnd = COURT.long / (aspect >= 1 ? 0.78 : 0.95);
-  const u = progress(t);
-  const width = Math.exp(Math.log(wStart) + (Math.log(wEnd) - Math.log(wStart)) * u);
-  const k = ease(clamp01((u - 0.35) / 0.65));          // tilting happens during the second part of the descent
-  const fovx = FOV_START + (FOV_END - FOV_START) * k;
+  const keys = ZOOM.map(([kt, w]) => [kt, Math.log(w === 'planet' ? planet : w === 'drift' ? planet * 0.55 : w === 'end' ? wEnd : w)]);
+  const width = Math.exp(monotone(keys, t));
+  const k = phase(t, T.tilt);
   return {
-    heading: FINAL_HEADING - TURN * (1 - u),
+    heading: FINAL_HEADING * phase(t, T.turn),
     tilt: FINAL_TILT * k,
-    fovx,
-    range: width / (2 * Math.tan(fovx / 2)),
+    fovx: FOV,
+    range: width / (2 * Math.tan(FOV / 2)),
     lift: width * 0.025 * k, // court sits a little below the middle at the end
   };
 }
@@ -186,10 +214,59 @@ export async function run({ token, cesiumBase }) {
   const ecToEnu = new Cesium.Matrix4();
   tileset.customShader = seeThrough;
 
+  // ---------------------------------------------------------------- map markings
+  const glow = (a) => Cesium.Color.fromCssColorString('#ffd23f').withAlpha(a);
+  let germanyA = 0, cityA = 0, boniA = 0;
+  const de = await (await fetch(new URL('../../assets/intro/deutschland.json', import.meta.url))).json();
+  const lineMat = new Cesium.PolylineGlowMaterialProperty({ glowPower: 0.22, color: new Cesium.CallbackProperty(() => glow(germanyA), false) });
+  const germany = de.rings.map((r) => viewer.entities.add({
+    polyline: { positions: Cesium.Cartesian3.fromDegreesArray([...r, r[0]].flat()), width: 7, material: lineMat, depthFailMaterial: lineMat, arcType: Cesium.ArcType.GEODESIC },
+  }));
+  const pin = (lon, lat, text, alpha, size = 26) => viewer.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(lon, lat, 0),
+    point: { pixelSize: 14, color: new Cesium.CallbackProperty(() => glow(alpha()), false), outlineColor: new Cesium.CallbackProperty(() => Cesium.Color.fromCssColorString('#16110d').withAlpha(alpha()), false), outlineWidth: 3, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+    label: { text, font: `bold ${size}px Arial, sans-serif`, style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 5, outlineColor: new Cesium.CallbackProperty(() => Cesium.Color.fromCssColorString('#16110d').withAlpha(alpha()), false),
+      fillColor: new Cesium.CallbackProperty(() => Cesium.Color.WHITE.withAlpha(alpha()), false), pixelOffset: new Cesium.Cartesian2(0, -30), verticalOrigin: Cesium.VerticalOrigin.BOTTOM, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+  });
+  const pins = [
+    pin(10.45, 51.16, 'Deutschland', () => germanyA, 30),
+    pin(9.7320, 52.3759, 'Hannover', () => cityA),
+    pin(COURT.center[0], COURT.center[1], 'Boni', () => boniA),
+  ];
+
+  // ---------------------------------------------------------------- narration
+  const caption = document.getElementById('caption'), titleName = document.getElementById('titleName'), titleSub = document.getElementById('titleSub');
+  titleName.textContent = GAME_TITLE.name; titleSub.textContent = GAME_TITLE.sub;
+  const voice = {
+    speak(text) {
+      if (window.BoniAndroid?.speak) { window.BoniAndroid.speak(text); return; }
+      if (!('speechSynthesis' in window)) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'de-DE'; u.rate = 0.88; u.pitch = 1.12;
+      const v = speechSynthesis.getVoices().find((x) => x.lang?.startsWith('de'));
+      if (v) u.voice = v;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    },
+    stop() { window.BoniAndroid?.stopSpeaking?.(); window.speechSynthesis?.cancel(); },
+  };
+  let told = -1;
+  const narrate = (t) => {
+    const i = STORY.findIndex((l) => t >= l.at && t < l.until);
+    const line = STORY[i];
+    caption.classList.toggle('on', !!line && !skip && !started);
+    if (line && i !== told) { told = i; caption.textContent = line.text; if (!skip && !RECORD_MODE) voice.speak(line.text); }
+  };
+
   const title = document.getElementById('title'), go = document.getElementById('go');
   scene.preRender.addEventListener(() => {
     const t = now();
     place(t);
+    germanyA = window01(t, T.germany, 1.2);
+    cityA = window01(t, T.city, 1.0);
+    boniA = window01(t, [15.2, 20.2], 1.0);
+    for (const e of germany) e.show = germanyA > 0;
+    pins[0].show = germanyA > 0; pins[1].show = cityA > 0; pins[2].show = boniA > 0;
+    narrate(t);
     const fade = phase(t, T.fade);
     rinkAlpha = phase(t, T.rink);
     court.show = rinkAlpha > 0;
@@ -206,6 +283,7 @@ export async function run({ token, cesiumBase }) {
     else seeThrough.setUniform('u_fade', 0);
     title.classList.toggle('on', t >= T.title && !started);
     go.classList.toggle('on', t >= T.button && !started);
+    document.getElementById('skip').classList.toggle('on', t < T.title && !skip && !started);
   });
 
   const loaded = (timeout = 25000) => new Promise((res) => {
@@ -223,16 +301,27 @@ export async function run({ token, cesiumBase }) {
     if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = courtMatrix(); }
   } catch { /* keep the estimate */ }
   await loaded();
-  const stops = [9.6, 8.6, 7.6, 6.6, 5.4, 4.0, 2.4, 0];
+  const stops = [23.2, 19.2, 13.8, 10.2, 0];
   for (let i = 0; i < stops.length; i++) {
     say(`Lade den Boni … ${Math.round(((i + 1) / stops.length) * 100)} %`);
     coverBar.style.width = `${Math.round(((i + 1) / stops.length) * 100)}%`;
     fixedT = stops[i];
     await loaded(i === stops.length - 1 ? 20000 : 8000);
   }
-  // preloading happened behind the cover; the flight starts at its first frame
+  // preloading happened behind the cover; the flight starts at its first frame, after a tap or a
+  // button press (browsers only allow speech after a user gesture)
   fixedT = 0;
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  if (!RECORD_MODE) {
+    say('▶  Antippen oder Taste drücken');
+    cover.classList.add('ready');
+    await new Promise((res) => {
+      const done = () => { window.removeEventListener('pointerdown', done); window.removeEventListener('keydown', done); clearInterval(poll); res(); };
+      window.addEventListener('pointerdown', done); window.addEventListener('keydown', done);
+      const poll = setInterval(() => { for (const g of navigator.getGamepads?.() ?? []) if (g?.buttons.some((b) => b.pressed)) done(); }, 80);
+    });
+    if ('speechSynthesis' in window && !window.BoniAndroid?.speak) speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); // unlock
+  }
   cover.classList.remove('on');
 
   window.introDebug = {
@@ -260,7 +349,8 @@ export async function run({ token, cesiumBase }) {
   const startGame = async () => {
     if (started) return;
     started = true; skip = true; fixedT = END;
-    title.classList.remove('on'); go.classList.remove('on');
+    title.classList.remove('on'); go.classList.remove('on'); voice.stop();
+    document.getElementById('skip').style.display = 'none';
     document.getElementById('hint').style.display = 'none';
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // final view drawn → matrix ready
     globalThis.BONI_3D = { toCss };
@@ -290,12 +380,22 @@ export async function run({ token, cesiumBase }) {
   fixedT = null; start = performance.now();
   window.introReady = true;
 
+  const skipIntro = () => { if (!skip) { skip = true; voice.stop(); caption.classList.remove('on'); } };
   window.addEventListener('keydown', (e) => {
     if (started) return;
-    if (e.key === 'r' || e.key === 'R') { start = performance.now(); skip = false; }
+    if (e.key === 'r' || e.key === 'R') { start = performance.now(); skip = false; told = -1; }
     else if (e.key === 'Enter' && skip) startGame();
-    else skip = true;
+    else skipIntro();
   });
-  scene.canvas.addEventListener('pointerdown', () => { skip = true; });
+  scene.canvas.addEventListener('pointerdown', skipIntro);
+  document.getElementById('skip').addEventListener('click', skipIntro);
+  // gamepads: any button skips the flight, then A/Start starts the game
+  let padHeld = true;
+  setInterval(() => {
+    if (started) return;
+    const down = (navigator.getGamepads?.() ?? []).some((g) => g?.buttons.some((b) => b.pressed));
+    if (down && !padHeld) { if (skip && now() >= T.button) startGame(); else skipIntro(); }
+    padHeld = down;
+  }, 60);
   go.addEventListener('click', startGame);
 }

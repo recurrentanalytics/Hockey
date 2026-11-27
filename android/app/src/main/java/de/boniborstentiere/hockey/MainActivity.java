@@ -43,6 +43,8 @@ public class MainActivity extends Activity {
     private static final String LIVE_PREFIX = "https://recurrentanalytics.github.io/Hockey/";
     private boolean fellBack = false;
     private WebView web;
+    private android.speech.tts.TextToSpeech tts;
+    private boolean ttsReady = false;
 
     /** One connected pad: standard-mapping buttons (0..16) and axes (0..3). */
     private static final class Pad {
@@ -59,6 +61,15 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // narrator: the device's own German text-to-speech voice, a little slower and brighter
+        tts = new android.speech.tts.TextToSpeech(this, status -> {
+            if (status != android.speech.tts.TextToSpeech.SUCCESS) return;
+            int r = tts.setLanguage(Locale.GERMANY);
+            if (r == android.speech.tts.TextToSpeech.LANG_MISSING_DATA || r == android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED) tts.setLanguage(Locale.GERMAN);
+            tts.setSpeechRate(0.9f);
+            tts.setPitch(1.1f);
+            ttsReady = true;
+        });
         web = new WebView(this);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -156,7 +167,10 @@ public class MainActivity extends Activity {
     public void onWindowFocusChanged(boolean focus) { super.onWindowFocusChanged(focus); if (focus) hideSystemBars(); }
 
     @Override
-    protected void onPause() { super.onPause(); web.onPause(); }
+    protected void onPause() { super.onPause(); web.onPause(); if (tts != null) tts.stop(); }
+
+    @Override
+    protected void onDestroy() { if (tts != null) tts.shutdown(); super.onDestroy(); }
 
     @Override
     protected void onResume() { super.onResume(); web.onResume(); hideSystemBars(); }
@@ -277,8 +291,10 @@ public class MainActivity extends Activity {
 
     /** Lets the page know it runs inside the Android app; keeps the Cesium token for both origins. */
     private final class Bridge {
-        @JavascriptInterface public String version() { return "0.4"; }
+        @JavascriptInterface public String version() { return "0.5"; }
         @JavascriptInterface public String token() { return getPreferences(MODE_PRIVATE).getString("cesiumToken", ""); }
+        @JavascriptInterface public void speak(String text) { if (ttsReady) tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "boni"); }
+        @JavascriptInterface public void stopSpeaking() { if (tts != null) tts.stop(); }
         @JavascriptInterface public void saveToken(String t) { getPreferences(MODE_PRIVATE).edit().putString("cesiumToken", t == null ? "" : t).apply(); }
     }
 }

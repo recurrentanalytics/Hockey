@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#0e0f1a" />
-  <title>Anflug auf den Boni</title>
+  <title>Die rote Kugel</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="assets/app/icon-192.png" />
@@ -21,12 +21,22 @@
     #coverText { font-size: clamp(15px, 2.6vw, 22px); }
     #coverTrack { width: min(60vw, 360px); height: 8px; border-radius: 8px; background: #2a2b3d; overflow: hidden; }
     #coverBar { width: 0; height: 100%; background: #ffd23f; transition: width .4s; }
+    #cover.ready #coverTrack { display: none; }
+    #cover.ready #coverText { font: clamp(18px, 3vw, 28px) "Arial Black", Arial, sans-serif; color: #ffd23f; animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .45; } }
+    #caption { position: absolute; left: 50%; bottom: 11%; transform: translate(-50%, 8px); width: min(86vw, 900px); text-align: center; opacity: 0;
+               transition: opacity .9s, transform .9s; font: 600 clamp(17px, 2.7vw, 30px)/1.35 Georgia, "Times New Roman", serif; color: #fff;
+               text-shadow: 0 2px 4px rgba(0,0,0,.85), 0 0 22px rgba(0,0,0,.6); letter-spacing: .01em; }
+    #caption.on { opacity: 1; transform: translate(-50%, 0); }
+    #skip { position: absolute; right: 14px; top: 12px; pointer-events: auto; opacity: 0; transition: opacity .6s; font: 14px Arial, sans-serif;
+            color: #fff; background: rgba(14,15,26,.55); border: 1px solid rgba(255,255,255,.45); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+    #skip.on { opacity: 1; }
     #ui { position: fixed; inset: 0; pointer-events: none; font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif; color: #fff; }
     #title { position: absolute; left: 0; right: 0; top: 7%; text-align: center; opacity: 0; transition: opacity .8s, transform .8s; transform: translateY(-12px);
              text-shadow: 0 3px 0 #16110d, 0 0 18px rgba(0,0,0,.55); }
     #title.on { opacity: 1; transform: none; }
-    #title .club { font-size: clamp(26px, 6vw, 64px); letter-spacing: .04em; color: #ffd23f; -webkit-text-stroke: 2px #16110d; }
-    #title .sub { font-size: clamp(14px, 2.6vw, 26px); margin-top: .3em; }
+    #title .club { font-size: clamp(30px, 7vw, 76px); letter-spacing: .05em; color: #ff3b4a; -webkit-text-stroke: 2px #16110d; }
+    #title .sub { font: italic 600 clamp(15px, 2.6vw, 28px) Georgia, serif; margin-top: .25em; color: #fff; }
     #go { position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); pointer-events: auto; opacity: 0; transition: opacity .6s;
           font: inherit; font-size: clamp(16px, 2.6vw, 24px); color: #16110d; background: #ffd23f; border: 3px solid #16110d; border-radius: 999px;
           padding: .55em 1.4em; box-shadow: 0 4px 0 #16110d; cursor: pointer; }
@@ -47,9 +57,11 @@
   <canvas id="screen" tabindex="0" style="display:none"></canvas>
   <div id="cover"><div id="coverText"></div><div id="coverTrack"><div id="coverBar"></div></div></div>
   <div id="ui">
-    <div id="title"></div>
+    <div id="title"><div class="club" id="titleName"></div><div class="sub" id="titleSub"></div></div>
+    <div id="caption"></div>
+    <button id="skip" type="button">Überspringen ›</button>
     <button id="go" type="button">Spiel starten</button>
-    <div id="hint">Tippen: überspringen · R: nochmal</div>
+    <div id="hint"></div>
     <div id="status"></div>
     <div id="token">
       <h2>3D-Ansicht freischalten</h2>
