@@ -128,7 +128,9 @@ export async function run({ token, cesiumBase }) {
   for (const a of ep.attributions ?? []) viewer.creditDisplay.addStaticCredit(new Cesium.Credit(a.html, true));
 
   // ground height of the court (ellipsoid metres); Hannover ≈ 54 m above sea level + 44 m geoid
-  let ground = 98;
+  // ground height of the court as measured from the Google mesh (ellipsoid metres); re-measured
+  // on a normal start, used as is in quick mode
+  let ground = 97.944;
   const target = (lift, heading) => {
     const c = Cesium.Cartesian3.fromDegrees(COURT.center[0], COURT.center[1], ground);
     const enu = Cesium.Transforms.eastNorthUpToFixedFrame(c);
@@ -320,12 +322,15 @@ export async function run({ token, cesiumBase }) {
   // measure the ground at the court, then warm the tile cache along the whole flight path, so the
   // flight itself streams from memory instead of loading tiles on the way
   tileset.cacheBytes = MOBILE ? 384 * 1024 * 1024 : 768 * 1024 * 1024;
-  fixedT = END; await loaded();
-  try {
-    const [p] = await scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(...COURT.center)]);
-    if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = courtMatrix(); }
-  } catch { /* keep the estimate */ }
-  await loaded();
+  fixedT = END;
+  if (!QUICK) {   // quick mode starts at once and lets the tiles stream in behind the game
+    await loaded();
+    try {
+      const [p] = await scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(...COURT.center)]);
+      if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = courtMatrix(); }
+    } catch { /* keep the measured default */ }
+    await loaded();
+  }
   const stops = QUICK ? [] : [23.2, 19.2, 13.8, 10.2, 0];
   for (let i = 0; i < stops.length; i++) {
     say(`Lade den Boni … ${Math.round(((i + 1) / stops.length) * 100)} %`);
