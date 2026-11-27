@@ -81,3 +81,39 @@ Die ganze Umgebung ist echtes 3D, gebaut nur aus freien amtlichen Daten des LGLN
 - **Darstellung:** WebGL2, Gitter mit 1 m (Viertel) und 4 m (Umgebung) Maschenweite, Mipmaps, anisotrope Filterung, Tiefenpuffer, leichter Dunst (`src/intro/intro.js`).
 - **Vorschauvideo:** `node tools/intro/record.cjs <ordner> 960 540 25` (Playwright und ffmpeg).
 - **Grenzen:** Die Daten haben 1 m (Höhe) und 20 cm (Bild) Auflösung. Aus der Nähe wirken Baumkronen wie weiche Wände, Dachkanten sind leicht abgerundet, und das Luftbild ist nicht entzerrt (hohe Dächer liegen etwas versetzt).
+
+## Ortsdaten reproduzierbar neu erzeugen
+
+Alle Rohdaten lassen sich mit einem Skript neu laden. Sie werden nicht eingecheckt (Ordner `daten/`, siehe `.gitignore`).
+
+```sh
+python3 tools/ort/abrufen.py tools/ort/boni.json daten/boni          # LGLN-WMS + Asphaltfoto, ca. 1 Minute
+python3 tools/intro/shadow_casters.py daten/boni/hoehe.png daten/boni/gebaeude.png \
+        assets/intro/boni_schatten.glb daten/boni/luftbild.jpg      # Kronenkarte, Luftbild-Boden
+python3 tools/intro/court_glb.py daten/boni/clean_asphalt_diff_2k.jpg \
+        assets/intro/boni_platz.glb assets/intro/boni_boden.glb daten/boni/flecken.png   # Platzmodell
+```
+
+Benötigt: Python 3 mit numpy, Pillow, opencv-python.
+
+| Quelle | Dienst / Adresse | Layer | Lizenz |
+|---|---|---|---|
+| Digitales Oberflächenmodell DOM1 (Farbskala) | `opendata.lgln.niedersachsen.de/doorman/noauth/dom_wms` | `ni_dom1_farbe` | © GeoBasis-DE / LGLN, CC BY 4.0 |
+| Digitales Geländemodell DGM1 (Farbskala) | `…/dgm_wms` | `ni_dgm1_farbe` | © GeoBasis-DE / LGLN, CC BY 4.0 |
+| Liegenschaftskarte ALKIS (Farbe) | `…/alkis_wms` | `ALKIS` | © GeoBasis-DE / LGLN, CC BY 4.0 |
+| Digitales Orthophoto DOP20 | `…/dop_wms` | `ni_dop20` | © GeoBasis-DE / LGLN, CC BY 4.0 |
+| Asphaltfoto „clean_asphalt“ | Poly Haven | – | CC0 |
+
+Der Ausschnitt (1224 × 1226 m um den Platz, UTM 32 / EPSG:25832) und das Pixelraster der Werkzeuge stehen in `tools/ort/boni.json`. Den Ursprung des Rasters habe ich aus den vier Platzecken zurückgerechnet. Die vier Ecken ergeben ihn übereinstimmend auf etwa 0,2 m genau.
+
+**Prüfung am 27. November 2026** (Neuabruf gegen die Dateien im Spiel):
+
+| Ergebnis | Übereinstimmung |
+|---|---|
+| Platzmodell `boni_platz.glb`, Boden `boni_boden.glb` | bitgleich |
+| Höhenumrechnung (aus den damaligen Rohdaten) | bitgleich |
+| Kronenkarte um den Platz (±46 m) | im Mittel 0,32 m Abweichung, 98 % der Zellen gleich belegt, Dächer IoU 0,87 |
+| Gebäudemaske (aus der damaligen Karte) | IoU 0,96; die damaligen Handschritte sind nicht überliefert |
+
+Die Kronenkarte ist nicht bitgleich, weil der LGLN-Dienst das 1-m-Raster bei jedem Abruf leicht anders auf Pixel umrechnet. An Kronen- und Dachkanten wirkt sich das stark aus, am Platz selbst kaum. Die Dateien im Spiel bleiben unverändert. Wer sie neu erzeugt, bekommt einen gleichwertigen, nicht identischen Stand. Abhilfe für später: den Ausschnitt auf das 1-m-Raster des LGLN ausrichten (ganze Meter in UTM), damit Pixel und Rasterzellen deckungsgleich sind.
+

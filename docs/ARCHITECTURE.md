@@ -253,8 +253,9 @@ Android-App: lädt die Live-Version von GitHub Pages, bei Fehlern die mitgeliefe
 
 | Werkzeug | Eingabe | Ausgabe |
 |---|---|---|
+| `ort/abrufen.py` | `tools/ort/boni.json` (Ecken, Ausschnitt) | LGLN-Rohdaten und Asphaltfoto in `daten/<ort>/`, `hoehe.png`, `gebaeude.png` |
 | `intro/court_glb.py` | Asphaltfoto (Poly Haven, CC0), Maße im Skript | `boni_platz.glb`, `boni_boden.glb` (+ ungenutztes `flecken.png`) |
-| `intro/shadow_casters.py` | LGLN-Höhenraster, Gebäudemaske, Luftbild (nicht im Repo) | `boni_schatten_hoehen.png`, `boni_schatten_luftboden.glb` (optional Schattenwerfer-Mesh) |
+| `intro/shadow_casters.py` | LGLN-Höhenraster, Gebäudemaske, Luftbild (aus `ort/abrufen.py`) | `boni_schatten_hoehen.png`, `boni_schatten_luftboden.glb` (optional Schattenwerfer-Mesh) |
 | `voice/make_voice.py` | `lines.json`, Piper, Thorsten-Modell | `assets/voice/*` |
 | `app/precache.cjs` | Dateibaum | `sw-files.js` |
 | `android/build.sh` | Webdateien, CesiumJS aus npm | APK |

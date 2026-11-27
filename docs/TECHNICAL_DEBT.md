@@ -15,7 +15,7 @@ Nichts davon ist umgesetzt. Jede Position ist ein eigener kleiner Auftrag.
 |---|---|---|---|---|
 | T1 | ✅ Android-Ersatzkopie unvollständig (App 0.8) | – | S | App offline wieder vollständig |
 | T2 | Kein Test für den Boni-Pfad (3D und Testplatz) | 🔴 | M | jeder Umbau prüfbar |
-| T3 | Ortsdaten nicht reproduzierbar | 🔴 | M | Boni neu baubar, zweiter Ort möglich |
+| T3 | ✅ Ortsdaten nicht reproduzierbar (`tools/ort/abrufen.py`) | – | M | Boni neu baubar, zweiter Ort möglich |
 | T4 | Keine Messung auf echten Geräten | 🔴 | S–M | Grundlage aller Performance-Entscheidungen |
 | T5 | Boni-Konstanten an acht Stellen | 🟠 | M | eine Quelle der Wahrheit, Voraussetzung für Ortsmodell |
 | T6 | `photoreal.js` und `environment.js` zu breit | 🟠 | L | Intro, Prolog und Welt unabhängig erweiterbar |
@@ -46,9 +46,9 @@ Nichts davon ist umgesetzt. Jede Position ist ein eigener kleiner Auftrag.
 - `tools/test/stills.cjs`: Standbilder des 3D-Platzes für feste Zeitpunkte und Wetterlagen. Braucht Cesium-Zugang, läuft also nur lokal oder mit Token.
 - Beide vor jedem Umbau und danach laufen lassen, Bilder vergleichen.
 
-### T3 🔴 Ortsdaten nicht reproduzierbar (M)
+### T3 ✅ Ortsdaten nicht reproduzierbar (M) – erledigt
 `tools/intro/shadow_casters.py` und `court_glb.py` brauchen Eingangsdaten, die nicht im Repo liegen: LGLN-Raster für Oberflächen- und Geländemodell, Gebäudemaske, Luftbild und das Asphaltfoto (Poly Haven, CC0). Der Abruf über den LGLN-WMS war Handarbeit (Farbskala dekodieren: 1,2 m je Graustufe). Die Pixelkoordinaten der Ecken im Referenzraster stehen fest im Skript.
-**Vorschlag:** `tools/ort/abrufen.py <ort.json>`: lädt DOP20, DOM1, DGM1 (Farbskala) und ALKIS-Gebäude für den Ausschnitt um die Ecken, dekodiert die Höhen und legt die Rohdaten in einen nicht eingecheckten Ordner. Die Asphalt-Quelle als Download-Hinweis in `quellen.md`. Das ist die wichtigste Voraussetzung für jeden zweiten Ort.
+**Erledigt:** `tools/ort/abrufen.py tools/ort/boni.json daten/boni` lädt DOM1, DGM1, ALKIS, DOP20 und das Asphaltfoto, dekodiert Höhen und Gebäude. Platzmodell und Boden entstehen daraus bitgleich, die Kronenkarte gleichwertig (Mittel 0,32 m, siehe `docs/BONI_ORT.md`). Rohdaten liegen in `daten/` (nicht eingecheckt). Offen: Ausschnitt auf das 1-m-Raster des LGLN ausrichten, dann wird auch die Kronenkarte bitgleich reproduzierbar.
 
 ### T4 🔴 Keine Messung auf echten Geräten (S–M)
 Alle Tests liefen mit Software-Rendering. Ob das Spiel auf dem Android-Tablet flüssig läuft, ist unbekannt. Kritisch sind Boden-Shader (`TREE_LIGHT`, bis 48 Texturzugriffe pro Pixel), Jahreszeit-Shader auf allen Kacheln, Schattenkarte und der Spiel-Canvas in voller Auflösung.

@@ -10,3 +10,7 @@ android/app/build/
 android/local.properties
 *.keystore
 *.jks
+
+# raw geodata fetched by tools/ort/abrufen.py (re-downloadable)
+daten/
+__pycache__/
