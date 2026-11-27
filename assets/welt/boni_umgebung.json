@@ -1,0 +1,16 @@
+{
+ "datei": "boni_umgebung.jpg",
+ "utm32": [
+  550060.59,
+  5803953.33,
+  551284.59,
+  5805179.05
+ ],
+ "pixel": [
+  2448,
+  2448
+ ],
+ "quelle": "Digitales Orthophoto DOP20 des LGLN, auf 0,5 m je Pixel verkleinert und geglättet (tools/intro/enhance.py, Stand der früheren Luftbild-Fassung des Intros)",
+ "lizenz": "© GeoBasis-DE / LGLN, CC BY 4.0",
+ "ausschnitt": "Referenzraster aus tools/ort/boni.json"
+}

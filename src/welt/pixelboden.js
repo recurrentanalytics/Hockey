@@ -1,9 +1,8 @@
-// The ground round the court as pixel art, made from the real aerial photo: fetched once for the
-// surroundings of the court, laid on a world-fixed pixel grid, reduced to the BORSTENBOOM palette
+// The ground round the court as pixel art, made from the real aerial photo: the place's own copy, laid on a world-fixed pixel grid, reduced to the BORSTENBOOM palette
 // with ordered dithering, outlined along the real mapped edges, and dissolved into the untouched
 // photo with a dithered mask that follows the court and the square. Geometry is never moved: the
 // picture keeps the photo's own georeference, outlines are the survey's own lines.
-import { ladeBild } from './bild.js';
+import { ausschnitt } from './luftbild.js';
 import { toUtm32, fromUtm32 } from './utm.js';
 
 /** Warm palette of the art standard (docs/art/README.md), plus the greys and browns the square needs. */
@@ -52,23 +51,16 @@ export function imVieleck([x, y], ring) {
   return drin;
 }
 
-const mercator = (lon, lat) => [(lon * 20037508.342789244) / 180, (Math.log(Math.tan(((90 + lat) * Math.PI) / 360)) * 20037508.342789244) / Math.PI];
-
 /**
  * Build the pixel ground. `linien`: rings/lines in court metres to outline; `platzRing`: the square's outline in court metres.
  * Returns { url, west, south, east, north, px } for a single image laid on the globe.
  */
-export async function pixelboden({ frame, linien = [], platzRing = null, baeume = [], halb = 130, px = 1040, wms }) {
+export async function pixelboden({ frame, foto, linien = [], platzRing = null, baeume = [], halb = 130, px = 1040 }) {
   const [e0, n0] = frame.ursprung_utm32, A = frame.achse_a, B = frame.achse_b;
   const [lon, lat] = fromUtm32(e0, n0), dLat = halb / 111320, dLon = halb / (111320 * Math.cos((lat * Math.PI) / 180));
   const west = lon - dLon, east = lon + dLon, south = lat - dLat, north = lat + dLat;
-  const [x0, y0] = mercator(west, south), [x1, y1] = mercator(east, north);
-  const img = await ladeBild(`${wms}&CRS=EPSG:3857&BBOX=${x0},${y0},${x1},${y1}&WIDTH=${px}&HEIGHT=${px}&FORMAT=image/jpeg`, true);
-  const c = Object.assign(document.createElement('canvas'), { width: px, height: px });
-  const g = c.getContext('2d', { willReadFrequently: true });
-  g.filter = 'blur(0.8px)';                     // edge simplification: small detail goes before the palette does
-  g.drawImage(img, 0, 0, px, px);
-  g.filter = 'none';
+  // edge simplification: small detail goes before the palette does
+  const c = ausschnitt(foto, { west, south, east, north }, px, 'blur(0.8px)'), g = c.getContext('2d', { willReadFrequently: true });
   const bild = g.getImageData(0, 0, px, px), d = bild.data;
   // court metres of a pixel: exact at the four corners, linear in between (millimetres over this window)
   const ab = (lo, la) => { const [e, n] = toUtm32(lo, la); return [(e - e0) * A[0] + (n - n0) * A[1], (e - e0) * B[0] + (n - n0) * B[1]]; };

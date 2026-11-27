@@ -9,6 +9,7 @@ import { hain, kronenkarte, baumbilder, pflanze } from './baeume.js';
 import { starte } from './spieler.js';
 import { pixelboden } from './pixelboden.js';
 import { baueHindernisse } from './hindernisse.js';
+import { ladeLuftbild, rechteck, ausschnitt } from './luftbild.js';
 import { platzmeter } from './baeume.js';
 
 const CESIUM_VERSION = '1.147.0';    // keep in step with src/intro/photoreal.js
@@ -38,7 +39,8 @@ function loadCesium(dir) {
 }
 
 const LAYERS = [
-  { id: 'luftbild', name: 'Luftbild DOP20 (LGLN)', on: true },
+  { id: 'luftbild', name: 'Luftbild (eigene Kopie, 0,5 m)', on: true },
+  { id: 'luftbildlive', name: 'Luftbild live vom LGLN (0,2 m)', on: true },
   { id: 'pixelboden', name: 'Pixel-Boden um den Platz', on: true },
   { id: 'google', name: 'Google-3D-Kacheln', on: false },
   { id: 'nutzung', name: 'Straßen, Wege, Flächen (ALKIS)', on: false },
@@ -69,6 +71,7 @@ async function main() {
   const baumBilder = Object.fromEntries(await Promise.all(baumArten.map(async (a) => [a.id, await baumbilder(a, ASSETS)])));
   const figur = manifest.assets.find((a) => a.id === 'character.skater.stride' && (a.approved || preview));
   const figurBilder = figur ? { rechts: await frameImages(figur), links: await frameImages(figur, true), seiten: figur.frame.w / figur.frame.h } : null;
+  const foto = await ladeLuftbild(ASSETS).catch(() => null); // the place's own aerial photo; the world stands on it
   let grove = { baeume: baumListe, zeige() {} };
   const hindernisse = baueHindernisse({ gebaeude, einfriedungen, platz, frame });
   const haeuser = []; // drawn building volumes, so the ones hiding the player can turn see-through
@@ -87,11 +90,27 @@ async function main() {
     credit: new Cesium.Credit('Luftbild und ALKIS © GeoBasis-DE / LGLN, CC BY 4.0', true),
   }));
   const viewer = new Cesium.Viewer('cesium', {
-    baseLayer: luftbild, animation: false, timeline: false, baseLayerPicker: false, geocoder: false, homeButton: false,
+    baseLayer: false, animation: false, timeline: false, baseLayerPicker: false, geocoder: false, homeButton: false,
     sceneModePicker: false, navigationHelpButton: false, fullscreenButton: false, infoBox: false, selectionIndicator: false,
     scene3DOnly: true, // renders every frame: with request-render mode the volumes built in the background never appeared until the camera moved
   });
   const { scene, camera } = viewer;
+  // ground: the own copy first, the live service on top while it answers (sharper); it switches itself off when it fails
+  let lokal = null;
+  if (foto) {
+    const r = rechteck(frame.ursprung_utm32, 595), kante = 2380;
+    lokal = viewer.imageryLayers.addImageryProvider(new Cesium.SingleTileImageryProvider({ url: ausschnitt(foto, r, kante).toDataURL('image/jpeg', 0.9),
+      rectangle: Cesium.Rectangle.fromDegrees(r.west, r.south, r.east, r.north), tileWidth: kante, tileHeight: kante, credit: new Cesium.Credit('Luftbild © GeoBasis-DE / LGLN, CC BY 4.0', true) }));
+  }
+  viewer.imageryLayers.add(luftbild);
+  let ausfaelle = 0;
+  luftbild.imageryProvider.errorEvent.addEventListener(() => {
+    if (++ausfaelle !== 6) return;
+    luftbild.show = false; LAYERS.find((l) => l.id === 'luftbildlive').on = false;
+    const haken = $('ebenen').querySelectorAll('input[type=checkbox]')[LAYERS.findIndex((l) => l.id === 'luftbildlive')];
+    if (haken) haken.checked = false;
+    status('LGLN-Dienst antwortet nicht: es gilt die eigene Kopie des Luftbilds');
+  });
   scene.globe.baseColor = Cesium.Color.fromCssColorString('#3a4038');
   scene.globe.depthTestAgainstTerrain = false;
   scene.skyAtmosphere.show = false; scene.fog.enabled = false;
@@ -107,8 +126,7 @@ async function main() {
     ...nutzung.features.filter((f) => f.properties.nutzart === 'Weg' && f.geometry.type === 'Polygon').map((f) => inMetern(f.geometry.coordinates[0])),
   ].filter(nah);
   let pixelLayer = null;
-  pixelboden({ frame, baeume: baumListe, linien: umrisse, platzRing: platzFlaeche ? inMetern(platzFlaeche.geometry.coordinates[0]) : null,
-    wms: `${LGLN}dop_wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=ni_dop20&STYLES=` }).then((b) => {
+  if (foto) pixelboden({ frame, foto, baeume: baumListe, linien: umrisse, platzRing: platzFlaeche ? inMetern(platzFlaeche.geometry.coordinates[0]) : null }).then((b) => {
     pixelLayer = new Cesium.ImageryLayer(new Cesium.SingleTileImageryProvider({ url: b.url, rectangle: Cesium.Rectangle.fromDegrees(b.west, b.south, b.east, b.north), tileWidth: b.px, tileHeight: b.px }),
       { magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST, minificationFilter: Cesium.TextureMinificationFilter.NEAREST });
     pixelLayer.show = LAYERS.find((l) => l.id === 'pixelboden').on;
@@ -159,7 +177,7 @@ async function main() {
     const trees = layer('baeume');
     for (const f of baeume.features) if (f.geometry.type !== 'Point') trees.add({ polyline: { positions: f.geometry.coordinates.map((p) => pos(p, 0.3)), width: 4, material: css('#2f7d32') }, properties: { text: describe('Baumreihe (OSM)', f.properties) } });
     // on the aerial photo the real cast shadows are already in the picture: contact shadows only (see schatten())
-    pflanze({ Cesium, entities: trees, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: luftbild.show && !google.on }).then((g) => { grove = g; });
+    pflanze({ Cesium, entities: trees, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: (lokal?.show || luftbild.show) && !google.on }).then((g) => { grove = g; });
     const fences = layer('einfriedungen');
     for (const f of einfriedungen.features) {
       if (f.geometry.type === 'LineString') fences.add({ wall: { positions: f.geometry.coordinates.map((p) => pos(p, 1.4)), minimumHeights: f.geometry.coordinates.map(() => ground), material: css('#7a1fa2', 0.7) }, properties: { text: describe('Einfriedung (OSM), Höhe angenommen 1,4 m', f.properties) } });
@@ -251,7 +269,8 @@ async function main() {
       l.on = ev.target.checked;
       if (l.id === 'pixelboden') { if (pixelLayer) pixelLayer.show = l.on; }
       else if (l.id === 'platz') { if (platzModell) platzModell.show = l.on; }
-      else if (l.id === 'luftbild') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
+      else if (l.id === 'luftbild') { if (lokal) lokal.show = l.on; build(); }
+      else if (l.id === 'luftbildlive') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
       else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); scene.globe.show = true; } }
       else sources[l.id].show = l.on;
       scene.requestRender();
