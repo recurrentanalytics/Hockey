@@ -101,9 +101,10 @@ export function schatten(t, frame, fotoBoden, licht = LICHT) {
   const weg = ((licht.azimut + 180) * Math.PI) / 180;            // direction the shadow falls, as a compass bearing
   const ost = Math.sin(weg), nord = Math.cos(weg);
   const richtung = [ost * frame.achse_a[0] + nord * frame.achse_a[1], ost * frame.achse_b[0] + nord * frame.achse_b[1]];
-  if (fotoBoden) return { mitte: t.ab, richtung, laengs: t.krone * 0.85, quer: t.krone * 0.85, deckung: 0.2 };
+  const kraft = licht.staerke ?? 1;                                // 0 under clouds and at night, 1 in full sun
+  if (fotoBoden) return { mitte: t.ab, richtung, laengs: t.krone * 0.85, quer: t.krone * 0.85, deckung: 0.2 * kraft };
   const wurf = (t.hoehe * 0.6) / Math.tan((licht.hoehe * Math.PI) / 180);
-  return { mitte: [t.ab[0] + richtung[0] * wurf, t.ab[1] + richtung[1] * wurf], richtung, laengs: t.krone * 1.35, quer: t.krone, deckung: 0.32 };
+  return { mitte: [t.ab[0] + richtung[0] * wurf, t.ab[1] + richtung[1] * wurf], richtung, laengs: t.krone * 1.35, quer: t.krone, deckung: 0.32 * kraft };
 }
 
 // ------------------------------------------------------------------ drawing (browser, CesiumJS)
@@ -115,8 +116,11 @@ export async function kronenkarte(url, a0 = -46, b0 = -41.4, zelle = 0.5) {
     const c = Object.assign(document.createElement('canvas'), { width: img.width, height: img.height });
     const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0);
     const d = g.getImageData(0, 0, c.width, c.height).data;
-    return (a, b) => { const i = Math.round((a - a0) / zelle), j = Math.round((b - b0) / zelle); return i < 0 || j < 0 || i >= c.width || j >= c.height ? null : (d[(j * c.width + i) * 4 + 1] > 128 ? 0 : d[(j * c.width + i) * 4] * 0.2); }; // green = roof, not a tree
-  } catch { return () => null; }
+    const zelleBei = (a, b) => { const i = Math.round((a - a0) / zelle), j = Math.round((b - b0) / zelle); return i < 0 || j < 0 || i >= c.width || j >= c.height ? -1 : (j * c.width + i) * 4; };
+    const krone = (a, b) => { const k = zelleBei(a, b); return k < 0 ? null : d[k + 1] > 128 ? 0 : d[k] * 0.2; }; // green = roof, not a tree
+    krone.roh = (a, b) => { const k = zelleBei(a, b); return k < 0 ? 0 : d[k] * 0.2; };                          // crowns and roofs alike: whatever casts shade
+    return krone;
+  } catch { const leer = () => null; leer.roh = () => 0; return leer; }
 }
 
 /** Split a tree sprite into trunk and canopy pictures of the full frame: the canopy starts where the outline widens. */

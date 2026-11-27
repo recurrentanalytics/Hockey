@@ -27,6 +27,24 @@
     #lage, #info { white-space: pre-wrap; word-break: break-word; font-variant-numeric: tabular-nums; }
     #info { background: #00000055; border-radius: 5px; padding: 5px 7px; min-height: 2.6em; }
     #status { color: #ffd23f; }
+    /* weather panel: markup and styles of the intro (intro.html), here beside the panel */
+    #weatherFx { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+    #surface { position: absolute; left: 62px; top: 40px; pointer-events: none; font: 600 13px 'Pixelify Sans', sans-serif; color: #fff; background: rgba(20, 18, 30, 0.72); border-radius: 8px; padding: 4px 8px; text-shadow: 0 1px 0 #000; }
+    #wxSurf { margin-top: 4px; color: #ffd23f; }
+    #wxBtn { position: absolute; left: 10px; top: 34px; pointer-events: auto; font-size: 20px; line-height: 1; padding: 6px 8px; border-radius: 10px;
+             background: rgba(14,15,26,.6); border: 2px solid rgba(255,210,63,.8); cursor: pointer; }
+    #wx { position: absolute; left: 10px; top: 76px; pointer-events: auto; width: min(300px, 80vw); padding: 10px; border-radius: 12px; background: rgba(14,15,26,.9);
+          border: 2px solid #ffd23f; font: 600 14px 'Pixelify Sans', Arial, sans-serif; color: #fff; }
+    #wx .row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+    #wx button { font: inherit; font-size: 15px; color: #fff; background: #2a2b3d; border: 2px solid #4a4b60; border-radius: 8px; padding: 4px 9px; cursor: pointer; }
+    #wx .season button { font-size: 13px; padding: 4px 7px; }
+    #wx button.on { border-color: #ffd23f; background: #4a3d14; }
+    #wx label { display: block; margin: 4px 0 8px; } #wx input[type=range] { width: 100%; } #wx input[type=date] { font: inherit; }
+    #wxInfo { color: #ffd23f; font-size: 13px; }
+    #wetter { position: fixed; left: 258px; top: -26px; width: min(340px, 60vw); z-index: 5; pointer-events: none; font-family: system-ui, sans-serif; color: #fff; }
+    #wetter #surface { white-space: nowrap; }
+    body.imspiel #wetter { left: 0; }
+    @media (max-width: 640px) { #wetter { left: 196px; } }
     #spielstart { display: none; position: fixed; left: 50%; bottom: 9%; transform: translateX(-50%); z-index: 3; text-align: center; text-decoration: none;
                   font: 700 20px/1.3 system-ui, sans-serif; color: #14151f; background: #ffd23f; border: 3px solid #14151f; border-radius: 10px; padding: 10px 22px; box-shadow: 0 4px 0 #14151f; }
     #spielstart small { font-weight: 500; color: #14151f; }
@@ -43,8 +61,9 @@
   <div id="cesium"></div>
   <div id="tafel">
     <h1>Der Boni als Welt</h1>
-    <small>Stand 14 · 27.11.</small>
+    <small>Stand 15 · 27.11.</small>
     <div id="status">…</div>
+    <a href="intro.html" style="color:#ffd23f">Intro ansehen</a>
     <h2>Ansicht</h2>
     <button data-sicht="schraeg">Schrägblick</button><button data-sicht="oben">Von oben</button><button data-sicht="spiel">Spielkamera</button><button data-sicht="platz">Platz</button><button data-sicht="fahren">Losfahren</button>
     <small>Ziehen dreht und verschiebt, Mausrad zoomt, Strg + Ziehen kippt (Touch: zwei Finger).</small>
@@ -57,9 +76,26 @@
     <div id="info">Auf ein Gebäude, einen Weg oder Baum klicken.</div>
   </div>
   <canvas id="screen" tabindex="0"></canvas>
+  <canvas id="weatherFx"></canvas>
+  <div id="wetter">
+    <button id="wxBtn" type="button" hidden title="Wetter und Uhrzeit">⛅</button>
+    <div id="surface" hidden></div>
+    <div id="wx" hidden>
+      <div class="row"><button data-mode="live">Live</button><button data-mode="pick">Wählen</button><button data-mode="hist">Damals</button></div>
+      <div id="wxPick"><div class="row"><button data-look="sun">☀️</button><button data-look="partly">🌤️</button><button data-look="clouds">☁️</button><button data-look="rain">🌧️</button><button data-look="snow">❄️</button><button data-look="fog">🌫️</button></div>
+        <div class="row season"><button data-season="fruehling">Frühling</button><button data-season="sommer">Sommer</button><button data-season="herbst">Herbst</button><button data-season="winter">Winter</button></div>
+        <label>Uhrzeit <span id="wxHourLbl"></span><input id="wxHour" type="range" min="0" max="24" step="0.25" /></label>
+        <label>Temperatur <span id="wxTempLbl"></span><input id="wxTemp" type="range" min="-10" max="36" step="1" /></label>
+        <label>Wind <span id="wxWindLbl"></span><input id="wxWind" type="range" min="0" max="20" step="1" /></label></div>
+      <div id="wxHist"><label>Datum <input id="wxDate" type="date" min="1940-01-01" /></label>
+        <label>Uhrzeit <span id="wxHourLbl2"></span><input id="wxHour2" type="range" min="0" max="23" step="1" /></label></div>
+      <div id="wxInfo"></div>
+      <div id="wxSurf"></div>
+    </div>
+  </div>
   <a id="spielstart" href="test.html">Spiel starten ▶<br><small>Hockey auf dem Boni, 3 gegen 3</small></a>
   <button id="verlassen" type="button">◀ Platz verlassen</button>
   <script src="src/native/pads.js"></script>
-  <script type="module" src="src/welt/welt.js?v=14"></script>
+  <script type="module" src="src/welt/welt.js?v=15"></script>
 </body>
 </html>

@@ -5,7 +5,9 @@
 // stands on the aerial photo alone. An inspection view, not gameplay yet.
 import { fromUtm32, toUtm32 } from './utm.js';
 import { placeLibrary, usable, frameImages } from './bibliothek.js';
-import { hain, kronenkarte, baumbilder, pflanze } from './baeume.js';
+import { hain, kronenkarte, baumbilder, pflanze, LICHT } from './baeume.js';
+import { createEnvironment, weatherPanel } from '../intro/environment.js';
+import { surfaceFor, setSurface } from '../game/surface.js';
 import { starte } from './spieler.js';
 import { pixelboden } from './pixelboden.js';
 import { baueHindernisse, davor } from './hindernisse.js';
@@ -66,7 +68,8 @@ async function main() {
   const ASSETS = new URL('../../assets/', import.meta.url);
   const baumArten = usable(manifest, preview).filter((a) => a.place.layer === 'baeume');
   // mapped trees, plus the crowns the canopy survey shows where OSM has no tree (not on the court itself)
-  const baumListe = hain(baeume.features, frame, baumArten, await kronenkarte(new URL('intro/boni_schatten_hoehen.png', ASSETS).href),
+  const krKarte = await kronenkarte(new URL('intro/boni_schatten_hoehen.png', ASSETS).href);
+  const baumListe = hain(baeume.features, frame, baumArten, krKarte,
     { sperre: (a, b) => Math.abs(a) < 13.4 && Math.abs(b) < 9.8 });
   const baumBilder = Object.fromEntries(await Promise.all(baumArten.map(async (a) => [a.id, await baumbilder(a, ASSETS)])));
   const figur = manifest.assets.find((a) => a.id === 'character.skater.stride' && (a.approved || preview));
@@ -361,9 +364,8 @@ async function main() {
     grove.zeigeMehrere?.(platzEcken, [0, 1]);
     zeigeHaeuser(new Set(platzEcken.flatMap((p) => [...davor(p, hindernisse)])));
     for (let i = 0; i < 2; i++) { scene.render(); await new Promise((r) => setTimeout(r, 30)); } // camera drawn → matrix ready
-    if (spielGeladen) { globalThis.BONI_3D.pausiert = false; }
-    else {
-      globalThis.BONI_3D = { toCss };
+    globalThis.BONI_3D.pausiert = false;
+    if (!spielGeladen) {
       status('Lade das Spiel …');
       await import('../main.js');
       spielGeladen = true;
@@ -381,6 +383,42 @@ async function main() {
     spieler?.spielt(false);
     view('fahren');
   }
+  // ---- sun, weather and season: the intro's own module with the intro's own rules (src/intro/environment.js).
+  // Colour grade, rain and snow, live weather, the weather panel; and passed on from here: the figures' sun
+  // shadow and tree shade, the court's grip and wind for the physics, the direction and depth of the tree shadows.
+  globalThis.BONI_3D = { toCss, pausiert: true }; // before any game module loads: it reads this once
+  let umwelt = null, neuZeichnen = null;
+  const beiUmwelt = (st) => {
+    const v = st.visuals, az = (v.sun.az * Math.PI) / 180;
+    if (v.sunlit < 0.04 || v.sun.alt < 1) globalThis.BONI_3D.shadow = null;
+    else {
+      const k = Math.min(4, 1 / Math.tan((Math.max(v.sun.alt, 8) * Math.PI) / 180)), dE = -Math.sin(az), dN = -Math.cos(az); // away from the sun
+      const a = dE * A[0] + dN * A[1], b = dE * B[0] + dN * B[1], steigung = Math.tan((v.sun.alt * Math.PI) / 180);
+      globalThis.BONI_3D.shadow = {
+        x: a * k, y: -b * k, alpha: 0.22 + 0.33 * v.sunlit, leaf: v.leaf,
+        /** 0 in the shade of a tree or house … 1 in full sun, for a figure at game position (x, y): a ray towards the sun through the canopy survey */
+        lit(x, y) {
+          let treffer = 0;
+          for (let t = 0.5; t < 45; t += 0.5) if (krKarte.roh(x - a * t, -y - b * t) > 0.9 + t * steigung && ++treffer > 1) break;
+          const laub = this.leaf ?? 0.85;
+          return treffer > 1 ? Math.max(0, 1 - laub * 1.1) : treffer ? 1 - laub * 0.5 : 1;
+        },
+      };
+    }
+    const hin = ((st.air.windDir + 180) * Math.PI) / 180, wE = Math.sin(hin), wN = Math.cos(hin);
+    const belag = surfaceFor({ look: st.look, temp: st.air.temp, wind: st.air.wind, windTo: { x: wE * A[0] + wN * A[1], y: -(wE * B[0] + wN * B[1]) }, leaves: st.air.leaves, amount: st.air.amount });
+    setSurface(belag);
+    if (umwelt) umwelt.surfaceLabel = belag.label;
+    $('surface').textContent = belag.label;
+    LICHT.azimut = v.sun.az; LICHT.hoehe = Math.max(v.sun.alt, 8); LICHT.staerke = Math.min(1, v.sunlit * 1.2);
+    clearTimeout(neuZeichnen); neuZeichnen = setTimeout(() => { if (sources.baeume) build(); }, 400); // tree shadows turn with the sun
+  };
+  try {
+    umwelt = createEnvironment({ Cesium, viewer, ground: {}, onChange: beiUmwelt });
+    weatherPanel(umwelt);
+    $('wxBtn').hidden = false; $('surface').hidden = false;
+  } catch (e) { status('Wetter nicht verfügbar: ' + e.message); }
+
   window.addEventListener('resize', () => { if (imSpiel) spielkamera(); });
   $('spielstart').addEventListener('click', (e) => { e.preventDefault(); betrete().catch((err) => { status('Spiel nicht geladen: ' + err.message); verlasse(); }); });
   $('verlassen').addEventListener('click', verlasse);
@@ -394,7 +432,7 @@ async function main() {
   }
   view(Q.get('sicht') in VIEWS ? Q.get('sicht') : 'schraeg');
   status('bereit');
-  window.welt = { viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; } }; // for the console and tests
+  window.welt = { get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; } }; // for the console and tests
 }
 
 main().catch((e) => { status('Fehler: ' + e.message); console.error(e); });
