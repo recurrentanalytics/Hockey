@@ -63,6 +63,9 @@
           font: inherit; font-size: clamp(16px, 2.6vw, 24px); color: #16110d; background: #ffd23f; border: 3px solid #16110d; border-radius: 999px;
           padding: .55em 1.4em; box-shadow: 0 4px 0 #16110d; cursor: pointer; }
     #go.on { opacity: 1; }
+    #erkunden { position: absolute; left: 50%; bottom: 2.5%; transform: translateX(-50%); pointer-events: none; opacity: 0; transition: opacity .6s; color: #fff; text-shadow: 0 2px 6px #000;
+                font: 700 clamp(14px, 2.2vw, 20px) 'Pixelify Sans', Arial, sans-serif; text-decoration: underline; }
+    #go.on + #erkunden { opacity: 1; pointer-events: auto; }
     #credit { position: absolute; right: 8px; bottom: 6px; font: 11px/1.2 Arial, sans-serif; color: rgba(255,255,255,.85); text-shadow: 0 1px 2px #000; }
     #token { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92vw, 520px); display: none; pointer-events: auto;
              background: rgba(14,15,26,.92); border: 3px solid #ffd23f; border-radius: 14px; padding: 18px 20px; font: 15px/1.4 Arial, sans-serif; color: #fff; }
@@ -99,6 +102,7 @@
     <div id="voiceHint"></div>
     <button id="skip" type="button">Überspringen ›</button>
     <button id="go" type="button">Spiel starten</button>
+    <a id="erkunden" href="welt.html?sicht=fahren">Viertel erkunden</a>
     <div id="hint"></div>
     <div id="status"></div>
     <div id="token">

@@ -205,3 +205,14 @@ Bild: `docs/ort/boni_viertel_strasse.jpg`.
 Bild mit dem Platzmodell des Intros in der Weltansicht: `docs/ort/boni_welt_introplatz.jpg`.
 
 **Eigene Kopie des Luftbilds (`src/welt/luftbild.js`):** Die Welt steht auf `assets/welt/boni_umgebung.jpg` (DOP20 des LGLN, 1,2 × 1,2 km um den Platz, 0,5 m je Pixel; es ist das Luftbild der früheren Intro-Fassung, aus der Git-Historie zurückgeholt; Ausdehnung in `boni_umgebung.json`). Auch der Pixel-Boden wird daraus gerechnet. Der Live-Dienst des LGLN liegt als zuschaltbare Ebene darüber (0,2 m, schärfer) und schaltet sich nach sechs Fehlern selbst ab. Anlass: Am 27.11.2026 antwortete der ganze LGLN-Server zeitweise mit „Dienst nicht verfügbar“, und die Welt stand ohne Boden da. Seitdem hängt sie für den Boden an keinem fremden Dienst mehr; nur CesiumJS kommt weiter vom CDN.
+
+## Eine Szene: Viertel und Spiel ohne Seitenwechsel
+
+Seit Stand 14 läuft das Hockeyspiel in `welt.html` selbst, über derselben Welt (Platzmodell, Pixel-Boden, Bäume, Häuser):
+
+- **Betreten:** Auf dem Platz „Spiel starten“. Die Kamera geht in die feste Spielkamera des Intro-Endes (118,2°, 60° aus der Senkrechten, 20° Bildwinkel, der Platz füllt die Breite). Das Spiel zeichnet seine Figuren wie am Intro-Ende durch diese Kamera auf eine durchsichtige Ebene (`globalThis.BONI_3D.toCss`). Bäume und Häuser zwischen Kamera und Platz werden für die Dauer des Spiels durchscheinend.
+- **Verlassen:** „◀ Platz verlassen“ legt das Spiel schlafen (`BONI_3D.pausiert`, eine Zeile in `src/main.js`), blendet es aus und gibt den Spieler im Viertel wieder frei. Beim nächsten Betreten läuft dasselbe Spiel weiter.
+- **Intro:** Am Ende von `intro.html` steht unter „Spiel starten“ der Verweis „Viertel erkunden“ (`welt.html?sicht=fahren`). Das ist ein Seitenwechsel: Intro und Welt sind noch zwei getrennte 3D-Szenen.
+- **Noch nicht in der Welt:** Sonnenstand, Wetter, Jahreszeiten und die per Strahlverfolgung gerechneten Baumschatten des Intros (`src/intro/environment.js`). Die Welt hat ihr festes Licht und ihre eigenen Schattenregeln; das Spiel läuft dort bei jedem Wetter gleich.
+
+Bild: `docs/ort/boni_welt_spiel.jpg`.

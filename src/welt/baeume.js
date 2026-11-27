@@ -168,6 +168,8 @@ export async function pflanze({ Cesium, entities, baeume, bilder, frame, pos, fo
   const zustand = new Map();
   return {
     baeume,
+    /** Like zeige, for several points at once (the whole court during a match). */
+    zeigeMehrere(punkte, blick) { for (const [t, setze] of kronen) { const durch = punkte.some((p) => verdeckt(p, t, blick)); if (zustand.get(t) !== durch) { zustand.set(t, durch); setze(durch); } } },
     zeige(punkt, blick) { for (const [t, setze] of kronen) { const durch = verdeckt(punkt, t, blick); if (zustand.get(t) !== durch) { zustand.set(t, durch); setze(durch); } } },
   };
 }

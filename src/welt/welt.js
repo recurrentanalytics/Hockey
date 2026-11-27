@@ -8,7 +8,7 @@ import { placeLibrary, usable, frameImages } from './bibliothek.js';
 import { hain, kronenkarte, baumbilder, pflanze } from './baeume.js';
 import { starte } from './spieler.js';
 import { pixelboden } from './pixelboden.js';
-import { baueHindernisse } from './hindernisse.js';
+import { baueHindernisse, davor } from './hindernisse.js';
 import { ladeLuftbild, rechteck, ausschnitt } from './luftbild.js';
 import { platzmeter } from './baeume.js';
 
@@ -295,15 +295,11 @@ async function main() {
       try { localStorage.setItem(TOKEN_KEY, value); } catch { /* private window: kept until the page closes */ }
       token = value; google.available = true;
       googleCheck.disabled = false; googleCheck.parentElement.querySelector('small')?.remove();
-      spielziel();
       tokenUi(false);
       status('Token gespeichert. Jetzt „Google-3D-Kacheln“ anhaken.');
     };
   }
   tokenUi(false);
-  // with the club's token the match runs on the real court in 3D, where the intro ends; otherwise on the plain test court
-  function spielziel() { $('spielstart').href = token ? 'intro.html?quick' : 'test.html'; }
-  spielziel();
   for (const b of document.querySelectorAll('[data-sicht]')) b.onclick = () => view(b.dataset.sicht);
 
   // ---- pointer: position in the grid and in court metres; click shows what is there
@@ -327,6 +323,68 @@ async function main() {
     $('info').textContent = hit?.id?.properties?.text ? hit.id.properties.text.getValue() : 'Kein Objekt an dieser Stelle.';
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
+  // ---- the match on the court, in this same scene (no page change): the game draws its figures through this
+  // camera onto a see-through canvas, exactly as it does at the end of the intro (globalThis.BONI_3D.toCss).
+  const SPIELFOV = Cesium.Math.toRadians(20), FREIFOV = camera.frustum.fov, platzEcken = [[-12.6, -9], [12.6, -9], [12.6, 9], [-12.6, 9], [0, 0]];
+  let imSpiel = false, spielGeladen = false, spielMatrix = null;
+  scene.postRender.addEventListener(() => {
+    if (!imSpiel) return;
+    const enu = Cesium.Transforms.eastNorthUpToFixedFrame(pos([E0, N0], 0)), inv = Cesium.Matrix4.inverse(enu, new Cesium.Matrix4());
+    const lokal = (en) => Cesium.Matrix4.multiplyByPoint(inv, pos(en, 0), new Cesium.Cartesian3());
+    const o = lokal([E0, N0]), pa = lokal([E0 + 10 * A[0], N0 + 10 * A[1]]), pb = lokal([E0 + 10 * B[0], N0 + 10 * B[1]]);
+    const u = { x: (pa.x - o.x) / 10, y: (pa.y - o.y) / 10 }, v = { x: (pb.x - o.x) / 10, y: (pb.y - o.y) / 10 };
+    // game metres: x along the court (axis a), y towards the camera (against axis b), z up
+    const m = Cesium.Matrix4.multiply(camera.frustum.projectionMatrix, camera.viewMatrix, new Cesium.Matrix4());
+    Cesium.Matrix4.multiply(m, enu, m);
+    spielMatrix = Cesium.Matrix4.multiply(m, new Cesium.Matrix4(u.x, -v.x, 0, o.x, u.y, -v.y, 0, o.y, 0, 0, 1, 0, 0, 0, 0, 1), m);
+  });
+  const toCss = (x, y, z) => {
+    const m = spielMatrix, cx = m[0] * x + m[4] * y + m[8] * z + m[12], cy = m[1] * x + m[5] * y + m[9] * z + m[13], cw = m[3] * x + m[7] * y + m[11] * z + m[15];
+    return { x: ((cx / cw + 1) / 2) * scene.canvas.clientWidth, y: ((1 - cy / cw) / 2) * scene.canvas.clientHeight };
+  };
+  function spielkamera() { // the fixed game camera of the intro's end: the court fills the width, seen 60° from the vertical
+    const aspekt = scene.canvas.clientWidth / Math.max(1, scene.canvas.clientHeight), breite = 25.2 / (aspekt >= 1 ? 0.78 : 0.95);
+    camera.frustum.fov = aspekt >= 1 ? SPIELFOV : 2 * Math.atan(Math.tan(SPIELFOV / 2) / aspekt);
+    const kurs = Cesium.Math.toRadians(GAME_VIEW.heading), hub = breite * 0.025;
+    const ziel = platzmeterZuGitter([0, hub]); // a little beyond the centre, so the court sits just below the middle
+    camera.lookAt(pos(ziel, 0), new Cesium.HeadingPitchRange(kurs, Cesium.Math.toRadians(-(90 - GAME_VIEW.tilt)), breite / (2 * Math.tan(SPIELFOV / 2))));
+    camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+  }
+  const platzmeterZuGitter = ([a, b]) => [E0 + a * A[0] + b * B[0], N0 + a * A[1] + b * B[1]];
+  async function betrete() {
+    if (imSpiel) return;
+    imSpiel = true;
+    spieler?.spielt(true);
+    document.body.classList.add('imspiel');
+    spielkamera();
+    // trees and houses between this camera and the court step aside for as long as the match runs
+    grove.zeigeMehrere?.(platzEcken, [0, 1]);
+    zeigeHaeuser(new Set(platzEcken.flatMap((p) => [...davor(p, hindernisse)])));
+    for (let i = 0; i < 2; i++) { scene.render(); await new Promise((r) => setTimeout(r, 30)); } // camera drawn → matrix ready
+    if (spielGeladen) { globalThis.BONI_3D.pausiert = false; }
+    else {
+      globalThis.BONI_3D = { toCss };
+      status('Lade das Spiel …');
+      await import('../main.js');
+      spielGeladen = true;
+    }
+    $('screen').focus({ preventScroll: true });
+    status('Spiel läuft – „Platz verlassen“ bringt dich zurück ins Viertel');
+  }
+  function verlasse() {
+    if (!imSpiel) return;
+    imSpiel = false;
+    if (globalThis.BONI_3D) globalThis.BONI_3D.pausiert = true; // the match sleeps where it was
+    try { window.app?.audio?.setAmbient?.(false); } catch { /* no sound running */ }
+    document.body.classList.remove('imspiel');
+    camera.frustum.fov = FREIFOV;
+    spieler?.spielt(false);
+    view('fahren');
+  }
+  window.addEventListener('resize', () => { if (imSpiel) spielkamera(); });
+  $('spielstart').addEventListener('click', (e) => { e.preventDefault(); betrete().catch((err) => { status('Spiel nicht geladen: ' + err.message); verlasse(); }); });
+  $('verlassen').addEventListener('click', verlasse);
+
   build();
   if (figurBilder) {
     const eigene = new Cesium.CustomDataSource('spieler'); // kept apart from the layers build() replaces
@@ -336,7 +394,7 @@ async function main() {
   }
   view(Q.get('sicht') in VIEWS ? Q.get('sicht') : 'schraeg');
   status('bereit');
-  window.welt = { viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, get spieler() { return spieler; }, get hain() { return grove; } }; // for the console and tests
+  window.welt = { viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; } }; // for the console and tests
 }
 
 main().catch((e) => { status('Fehler: ' + e.message); console.error(e); });

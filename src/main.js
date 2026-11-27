@@ -87,6 +87,8 @@ window.addEventListener('error', (e) => { lastError = e.message; });
 window.addEventListener('unhandledrejection', (e) => { lastError = String(e.reason?.message ?? e.reason); });
 
 function frame(now) {
+  // the world view (welt.html) has taken over: the player left the court, the match sleeps where it was
+  if (globalThis.BONI_3D?.pausiert) { last = now; requestAnimationFrame(frame); return; }
   try {
     step(now);
   } catch (e) {

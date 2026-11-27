@@ -28,7 +28,7 @@ export function starte({ Cesium, viewer, entities, frame, pos, bilder, hoehe, ha
   const z = { ab: [0, 0], tasten: [0, 0], ziel: null, rechts: true, faehrt: false, phase: 0, folgt: false };
   const zuGitter = ([a, b]) => [frame.ursprung_utm32[0] + a * frame.achse_a[0] + b * frame.achse_b[0], frame.ursprung_utm32[1] + a * frame.achse_a[1] + b * frame.achse_b[1]];
   const n = bilder.rechts.length;
-  entities.add({
+  const figur = entities.add({
     position: new Cesium.CallbackProperty(() => pos(zuGitter(z.ab), 0), false),
     billboard: { image: new Cesium.CallbackProperty(() => (z.rechts ? bilder.rechts : bilder.links)[z.faehrt ? Math.floor(z.phase) % n : 0], false),
       sizeInMeters: true, width: hoehe * bilder.seiten, height: hoehe, verticalOrigin: Cesium.VerticalOrigin.BOTTOM },
@@ -37,11 +37,12 @@ export function starte({ Cesium, viewer, entities, frame, pos, bilder, hoehe, ha
   // keys: up is away from the game camera (court axis b), right is court axis a
   const gedrueckt = new Set();
   const richtung = () => { z.tasten = [(gedrueckt.has('ArrowRight') || gedrueckt.has('KeyD') ? 1 : 0) - (gedrueckt.has('ArrowLeft') || gedrueckt.has('KeyA') ? 1 : 0), (gedrueckt.has('ArrowUp') || gedrueckt.has('KeyW') ? 1 : 0) - (gedrueckt.has('ArrowDown') || gedrueckt.has('KeyS') ? 1 : 0)]; };
-  addEventListener('keydown', (e) => { if (/^(Arrow|Key[WASD])/.test(e.code)) { gedrueckt.add(e.code); richtung(); if (z.folgt) e.preventDefault(); } });
+  addEventListener('keydown', (e) => { if (z.spielt) return; if (/^(Arrow|Key[WASD])/.test(e.code)) { gedrueckt.add(e.code); richtung(); if (z.folgt) e.preventDefault(); } });
   addEventListener('keyup', (e) => { gedrueckt.delete(e.code); richtung(); });
   const blick = [0, 1]; // the game camera looks along court axis b
   let zuletzt = performance.now();
   const takt = (dt) => {
+    if (z.spielt) return; // the match is on: the figures on the court are the game's
     schritt(z, dt, hain().baeume, welt);
     hain().zeige(z.ab, blick);
     if (welt && z.folgt) zeigeHaeuser(davor(z.ab, welt, blick, KAMERA.neigung));
@@ -54,6 +55,8 @@ export function starte({ Cesium, viewer, entities, frame, pos, bilder, hoehe, ha
   viewer.scene.preUpdate.addEventListener(() => { const jetzt = performance.now(); takt(Math.min(0.1, (jetzt - zuletzt) / 1000)); zuletzt = jetzt; });
   return {
     zustand: z, takt,
+    /** The match begins or ends: hide the roaming figure and ignore its keys meanwhile. */
+    spielt(an) { z.spielt = an; figur.show = !an; z.tasten = [0, 0]; z.ziel = null; gedrueckt.clear(); },
     folge(an) { z.folgt = an; if (!an) { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); zeigeHaeuser(new Set()); z.aufPlatz = false; aufPlatz(false); } },
     tippe(bildpunkt) { if (!z.folgt) return false; const en = bodenpunkt(bildpunkt); if (!en) return false; const de = en[0] - frame.ursprung_utm32[0], dn = en[1] - frame.ursprung_utm32[1]; z.ziel = [de * frame.achse_a[0] + dn * frame.achse_a[1], de * frame.achse_b[0] + dn * frame.achse_b[1]]; return true; },
   };
