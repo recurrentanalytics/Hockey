@@ -1,5 +1,5 @@
-// Chooses the intro: photorealistic Google 3D (needs internet and the club's Cesium ion token)
-// or the aerial-photo version built from LGLN open data (no token needed).
+// Starts the intro: photorealistic Google 3D (needs internet and the club's Cesium ion token).
+// Without token or connection the classic arena game (index.html) starts instead.
 // The token is asked for once (or passed as ?token=…) and then remembered on this device.
 const params = new URLSearchParams(location.search);
 const KEY = 'boniCesiumToken';
@@ -14,13 +14,11 @@ if (params.get('token')) store.set(params.get('token'));
 const $ = (id) => document.getElementById(id);
 const say = (s) => { $('status').textContent = s; };
 
+// without the 3D view (no token, no connection) the classic arena game starts instead
 function aerial(message = '') {
   $('cover')?.classList.remove('on');
-  $('cesium').remove();
-  $('gl').style.display = '';
   say(message);
-  if (message) setTimeout(() => say(''), 4000);
-  import('./aerial.js');
+  setTimeout(() => location.replace('index.html'), message ? 1800 : 0);
 }
 
 function photoreal(token) {
@@ -31,7 +29,7 @@ function photoreal(token) {
       console.error(e);
       // a rejected token is forgotten, so the next start asks again
       if (/token|401|403|invalid/i.test(String(e?.message))) store.set(null);
-      aerial(navigator.onLine ? '3D-Ansicht nicht verfügbar' : 'Keine Internetverbindung – Luftbild-Version');
+      aerial(navigator.onLine ? '3D-Ansicht nicht verfügbar – Hallen-Version' : 'Keine Internetverbindung – Hallen-Version');
     });
 }
 
@@ -54,6 +52,6 @@ function askToken() {
 // ?proxy: development container, where the network proxy adds the token itself
 const token = store.get();
 if (params.has('proxy')) photoreal(null);
-else if (!navigator.onLine) aerial('Keine Internetverbindung – Luftbild-Version');
+else if (!navigator.onLine) aerial('Keine Internetverbindung – Hallen-Version');
 else if (token) photoreal(token);
 else askToken();

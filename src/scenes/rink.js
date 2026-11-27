@@ -9,7 +9,6 @@ import { BAKE } from '../world/rink.js';
 import { project, FIXED, fixedZoom } from '../world/projection.js';
 import { Match } from '../game/match.js';
 import { Particles } from '../world/particles.js';
-import { VideoWall } from '../ui/videoWall.js';
 import { resolveRules } from '../game/rules.js';
 import { hintBar } from '../ui/hud.js';
 import { PauseScene } from './pause.js';
@@ -68,7 +67,6 @@ export class RinkScene {
     this.shared = new Camera();
     this.banner = null;
     this.fx = new Particles();
-    this.wall = new VideoWall();
     this.recorder = new Recorder(6);
     this.replay = null;
     this.replayCam = new Camera();
@@ -193,7 +191,6 @@ export class RinkScene {
         if (boar && !e.shootout) this.app.audio.song('audio/hymne.mp3', 10);
         if (!e.shootout) this.notice = { text: this.creditText(e), t: 3 };
         if (!e.shootout && settings.replays) this.replayAt = this.recorder.last;
-        if (!e.shootout) this.wall.start('goal', { team: m.sides[e.side].team, look: e.by?.sideKey === e.side ? e.by.look : {}, text: boar ? 'TOOORRR!' : 'TOR!' }, 2.6, 2.2);
       }
       if (e.type === 'save' && !this.banner) this.banner = { text: 'GEHALTEN!', t: 0.8, small: true };
       if (e.type === 'foul') this.notice = { text: `${e.name} - ${name(e.offender.sideKey)} #${e.offender.number}`, t: 2.5 };
@@ -201,14 +198,6 @@ export class RinkScene {
       if (e.type === 'penaltyShot') this.banner = { text: 'PENALTY', sub: `${e.name} AN #${e.shooter.number}`, t: 2.6, small2: true };
       if (e.type === 'attempt' && !e.scored) this.banner = { text: 'KEIN TOR', t: 1.4, small: true };
       if (e.type === 'break') this.banner = { text: e.text, t: 3, small2: true };
-      // Stoppages: sometimes the video wall shows a kiss cam, Bonny or a dancing fan.
-      if ((e.type === 'whistle' || e.type === 'break' || e.type === 'timeout') && !this.wall.active && Math.random() < 0.5) {
-        const boarGame = [m.sides.home.team, m.sides.away.team].some((t) => BOAR_TEAMS.has(t));
-        const r = Math.random();
-        const kind = boarGame && r < 0.4 ? 'bonny' : r < 0.75 ? 'kiss' : 'dance';
-        this.wall.start(kind, { team: pick([m.sides.home.team, m.sides.away.team]) });
-        if (kind === 'kiss') this.app.audio.play('cheer', 0.5);
-      }
       if (e.type === 'final') {
         this.banner = { text: 'ENDSTAND', sub: this.finalText(e), t: Infinity, final: true };
         if (e.winner && BOAR_TEAMS.has(m.sides[e.winner].team)) { this.banner.sub += ' - ZUSAMMEN SIND WIR STARK!'; this.app.audio.song('audio/hymne.mp3', 20); }
@@ -226,7 +215,6 @@ export class RinkScene {
     if (m.state === 'play' && Math.random() < dt / 70) this.app.world.startWave(1);
     if (m.puck.loose && m.puck.speed > 14) this.fx.trail(m.puck);
     this.fx.update(dt);
-    this.wall.update(dt);
     this.shake = Math.max(0, (this.shake ?? 0) - dt);
     this.cheerT = Math.max(0, (this.cheerT ?? 0) - dt);
     if (this.banner && (this.banner.t -= dt) <= 0) this.banner = null;
@@ -281,7 +269,6 @@ export class RinkScene {
     const live = [...m.roster, ...m.goalies, m.puck];
     this.replay = new Replay(frames, live, { speed: 0.55 });
     this.banner = null;
-    this.wall.show = null;
     this.cheerT = 0;
     this.fx.list.length = 0;
     const p = frames[0]?.ents.find((o) => o.e === m.puck);
@@ -479,7 +466,6 @@ export class RinkScene {
     } else {
       drawText(ui, this.title, 4, 4, { color: PAL.cloud, shadow: PAL.ink });
     }
-    if (m0(this).state !== 'final') this.wall.draw(ui, W);
     this.drawBanner(ui, W, H);
 
     if (!isTop) return;

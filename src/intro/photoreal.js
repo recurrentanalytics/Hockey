@@ -238,14 +238,30 @@ export async function run({ token, cesiumBase }) {
   const caption = document.getElementById('caption'), titleName = document.getElementById('titleName'), titleSub = document.getElementById('titleSub');
   titleName.textContent = GAME_TITLE.name; titleSub.textContent = GAME_TITLE.sub;
   const voice = {
+    warned: false,
     speak(text) {
-      if (window.BoniAndroid?.speak) { window.BoniAndroid.speak(text); return; }
-      if (!('speechSynthesis' in window)) return;
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'de-DE'; u.rate = 0.88; u.pitch = 1.12;
-      const v = speechSynthesis.getVoices().find((x) => x.lang?.startsWith('de'));
-      if (v) u.voice = v;
-      speechSynthesis.cancel(); speechSynthesis.speak(u);
+      // 1. the app's device voice, 2. the browser's voice, 3. a visible hint once
+      const app = window.BoniAndroid;
+      if (app?.speak && app.speak(text) !== false) return;
+      if ('speechSynthesis' in window) {
+        const voices = speechSynthesis.getVoices();
+        const v = voices.find((x) => x.lang?.toLowerCase().startsWith('de'));
+        if (v || !voices.length) {
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = 'de-DE'; u.rate = 0.88; u.pitch = 1.12;
+          if (v) u.voice = v;
+          speechSynthesis.cancel(); speechSynthesis.speak(u);
+          return;
+        }
+      }
+      if (!this.warned) {
+        this.warned = true;
+        const why = app?.speechProblem?.() || 'Keine deutsche Stimme gefunden';
+        const hint = document.getElementById('voiceHint');
+        hint.textContent = `🔇 ${why} – Handy-Einstellungen › Sprachausgabe (Text-in-Sprache) › Deutsch installieren`;
+        hint.classList.add('on');
+        setTimeout(() => hint.classList.remove('on'), 9000);
+      }
     },
     stop() { window.BoniAndroid?.stopSpeaking?.(); window.speechSynthesis?.cancel(); },
   };

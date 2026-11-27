@@ -45,6 +45,7 @@ public class MainActivity extends Activity {
     private WebView web;
     private android.speech.tts.TextToSpeech tts;
     private boolean ttsReady = false;
+    private String ttsProblem = "Sprachausgabe startet noch";
 
     /** One connected pad: standard-mapping buttons (0..16) and axes (0..3). */
     private static final class Pad {
@@ -65,7 +66,12 @@ public class MainActivity extends Activity {
         tts = new android.speech.tts.TextToSpeech(this, status -> {
             if (status != android.speech.tts.TextToSpeech.SUCCESS) return;
             int r = tts.setLanguage(Locale.GERMANY);
-            if (r == android.speech.tts.TextToSpeech.LANG_MISSING_DATA || r == android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED) tts.setLanguage(Locale.GERMAN);
+            if (r < 0) r = tts.setLanguage(Locale.GERMAN);
+            if (r < 0) { ttsProblem = "Keine deutsche Stimme installiert"; return; }
+            // narration plays on the media volume
+            tts.setAudioAttributes(new android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH).build());
             tts.setSpeechRate(0.9f);
             tts.setPitch(1.1f);
             ttsReady = true;
@@ -291,9 +297,11 @@ public class MainActivity extends Activity {
 
     /** Lets the page know it runs inside the Android app; keeps the Cesium token for both origins. */
     private final class Bridge {
-        @JavascriptInterface public String version() { return "0.6"; }
+        @JavascriptInterface public String version() { return "0.7"; }
         @JavascriptInterface public String token() { return getPreferences(MODE_PRIVATE).getString("cesiumToken", ""); }
-        @JavascriptInterface public void speak(String text) { if (ttsReady) tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "boni"); }
+        /** Speaks with the device voice; returns false (and the page falls back) if that is not possible. */
+        @JavascriptInterface public boolean speak(String text) { return ttsReady && tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "boni") == android.speech.tts.TextToSpeech.SUCCESS; }
+        @JavascriptInterface public String speechProblem() { return ttsReady ? "" : ttsProblem; }
         @JavascriptInterface public void stopSpeaking() { if (tts != null) tts.stop(); }
         @JavascriptInterface public void saveToken(String t) { getPreferences(MODE_PRIVATE).edit().putString("cesiumToken", t == null ? "" : t).apply(); }
     }

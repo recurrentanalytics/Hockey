@@ -31,6 +31,9 @@
     #skip { position: absolute; right: 14px; top: 12px; pointer-events: auto; opacity: 0; transition: opacity .6s; font: 14px Arial, sans-serif;
             color: #fff; background: rgba(14,15,26,.55); border: 1px solid rgba(255,255,255,.45); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
     #skip.on { opacity: 1; }
+    #voiceHint { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); max-width: 80vw; font: 13px Arial, sans-serif; color: #fff; background: rgba(14,15,26,.75);
+                 border-radius: 8px; padding: 6px 10px; opacity: 0; transition: opacity .6s; text-align: center; }
+    #voiceHint.on { opacity: 1; }
     #ui { position: fixed; inset: 0; pointer-events: none; font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif; color: #fff; }
     #title { position: absolute; left: 0; right: 0; top: 7%; text-align: center; opacity: 0; transition: opacity .8s, transform .8s; transform: translateY(-12px);
              text-shadow: 0 3px 0 #16110d, 0 0 18px rgba(0,0,0,.55); }
@@ -59,6 +62,7 @@
   <div id="ui">
     <div id="title"><div class="club" id="titleName"></div><div class="sub" id="titleSub"></div></div>
     <div id="caption"></div>
+    <div id="voiceHint"></div>
     <button id="skip" type="button">Überspringen ›</button>
     <button id="go" type="button">Spiel starten</button>
     <div id="hint"></div>
