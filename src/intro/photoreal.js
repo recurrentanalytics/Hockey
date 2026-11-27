@@ -239,6 +239,13 @@ export async function run({ token, cesiumBase }) {
   titleName.innerHTML = '<img class="logo" src="assets/pixel/logo.png" alt="BORSTENBOOM!" /><img class="bonny" src="assets/pixel/bonny.png" alt="Bonny" />'; titleSub.textContent = GAME_TITLE.sub;
   const voice = {
     warned: false,
+    el: null,
+    /** Narration line i: Thorsten's recording (assets/voice), the device or browser voice as a fallback. */
+    line(i, text) {
+      this.el?.pause();
+      const a = new Audio(new URL(`../../assets/voice/intro-${i}.mp3`, import.meta.url).href);
+      a.play().then(() => { this.el = a; }).catch(() => this.speak(text));
+    },
     speak(text) {
       // 1. the app's device voice, 2. the browser's voice, 3. a visible hint once
       const app = window.BoniAndroid;
@@ -263,14 +270,14 @@ export async function run({ token, cesiumBase }) {
         setTimeout(() => hint.classList.remove('on'), 9000);
       }
     },
-    stop() { window.BoniAndroid?.stopSpeaking?.(); window.speechSynthesis?.cancel(); },
+    stop() { this.el?.pause(); window.BoniAndroid?.stopSpeaking?.(); window.speechSynthesis?.cancel(); },
   };
   let told = -1;
   const narrate = (t) => {
     const i = STORY.findIndex((l) => t >= l.at && t < l.until);
     const line = STORY[i];
     caption.classList.toggle('on', !!line && !skip && !started);
-    if (line && i !== told) { told = i; caption.textContent = line.text; if (!skip && !RECORD_MODE) voice.speak(line.text); }
+    if (line && i !== told) { told = i; caption.textContent = line.text; if (!skip && !RECORD_MODE) voice.line(i, line.text); }
   };
 
   const title = document.getElementById('title'), go = document.getElementById('go');

@@ -1,0 +1,56 @@
+{
+ "intro": [
+  "intro-0.mp3",
+  "intro-1.mp3",
+  "intro-2.mp3",
+  "intro-3.mp3",
+  "intro-4.mp3",
+  "intro-5.mp3"
+ ],
+ "comments": {
+  "start": [
+   "start-0.mp3",
+   "start-1.mp3",
+   "start-2.mp3"
+  ],
+  "goal": [
+   "goal-0.mp3",
+   "goal-1.mp3",
+   "goal-2.mp3",
+   "goal-3.mp3",
+   "goal-4.mp3"
+  ],
+  "goalBoar": [
+   "goalBoar-0.mp3",
+   "goalBoar-1.mp3",
+   "goalBoar-2.mp3"
+  ],
+  "save": [
+   "save-0.mp3",
+   "save-1.mp3",
+   "save-2.mp3",
+   "save-3.mp3"
+  ],
+  "post": [
+   "post-0.mp3",
+   "post-1.mp3",
+   "post-2.mp3"
+  ],
+  "penalty": [
+   "penalty-0.mp3",
+   "penalty-1.mp3"
+  ],
+  "break": [
+   "break-0.mp3",
+   "break-1.mp3"
+  ],
+  "final": [
+   "final-0.mp3",
+   "final-1.mp3"
+  ],
+  "win": [
+   "win-0.mp3",
+   "win-1.mp3"
+  ]
+ }
+}

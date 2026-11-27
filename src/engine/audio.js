@@ -4,6 +4,11 @@ import { settings } from '../settings.js';
 
 const MIN_GAP = { stick: 0.05, boards: 0.08, hit: 0.1, post: 0.15, menu: 0.03, ooh: 1.5 };
 
+// Spoken lines (Piper TTS, voice "Thorsten", CC0; tools/voice/make_voice.py): narration and commentary
+let VOICE = null;
+fetch(new URL('../../assets/voice/index.json', import.meta.url)).then((r) => r.json()).then((j) => { VOICE = j; }).catch(() => {});
+export const voiceFile = (name) => new URL(`../../assets/voice/${name}`, import.meta.url).href;
+
 export class Audio {
   constructor() {
     this.ctx = null;
@@ -164,6 +169,20 @@ export class Audio {
   /**
    * Play part of a song file (e.g. the Borstentiere hymn as goal song), fading out after `seconds`.
    */
+  /** A random commentary line of a group (goal, save, post, …); never talks over itself. */
+  say(group, { force = false } = {}) {
+    const list = VOICE?.comments?.[group];
+    if (!list?.length || settings.sound <= 0) return;
+    const now = performance.now();
+    if (!force && this.voiceEl && !this.voiceEl.ended && !this.voiceEl.paused) return;
+    if (!force && now - (this.voiceAt ?? 0) < 1800) return;
+    this.voiceEl?.pause();
+    const a = new window.Audio(voiceFile(list[Math.floor(Math.random() * list.length)]));
+    a.volume = Math.min(1, settings.sound * 1.15);
+    a.play().catch(() => {});
+    this.voiceEl = a; this.voiceAt = now;
+  }
+
   /** Outdoor sound at the Boni: soft city rumble, leaves, and birds chirping now and then. */
   ambience() {
     if (!this.ctx || this.amb) return;

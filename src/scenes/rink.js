@@ -73,6 +73,7 @@ export class RinkScene {
     const teamsInGame = [this.match.sides.home.team, this.match.sides.away.team];
     app.world.configure({ venue: settings.venue, logo: teamsInGame.some((t) => BOAR_TEAMS.has(t)) ? 'boar' : 'puck' });
     this.snapCameras();
+    if (mode !== 'practice') setTimeout(() => app.audio.say('start', { force: true }), 900);
   }
 
   get usesTouch() {
@@ -166,12 +167,12 @@ export class RinkScene {
         case 'pass': case 'steal': sfx.play('stick', 0.8); break;
         case 'pickup': sfx.play('stick', 0.4); break;
         case 'boards': sfx.play('boards', e.speed / 15); break;
-        case 'post': sfx.play('post', e.speed / 20); sfx.play('ooh'); this.shake = Math.max(this.shake, 0.15); this.app.world.jiggle(Math.sign(m.puck.pos.x), 0.35); break;
-        case 'save': sfx.play('save'); this.fx.puff(m.puck.pos.x, m.puck.pos.y); if (e.speed > 20 || e.dist < 5) sfx.play('ooh', 0.8); break;
+        case 'post': sfx.play('post', e.speed / 20); sfx.play('ooh'); sfx.say('post'); this.shake = Math.max(this.shake, 0.15); this.app.world.jiggle(Math.sign(m.puck.pos.x), 0.35); break;
+        case 'save': sfx.play('save'); this.fx.puff(m.puck.pos.x, m.puck.pos.y); if (e.speed > 20 || e.dist < 5) { sfx.play('ooh', 0.8); sfx.say('save'); } break;
         case 'hit': if (e.approach > 4.5 || e.victim.downT > 0) sfx.play('hit', e.approach / 8); if (e.approach > 5) { this.shake = Math.max(this.shake, 0.2); this.fx.stars(e.victim.pos.x, e.victim.pos.y); } if (e.victim.downT > 0) this.fx.puff(e.victim.pos.x, e.victim.pos.y, 0.1, 9); break;
-        case 'goal': sfx.play('horn'); this.shake = 0.5; this.slowT = 1.1; if (!e.shootout) this.torT = 2.2; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); this.app.world.jiggle(this.lampSide, 1); if (e.side === 'home') this.waveT = 3.5; this.fx.confetti(m.puck.pos.x - Math.sign(m.puck.pos.x) * 3, m.puck.pos.y); break;
+        case 'goal': sfx.play('horn'); sfx.say(BOAR_TEAMS.has(m.sides[e.side].team) ? 'goalBoar' : 'goal', { force: true }); this.shake = 0.5; this.slowT = 1.1; if (!e.shootout) this.torT = 2.2; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); this.app.world.jiggle(this.lampSide, 1); if (e.side === 'home') this.waveT = 3.5; this.fx.confetti(m.puck.pos.x - Math.sign(m.puck.pos.x) * 3, m.puck.pos.y); break;
         case 'whistle': sfx.play('whistle'); break;
-        case 'break': case 'final': sfx.play('buzzer'); if (e.type === 'final') sfx.play('cheer'); break;
+        case 'break': case 'final': sfx.play('buzzer'); if (e.type === 'final') sfx.play('cheer'); sfx.say(e.type, { force: true }); break;
         case 'attempt': if (!e.scored) sfx.play('save', 0.6); break;
       }
       // Rumble on the pads of the players involved.
@@ -199,13 +200,14 @@ export class RinkScene {
       }
       if (e.type === 'save' && !this.banner) this.banner = { text: 'GEHALTEN!', t: 0.8, small: true };
       if (e.type === 'foul') this.notice = { text: `${e.name} - ${name(e.offender.sideKey)} #${e.offender.number}`, t: 2.5 };
+      if (e.type === 'penalty') this.app.audio.say('penalty');
       if (e.type === 'penalty') this.banner = { text: e.major ? 'GROSSE STRAFE' : 'STRAFE', sub: `${name(e.side)} #${e.skater.number} - ${e.foul} - ${fmt(e.seconds)}`, t: 2.6, small2: true };
       if (e.type === 'penaltyShot') this.banner = { text: 'PENALTY', sub: `${e.name} AN #${e.shooter.number}`, t: 2.6, small2: true };
       if (e.type === 'attempt' && !e.scored) this.banner = { text: 'KEIN TOR', t: 1.4, small: true };
       if (e.type === 'break') this.banner = { text: e.text, t: 3, small2: true };
       if (e.type === 'final') {
         this.banner = { text: 'ENDSTAND', sub: this.finalText(e), t: Infinity, final: true };
-        if (e.winner && BOAR_TEAMS.has(m.sides[e.winner].team)) { this.banner.sub += ' - ZUSAMMEN SIND WIR STARK!'; this.app.audio.song('audio/hymne.mp3', 20); }
+        if (e.winner && BOAR_TEAMS.has(m.sides[e.winner].team)) { this.banner.sub += ' - ZUSAMMEN SIND WIR STARK!'; this.app.audio.song('audio/hymne.mp3', 20); setTimeout(() => this.app.audio.say('win', { force: true }), 2600); }
       }
       if (e.type === 'release') this.notice = { text: `${name(e.side)} WIEDER VOLLZÄHLIG`, t: 2 };
     }

@@ -1,0 +1,22 @@
+{
+  "voice": "Piper TTS, Stimme de_DE-thorsten-high (Thorsten-Voice, CC0)",
+  "intro": [
+    "Ganz weit draußen, im großen, dunklen Weltall … schwebt eine kleine blaue Kugel.",
+    "Auf dieser Kugel gibt es ein Land.",
+    "In diesem Land eine Stadt.",
+    "Und in dieser Stadt … einen kleinen Platz unter großen Bäumen.",
+    "Hier rollt eine noch viel kleinere Kugel. Ein roter Ball. Klein wie eine Kinderfaust …",
+    "… und für uns das Größte auf der ganzen Welt."
+  ],
+  "comments": {
+    "start": ["Und los geht's!", "Bully! Das Spiel läuft!", "Auf geht's, Kinder!"],
+    "goal": ["Toooor!", "Der sitzt!", "Unhaltbar!", "Was für ein Schuss!", "Drin ist das Ding!"],
+    "goalBoar": ["Toooor für die Borstentiere!", "Was sind wir? Ein Borstentier!", "Borstenboom!"],
+    "save": ["Gehalten!", "Was für eine Parade!", "Der Torwart ist hellwach!", "Klasse gehalten!"],
+    "post": ["Pfosten!", "Nur der Pfosten!", "Uiii, ganz knapp!"],
+    "penalty": ["Strafe!", "Ab auf die Strafbank!"],
+    "break": ["Pause! Kurz durchatmen.", "Halbzeit! Trinken nicht vergessen."],
+    "final": ["Das Spiel ist aus!", "Abpfiff! Was für ein Spiel!"],
+    "win": ["Sieg! Die Borstentiere jubeln!", "Gewonnen! Zusammen sind wir stark!"]
+  }
+}
