@@ -232,7 +232,7 @@ const baseline = (y, scale, big) => y + (big ? 7.4 : 5.4) * scale; // pixel glyp
 // pixel-art images (SpriteCook): logo, Bonny, goal burst
 const ART = {};
 if (typeof Image !== 'undefined') {
-  for (const name of ['logo', 'bonny', 'tor']) { const img = new Image(); img.src = new URL(`../../assets/pixel/${name}.png`, import.meta.url).href; ART[name] = img; }
+  for (const name of ['logo', 'bonny', 'bonny_jubel', 'tor']) { const img = new Image(); img.src = new URL(`../../assets/pixel/${name}.png`, import.meta.url).href; ART[name] = img; }
 }
 /** Draw a pixel-art image on the full-resolution layer: centred at cx, top edge at top, height h (UI px). */
 export function drawArt(ctx, name, cx, top, h, { alpha = 1, scale = 1 } = {}) {
