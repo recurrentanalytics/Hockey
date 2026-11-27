@@ -369,7 +369,22 @@ export class Match {
   }
 
   actions(h, c, dt) {
-    const s = h.skater, p = this.puck;
+    let s = h.skater;
+    const p = this.puck;
+    // Snappy switching: a pass to a teammate hands control to the receiver at once; without the
+    // ball, control jumps to the teammate clearly closest to it (the switch button still works).
+    if (!s.hasPuck) {
+      h.autoT = (h.autoT ?? 0) - dt;
+      const rcv = p.passTo;
+      if (rcv && rcv.sideKey === h.side && rcv !== s && !rcv.human) { this.giveControl(h, rcv); h.autoT = 0.6; }
+      else if (h.autoT <= 0 && !(p.carrier && p.carrier.sideKey === h.side)) {
+        const d = (t) => Math.hypot(t.pos.x - p.pos.x, t.pos.y - p.pos.y);
+        let best = null;
+        for (const t of this.skaters) if (t.sideKey === h.side && !t.human && (!best || d(t) < d(best))) best = t;
+        if (best && d(best) < d(s) - 2.2) { this.giveControl(h, best); h.autoT = 0.7; }
+      }
+      s = h.skater;
+    }
     if (p.carrier === s) {
       if (c.down.shoot) {
         s.charging = true;

@@ -1,7 +1,7 @@
 // The puck: position on the floor plus height (z) so shots can be lifted.
 import { PAL } from '../engine/palette.js';
 import { RES } from '../config.js';
-import { project } from '../world/projection.js';
+import { project, FIXED } from '../world/projection.js';
 
 export const PUCK = {
   radius: 0.1,          // enlarged from the real 3.8 cm for playability
@@ -78,12 +78,32 @@ export class Puck {
 
   draw(ctx, ox, oy, ghost = false) {
     const p = project(this.pos.x, this.pos.y, this.z);
+    if (!ghost) {
+      // where is the ball? a yellow marker over its carrier, or a pulsing ring round a loose ball
+      const t = performance.now() / 1000;
+      ctx.save();
+      ctx.strokeStyle = '#ffe14d'; ctx.fillStyle = '#ffe14d'; ctx.lineWidth = 1;
+      const owner = this.carrier || this.holder;
+      if (owner?.pos) {
+        const c = project(owner.pos.x, owner.pos.y, 2.35);
+        const bx = c.x + ox, by = c.y + oy - Math.abs(Math.sin(t * 6)) * 2.5;
+        ctx.fillStyle = PAL.ink; ctx.beginPath(); ctx.moveTo(bx - 4.5, by - 4.5); ctx.lineTo(bx + 4.5, by - 4.5); ctx.lineTo(bx, by + 1); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffe14d'; ctx.beginPath(); ctx.moveTo(bx - 3, by - 3.6); ctx.lineTo(bx + 3, by - 3.6); ctx.lineTo(bx, by - 0.6); ctx.closePath(); ctx.fill();
+      } else {
+        const g = project(this.pos.x, this.pos.y, 0), k = 0.5 + 0.5 * Math.sin(t * 8);
+        ctx.globalAlpha = 0.55 + 0.4 * k;
+        ctx.beginPath(); ctx.ellipse(g.x + ox, g.y + oy - 0.5, 5.5 + k * 1.5, 2.6 + k * 0.7, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+    }
     // Distance rolled, for the spinning seam and pegs.
     const sp = this.speed;
     if (!ghost) this.roll = ((this.roll ?? 0) + sp / 60 / 0.035) % (Math.PI * 2);
     ctx.save();
-    ctx.scale(1 / RES, 1 / RES);
-    const x = Math.round((p.x + ox) * RES), y = Math.round((p.y + oy) * RES);
+    // on the real court the ball is drawn bigger, so it stays visible on the dappled asphalt
+    const big = FIXED ? 1.6 : 1;
+    ctx.scale(big / RES, big / RES);
+    const x = Math.round(((p.x + ox) * RES) / big), y = Math.round(((p.y + oy) * RES) / big);
     const px = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, w, h); };
     if (this.ball) {
       // 7 px ball: outline, red body, darker lower half, a bright shine; a seam spot rolls round.
