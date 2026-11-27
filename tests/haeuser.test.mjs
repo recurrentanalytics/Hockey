@@ -211,9 +211,16 @@ test('houses: the whole Bonifatiusplatz dataset becomes houses without a gap', (
 });
 
 test('houses: a façade kit is set together for the real wall length, pixel for pixel, and dresses the house it names', () => {
-  const kit = JSON.parse(fs.readFileSync('assets/welt/haeuser/bausatz.json', 'utf8')), f = kit.fassade;
-  for (const teil of [f, kit.ziegel, kit.putz]) { const bild = decodePng(fs.readFileSync(`assets/welt/haeuser/${teil.datei}`)); assert.deepEqual([bild.width, bild.height], [teil.breite, teil.hoehe], `${teil.datei}: the size the kit says`); }
-  assert.ok(Math.abs(f.hoehe / f.hoehe_m - kit.px_je_m) < 0.01, 'the picture is as tall as its storeys');
+  const lies = (n) => JSON.parse(fs.readFileSync(`assets/welt/haeuser/${n}`, 'utf8')), kit = lies('bausatz.json'), f = kit.fassade;
+  for (const k of [kit, lies('bausatz-b.json')]) { // every kit: pictures of the size it says, as tall as its storeys, cut into columns that follow one another
+    for (const teil of [k.fassade, k.ziegel, k.putz]) { const bild = decodePng(fs.readFileSync(`assets/welt/haeuser/${teil.datei}`)); assert.deepEqual([bild.width, bild.height], [teil.breite, teil.hoehe], `${teil.datei}: the size the kit says`); }
+    assert.ok(Math.abs(k.fassade.hoehe / k.fassade.hoehe_m - k.px_je_m) < 0.01, 'the picture is as tall as its storeys');
+    const g = k.fassade, alle = [g.links, ...g.achsen, g.mitte, g.rechts].sort((a, b) => a[0] - b[0]);
+    for (const [a, b] of alle) assert.ok(a >= 0 && b <= g.breite && b > a);
+    assert.ok(g.pfeiler >= g.links[1] - 1 && g.pfeiler < g.rechts[0], 'the pier lies between two windows');
+    const breit = fuege(g, 18, k.px_je_m, true, 0.4);
+    assert.ok(Math.abs(breit.breite / (18 * k.px_je_m) - 1) < 0.06, `${g.datei}: 18 m within 6 % (${breit.breite} px)`);
+  }
   const stuecke = [f.links, ...f.achsen, f.mitte, f.rechts].map(String);
   // a front of 18 m: both edges, the middle with the door once, plain axes in between; no column is scaled
   const lang = fuege(f, 18, kit.px_je_m, true, 0.4);

@@ -84,7 +84,8 @@ async function main() {
   const haeuser = []; // drawn building volumes, so the ones hiding the player can turn see-through
   const hausArt = Q.get('haeuser') ?? 'alt'; // 'alt' plain volumes, 'probe' the houses of the sprite kit, 'neu' every house
   let viertelHaeuser = null;                 // the houses of haeuser.js
-  const bausatz = hausArt === 'alt' ? null : await fetch(new URL('welt/haeuser/bausatz.json', ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const satz = (Q.get('bausatz') ?? '').replace(/[^a-z0-9]/g, ''); // ?bausatz=b: another kit for the same houses, to compare
+  const bausatz = hausArt === 'alt' ? null : await fetch(new URL(`welt/haeuser/bausatz${satz ? '-' + satz : ''}.json`, ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   let spieler = null;
   status('Lade 3D-Ansicht …');
   const Cesium = await loadCesium(Q.get('cesiumBase') || `https://cdn.jsdelivr.net/npm/cesium@${CESIUM_VERSION}/Build/Cesium/`);

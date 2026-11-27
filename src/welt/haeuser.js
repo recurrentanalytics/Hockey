@@ -512,7 +512,7 @@ export function fuege(f, laenge, pxJeM, mitMitte = false, saat = 0) {
 function dachaufbauten(h, kit) {
   const d = h.dach, aus = [];
   if (d.form !== 'sattel') return aus;
-  const m = kit.px_je_m, [, , sw, sh] = kit.teile.schornstein, [, , fw, fh] = kit.teile.dachfenster;
+  const m = kit.teile.px_je_m ?? kit.px_je_m, [, , sw, sh] = kit.teile.schornstein, [, , fw, fh] = kit.teile.dachfenster;
   let seite = 0; // which side of the ridge looks at the street
   for (const k of h.kanten) for (const s of k.stuecke) if (s.art === 'strasse') seite += mal(k.n, d.v) * (s.t1 - s.t0);
   const vorn = seite >= 0 ? 1 : -1, lang = d.xb - d.xa, halb = (d.yb - d.ya) / 2;
