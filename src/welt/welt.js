@@ -63,7 +63,7 @@ async function main() {
   const viewer = new Cesium.Viewer('cesium', {
     baseLayer: luftbild, animation: false, timeline: false, baseLayerPicker: false, geocoder: false, homeButton: false,
     sceneModePicker: false, navigationHelpButton: false, fullscreenButton: false, infoBox: false, selectionIndicator: false,
-    scene3DOnly: true, requestRenderMode: true, maximumRenderTimeChange: Infinity,
+    scene3DOnly: true, // renders every frame: with request-render mode the volumes built in the background never appeared until the camera moved
   });
   const { scene, camera } = viewer;
   scene.globe.baseColor = Cesium.Color.fromCssColorString('#3a4038');
