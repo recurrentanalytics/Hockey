@@ -16,18 +16,25 @@ const Q = new URLSearchParams(location.search);
 const FINAL_HEADING = ((+Q.get('heading') || 118.2) * Math.PI) / 180; // view direction A→B, clockwise from north
 const FINAL_TILT = ((+Q.get('tilt') || 60) * Math.PI) / 180;            // 60° from vertical, like PROJ {x:16, y:8}
 
-const T = { zoom: [0.6, 9.4], turn: [3.2, 8.0], tilt: [6.0, 9.6], fade: [8.8, 10.6], rink: [9.2, 10.8], title: 10.4, button: 11.2 };
+// One continuous camera move: a single progress curve u (slow start, long soft landing) drives
+// zoom, turn and tilt together, so the flight reads as one gesture instead of separate moves.
+const T = { flight: [0.2, 10.2], fade: [7.4, 10.6], rink: [8.2, 10.6], title: 10.4, button: 11.0 };
 const END = T.button + 0.2;
 const ease = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * t * (t * (t * 6 - 15) + 10));
 const phase = (t, [a, b]) => ease((t - a) / (b - a));
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+/** Flight progress 0..1: gentle start, most of the distance mid-flight, long deceleration. */
+const progress = (t) => { const x = clamp01((t - T.flight[0]) / (T.flight[1] - T.flight[0])); return 1 - Math.pow(1 - ease(x), 1.6); };
+const TURN = (50 * Math.PI) / 180; // the flight starts already turned towards the court; only the last 50° are flown
 const FOV_START = (40 * Math.PI) / 180, FOV_END = (18 * Math.PI) / 180;
 
 // Performance: phones and tablets fly at reduced resolution and coarser tiles; once landed, the
 // view is drawn once at full resolution and then only when something changes (request render
 // mode), so the game on top runs at full speed.
 const MOBILE = !!window.BoniAndroid || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
-const FLIGHT = { res: MOBILE ? 0.6 : 1, sse: MOBILE ? 18 : 10, msaa: MOBILE ? 1 : 4 };
-const STILL = { res: 1, sse: 8 };
+// one setting for the whole flight and the landed view: no visible jump in sharpness at the end
+const FLIGHT = { res: MOBILE ? 0.8 : 1, sse: MOBILE ? 14 : 8, msaa: MOBILE ? 1 : 4 };
+const STILL = FLIGHT;
 
 function loadCesium(base) {
   window.CESIUM_BASE_URL = base;
@@ -45,14 +52,16 @@ function loadCesium(base) {
 function cameraAt(t, aspect) {
   const wStart = 1150 * Math.min(1, aspect);
   const wEnd = COURT.long / (aspect >= 1 ? 0.78 : 0.95);
-  const width = Math.exp(Math.log(wStart) + (Math.log(wEnd) - Math.log(wStart)) * phase(t, T.zoom));
-  const fovx = FOV_START + (FOV_END - FOV_START) * phase(t, T.tilt);
+  const u = progress(t);
+  const width = Math.exp(Math.log(wStart) + (Math.log(wEnd) - Math.log(wStart)) * u);
+  const k = ease(clamp01((u - 0.35) / 0.65));          // tilting happens during the second part of the descent
+  const fovx = FOV_START + (FOV_END - FOV_START) * k;
   return {
-    heading: FINAL_HEADING * phase(t, T.turn),
-    tilt: FINAL_TILT * phase(t, T.tilt),
+    heading: FINAL_HEADING - TURN * (1 - u),
+    tilt: FINAL_TILT * k,
     fovx,
     range: width / (2 * Math.tan(fovx / 2)),
-    lift: width * 0.025 * phase(t, T.tilt), // court sits a little below the middle at the end
+    lift: width * 0.025 * k, // court sits a little below the middle at the end
   };
 }
 
@@ -149,12 +158,12 @@ export async function run({ token, cesiumBase }) {
     // dither, the rest stays opaque (true alpha blending would turn the whole mesh see-through)
     translucencyMode: Cesium.CustomShaderTranslucencyMode.OPAQUE,
     fragmentShaderText: `
-      float bayer4(vec2 f) {
-        int x = int(mod(f.x, 4.0)), y = int(mod(f.y, 4.0));
-        float m[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
-        return (m[x + y * 4] + 0.5) / 16.0;
-      }
+      // 8x8 ordered (Bayer) dither: 64 steps, so the trees thin out smoothly
+      float bayer2(vec2 a) { a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
+      float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
+      float bayer8(vec2 a) { return bayer4(0.5 * a) * 0.25 + bayer2(a); }
       void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+        if (u_fade <= 0.0) return;
         vec3 p = (u_ecToEnu * vec4(fsInput.attributes.positionEC, 1.0)).xyz;
         vec3 cam = (u_ecToEnu * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
         vec3 d = p - cam;
@@ -167,10 +176,11 @@ export async function run({ token, cesiumBase }) {
         vec2 k = q - (u_rect.zw - vec2(0.1));
         float sd = length(max(k, 0.0)) + min(max(k.x, k.y), 0.0);
         float inside = 1.0 - smoothstep(0.3, 3.2, sd);   // fully open over the court, soft over the mulch apron
-        if (u_fade * inside > bayer4(gl_FragCoord.xy)) discard;
+        if (u_fade * inside > bayer8(gl_FragCoord.xy)) discard;
       }`,
   });
   const ecToEnu = new Cesium.Matrix4();
+  tileset.customShader = seeThrough;
 
   const title = document.getElementById('title'), go = document.getElementById('go');
   scene.preRender.addEventListener(() => {
@@ -180,16 +190,16 @@ export async function run({ token, cesiumBase }) {
     rinkAlpha = phase(t, T.rink);
     court.show = rinkAlpha > 0;
     court.color = Cesium.Color.WHITE.withAlpha(rinkAlpha);
-    // the see-through shader is only switched on for the end of the flight
-    const want = fade > 0 ? seeThrough : undefined;
-    if (tileset.customShader !== want) tileset.customShader = want;
-    if (want) {
+    // the see-through shader stays attached all the time (switching it recompiles every tile and
+    // stutters); it does nothing while u_fade is 0
+    if (fade > 0) {
       Cesium.Matrix4.multiply(frame.inv, camera.inverseViewMatrix, ecToEnu);
       seeThrough.setUniform('u_ecToEnu', ecToEnu);
       seeThrough.setUniform('u_rect', new Cesium.Cartesian4(frame.C.x, frame.C.y, frame.halfLong, frame.halfShort));
       seeThrough.setUniform('u_axis', new Cesium.Cartesian2(frame.u.x, frame.u.y));
       seeThrough.setUniform('u_fade', fade);
     }
+    else seeThrough.setUniform('u_fade', 0);
     title.classList.toggle('on', t >= T.title && !started);
     go.classList.toggle('on', t >= T.button && !started);
   });
@@ -200,14 +210,21 @@ export async function run({ token, cesiumBase }) {
     setTimeout(check, 200);
   });
 
-  // measure the ground at the court, then warm the tile cache at the end view and the start view
+  // measure the ground at the court, then warm the tile cache along the whole flight path, so the
+  // flight itself streams from memory instead of loading tiles on the way
+  tileset.cacheBytes = MOBILE ? 384 * 1024 * 1024 : 768 * 1024 * 1024;
   fixedT = END; await loaded();
   try {
     const [p] = await scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(...COURT.center)]);
     if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = courtMatrix(); }
   } catch { /* keep the estimate */ }
   await loaded();
-  fixedT = 0; await loaded();
+  const stops = [9.6, 8.6, 7.6, 6.6, 5.4, 4.0, 2.4, 0];
+  for (let i = 0; i < stops.length; i++) {
+    say(`Lade den Boni … ${Math.round(((i + 1) / stops.length) * 100)} %`);
+    fixedT = stops[i];
+    await loaded(i === stops.length - 1 ? 20000 : 8000);
+  }
   say('');
 
   window.introDebug = {

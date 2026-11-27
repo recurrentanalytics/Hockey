@@ -15,7 +15,9 @@ const QUERY = process.argv[6] ? `?record&${process.argv[6]}${process.env.CESIUM_
   const srv = spawn('python3', ['-m', 'http.server', String(port), '--bind', '127.0.0.1'], { cwd: root, stdio: 'ignore' });
   await new Promise((r) => setTimeout(r, 800));
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-  const page = await browser.newPage({ viewport: { width: W, height: H } });
+  // service workers off: they would bypass the request routing below
+  const context = await browser.newContext({ viewport: { width: W, height: H }, serviceWorkers: 'block' });
+  const page = await context.newPage();
   page.on('console', (m) => console.log('page:', m.text()));
   page.on('pageerror', (e) => console.log('pageerror:', e.message));
   if (process.env.CESIUM_DIR) {
@@ -25,7 +27,7 @@ const QUERY = process.argv[6] ? `?record&${process.argv[6]}${process.env.CESIUM_
     });
   }
   await page.goto(`http://127.0.0.1:${port}/intro.html${QUERY}`);
-  await page.waitForFunction('window.introReady === true', null, { timeout: 180000 });
+  await page.waitForFunction('window.introReady === true', null, { timeout: 400000 });
   const dur = await page.evaluate('introDebug.duration');
   const n = Math.ceil(dur * FPS) + FPS; // plus one second hold
   for (let i = 0; i < n; i++) {
