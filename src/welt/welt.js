@@ -4,7 +4,9 @@
 // device the Google photorealistic 3D tiles can be switched on as well; without it the view
 // stands on the aerial photo alone. An inspection view, not gameplay yet.
 import { fromUtm32, toUtm32 } from './utm.js';
-import { placeLibrary, usable } from './bibliothek.js';
+import { placeLibrary, usable, frameImages } from './bibliothek.js';
+import { hain, kronenkarte, baumbilder, pflanze } from './baeume.js';
+import { starte } from './spieler.js';
 
 const CESIUM_VERSION = '1.147.0';    // keep in step with src/intro/photoreal.js
 const GOOGLE_3D_TILES = 2275207;     // Cesium ion asset, as in the intro
@@ -38,7 +40,7 @@ const LAYERS = [
   { id: 'nutzung', name: 'Straßen, Wege, Flächen (ALKIS)', on: true },
   { id: 'gebaeude', name: 'Gebäude als Volumen (ALKIS)', on: true },
   { id: 'wege', name: 'Wegelinien (OSM)', on: true },
-  { id: 'baeume', name: 'Bäume (OSM, schematisch)', on: true },
+  { id: 'baeume', name: 'Bäume mit Schatten (OSM-Standorte)', on: true },
   { id: 'einfriedungen', name: 'Zäune, Mauern (OSM)', on: true },
   { id: 'platz', name: 'Bolzplatz (Verein)', on: true },
   { id: 'bibliothek', name: 'Art-Bibliothek (SpriteCook)', on: true },
@@ -53,8 +55,15 @@ async function main() {
   const manifest = await fetch(new URL('../../assets/manifest.json', import.meta.url)).then((r) => (r.ok ? r.json() : { assets: [] })).catch(() => ({ assets: [] }));
   const preview = Q.get('preview') === 'art';
   const geo = { baeume, ausstattung, einfriedungen, wege, platz };
-  // a layer that has a sprite does not need its schematic stand-in as well
-  for (const a of usable(manifest, preview)) if (a.place.layer === 'baeume') LAYERS.find((l) => l.id === 'baeume').on = false;
+  // The grove: size from the canopy survey where it reaches, species and mirroring by the tree's id (baeume.js)
+  const ASSETS = new URL('../../assets/', import.meta.url);
+  const baumArten = usable(manifest, preview).filter((a) => a.place.layer === 'baeume');
+  const baumListe = hain(baeume.features, frame, baumArten, await kronenkarte(new URL('intro/boni_schatten_hoehen.png', ASSETS).href));
+  const baumBilder = Object.fromEntries(await Promise.all(baumArten.map(async (a) => [a.id, await baumbilder(a, ASSETS)])));
+  const figur = manifest.assets.find((a) => a.id === 'character.skater.stride' && (a.approved || preview));
+  const figurBilder = figur ? { rechts: await frameImages(figur), links: await frameImages(figur, true), seiten: figur.frame.w / figur.frame.h } : null;
+  let grove = { baeume: baumListe, zeige() {} };
+  let spieler = null;
   status('Lade 3D-Ansicht …');
   const Cesium = await loadCesium(Q.get('cesiumBase') || `https://cdn.jsdelivr.net/npm/cesium@${CESIUM_VERSION}/Build/Cesium/`);
   Cesium.Ion.defaultAccessToken = undefined; // nothing here needs Cesium ion unless the Google layer is switched on
@@ -119,11 +128,9 @@ async function main() {
         properties: { text: describe('Weg (OSM)', f.properties) } });
     }
     const trees = layer('baeume');
-    for (const f of baeume.features) {
-      if (f.geometry.type !== 'Point') { trees.add({ polyline: { positions: f.geometry.coordinates.map((p) => pos(p, 0.3)), width: 4, material: css('#2f7d32') }, properties: { text: describe('Baumreihe (OSM)', f.properties) } }); continue; }
-      // size is not in the data: a 9 m marker with a 3 m crown radius, only to show where the tree stands
-      trees.add({ position: pos(f.geometry.coordinates, 4.5), cylinder: { length: 9, topRadius: 3, bottomRadius: 0.25, material: css('#3f8f3a', 0.55) }, properties: { text: describe('Baum (OSM), Größe schematisch', f.properties) } });
-    }
+    for (const f of baeume.features) if (f.geometry.type !== 'Point') trees.add({ polyline: { positions: f.geometry.coordinates.map((p) => pos(p, 0.3)), width: 4, material: css('#2f7d32') }, properties: { text: describe('Baumreihe (OSM)', f.properties) } });
+    // on the aerial photo the real cast shadows are already in the picture: contact shadows only (see schatten())
+    pflanze({ Cesium, entities: trees, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: luftbild.show && !google.on }).then((g) => { grove = g; });
     const fences = layer('einfriedungen');
     for (const f of einfriedungen.features) {
       if (f.geometry.type === 'LineString') fences.add({ wall: { positions: f.geometry.coordinates.map((p) => pos(p, 1.4)), minimumHeights: f.geometry.coordinates.map(() => ground), material: css('#7a1fa2', 0.7) }, properties: { text: describe('Einfriedung (OSM), Höhe angenommen 1,4 m', f.properties) } });
@@ -138,7 +145,7 @@ async function main() {
       if (p.art === 'achse') court.add({ polyline: { positions: f.geometry.coordinates.map((q) => pos(q, 0.4)), width: 3, material: new Cesium.PolylineArrowMaterialProperty(css(p.name === 'a' ? '#ffd23f' : '#3fd2ff')) } });
     }
     const library = layer('bibliothek');
-    placeLibrary({ Cesium, entities: library, manifest, geo, frame, pos, preview }).then((n) => { $('bibliothek').textContent = `${n} Sprites aus der Art-Bibliothek` + (preview ? ' (mit wartenden)' : ''); });
+    placeLibrary({ Cesium, entities: library, manifest, geo, frame, pos, preview, skip: (a) => a.place.layer === 'baeume' || a.id === figur?.id }).then((n) => { $('bibliothek').textContent = `${n} Sprites aus der Art-Bibliothek` + (preview ? ' (mit wartenden)' : ''); });
     scene.requestRender();
   }
 
@@ -172,10 +179,13 @@ async function main() {
     oben: { heading: 0, pitch: -90, range: 520 },
     schraeg: { heading: 25, pitch: -38, range: 330 },
     spiel: { heading: GAME_VIEW.heading, pitch: -(90 - GAME_VIEW.tilt), range: 75 },
+    fahren: null, // the camera follows the player (spieler.js)
     platz: { heading: frame.kompassrichtung_b_grad, pitch: -90, range: 60 },
   };
   function view(name) {
     current = name;
+    spieler?.folge(name === 'fahren');
+    if (name === 'fahren') { status(spieler ? 'Losfahren: Pfeiltasten oder WASD, oder auf den Boden tippen' : 'Kein freigegebener Spieler in der Art-Bibliothek'); return; }
     const v = VIEWS[name];
     camera.lookAt(pos([E0, N0], 0), new Cesium.HeadingPitchRange(Cesium.Math.toRadians(v.heading), Cesium.Math.toRadians(v.pitch), v.range));
     camera.lookAtTransform(Cesium.Matrix4.IDENTITY); // free the camera again: drag, zoom and tilt as usual
@@ -190,7 +200,7 @@ async function main() {
     label.innerHTML = `<input type="checkbox" ${l.on ? 'checked' : ''} ${usable ? '' : 'disabled'}> ${l.name}${usable ? '' : ' <small>(braucht den Cesium-Token des Vereins)</small>'}`;
     label.querySelector('input').onchange = async (ev) => {
       l.on = ev.target.checked;
-      if (l.id === 'luftbild') luftbild.show = l.on;
+      if (l.id === 'luftbild') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
       else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); scene.globe.show = true; } }
       else sources[l.id].show = l.on;
       scene.requestRender();
@@ -238,14 +248,20 @@ async function main() {
     $('lage').textContent = `Ost ${en[0].toFixed(1)}  Nord ${en[1].toFixed(1)}\nPlatz a ${(de * A[0] + dn * A[1]).toFixed(1)} m, b ${(de * B[0] + dn * B[1]).toFixed(1)} m`;
   }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
   handler.setInputAction((m) => {
+    if (spieler?.tippe(m.position)) return;
     const hit = scene.pick(m.position);
     $('info').textContent = hit?.id?.properties?.text ? hit.id.properties.text.getValue() : 'Kein Objekt an dieser Stelle.';
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
   build();
+  if (figurBilder) {
+    const eigene = new Cesium.CustomDataSource('spieler'); // kept apart from the layers build() replaces
+    viewer.dataSources.add(eigene);
+    spieler = starte({ Cesium, viewer, entities: eigene.entities, frame, pos, bilder: figurBilder, hoehe: figur.worldHeight ?? 1.4, hain: () => grove, bodenpunkt: groundPoint });
+  }
   view(Q.get('sicht') in VIEWS ? Q.get('sicht') : 'schraeg');
   status('bereit');
-  window.welt = { viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32 }; // for the console and tests
+  window.welt = { viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, get spieler() { return spieler; }, get hain() { return grove; } }; // for the console and tests
 }
 
 main().catch((e) => { status('Fehler: ' + e.message); console.error(e); });

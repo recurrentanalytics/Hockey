@@ -153,3 +153,19 @@ python3 serve.py      # dann http://localhost:8000/welt.html   (?sicht=oben|schr
 - **Gelände:** keins. Ohne die Google-Kacheln ist die Welt eben.
 
 Bilder: `docs/ort/boni_welt_schraeg.jpg`, `boni_welt_platz.jpg`, `boni_welt_spielkamera.jpg` (Luftbild © GeoBasis-DE / LGLN, CC BY 4.0). Die Koordinaten rechnet `src/welt/utm.js` um; ein Test hält sie mit `tools/ort/utm.py` gleich.
+
+## Bäume, Schatten und Losfahren (`src/welt/baeume.js`, `src/welt/spieler.js`)
+
+In `welt.html` steht auf jedem in OSM kartierten Baumstandort ein Baum aus Stamm und Krone mit Bodenschatten; mit „Losfahren“ steuert man den Spieler aus der Art-Bibliothek hindurch (Pfeiltasten oder WASD, oder auf den Boden tippen; die Kamera folgt im Blickwinkel des Spiels).
+
+- **Standort:** die Punkte aus `locations/boni/geo/baeume.geojson`, unverändert.
+- **Größe:** wo die Kronenhöhenkarte des amtlichen Oberflächenmodells reicht (`assets/intro/boni_schatten_hoehen.png`, ±46 m um den Platz), die dort gemessene Kronenhöhe; sonst 9 bis 16 m, festgelegt über die OSM-Kennung des Baums. Kronenradius 0,32 × Höhe (2 bis 6,5 m), Stammradius 0,035 × Höhe.
+- **Art:** OSM kennt hier nur „Laubbaum“. Solange das so ist, wird jedem Baum über seine Kennung eine der Baumarten der Art-Bibliothek zugeteilt (derzeit Platane und Linde) und er wird gespiegelt oder nicht. Gleiche Daten ergeben immer denselben Hain.
+- **Stamm und Krone:** aus einem Sprite, geteilt an der Zeile, in der der Umriss breiter als der Stamm wird. Ohne freigegebenes Baum-Sprite stehen dort ein schlichter Stamm und eine Kugel in derselben Größe.
+- **Licht:** eine Sonne für alles (`LICHT`: aus 73°, 45° hoch), so gewählt, dass das Licht in der Spielkamera von links oben kommt wie in den Sprites.
+- **Schatten und Luftbild:** Im Luftbild sind die Schlagschatten der echten Bäume schon enthalten. Solange das Luftbild der Boden ist, zeichnet das System deshalb nur einen Kontaktschatten unter der Krone. Den vollen Schlagschatten nach `LICHT` gibt es, wenn der Boden gezeichnet ist (Luftbild aus).
+- **Kollision:** Kreis aus Stammradius plus 0,35 m Wurzelanlauf; der Spieler gleitet daran entlang.
+- **Tiefe und Verdeckung:** Die 3D-Ansicht sortiert Stamm, Krone und Spieler nach ihrer Lage. Steht der Spieler aus Sicht der Kamera hinter einer Krone, wird nur diese Krone durchscheinend; der Stamm bleibt.
+- **Noch nicht:** Häuser und Zäune halten den Spieler nicht auf. Art, Kronenform und Stammumfang sind keine Messwerte. Der Sonnenstand des Luftbilds ist nicht ausgewertet.
+
+Bilder: `docs/art/set/welt-fahren.jpg`, `docs/art/set/welt-hinter-baum.jpg`.

@@ -24,7 +24,7 @@ export function spots(asset, geo, frame) {
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 
 /** Frames of an asset as image URLs: recoloured to the kit, enlarged with hard pixels. */
-async function frameImages(asset) {
+export async function frameImages(asset, mirror = false) {
   const img = new Image();
   img.src = new URL(asset.file, ASSETS).href;
   await img.decode();
@@ -42,15 +42,17 @@ async function frameImages(asset) {
     const c = Object.assign(document.createElement('canvas'), { width: w * scale, height: h * scale });
     const cg = c.getContext('2d');
     cg.imageSmoothingEnabled = false;
+    if (mirror) { cg.translate(c.width, 0); cg.scale(-1, 1); }
     cg.drawImage(sheet, f * w, 0, w, h, 0, 0, c.width, c.height);
     return c.toDataURL(); // a URL, so the 3D library keeps one texture per frame instead of one per swap
   });
 }
 
 /** Add every usable asset to `entities`; returns how many sprites stand in the world. */
-export async function placeLibrary({ Cesium, entities, manifest, geo, frame, pos, preview }) {
+export async function placeLibrary({ Cesium, entities, manifest, geo, frame, pos, preview, skip = () => false }) {
   let count = 0;
   for (const asset of usable(manifest, preview)) {
+    if (skip(asset)) continue; // trees and the player have systems of their own
     const frames = await frameImages(asset);
     const h = asset.worldHeight, w = (h * asset.frame.w) / asset.frame.h;
     const image = frames.length > 1 ? new Cesium.CallbackProperty(() => frames[Math.floor(performance.now() / 110) % frames.length], false) : frames[0];

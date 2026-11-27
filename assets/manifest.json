@@ -247,6 +247,34 @@
         "prompt": "docs/art/prompts/set.md"
       },
       "sha12": "a2d9eedc9635"
+    },
+    {
+      "id": "world.bonifatiusplatz.linden",
+      "kind": "world",
+      "file": "world/bonifatiusplatz/linden.png",
+      "frame": {
+        "w": 52,
+        "h": 80
+      },
+      "frames": 1,
+      "density": 2,
+      "anchor": {
+        "x": 26,
+        "y": 79
+      },
+      "worldHeight": 14,
+      "place": {
+        "layer": "baeume",
+        "match": {
+          "natural": "tree"
+        }
+      },
+      "source": {
+        "asset_id": "a7a7f747-b924-4a78-8977-ceac9e436228",
+        "model": "gemini-nano-banana-2.1",
+        "prompt": "docs/art/prompts/set.md"
+      },
+      "sha12": "1b2e4b99922e"
     }
   ]
 }

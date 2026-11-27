@@ -9,3 +9,7 @@ All three: `gemini-nano-banana-2.1`, style reference the chosen skater `9eeb43be
 | `equipment.puck` | `4e081222-5c5f-4110-aa64-0bc21348208f` | 32×32 → 36×36 | A single black inline hockey puck lying flat, seen from the side and slightly above: a short flat black cylinder with a dark grey top face, a thin lighter rim and a few small round glide pegs on top. Same chunky pixel size as the skater, about as wide as his skate. One puck only, no stick. |
 
 For an object (unlike a character, see `pilot.md`) the words "hockey" and "stick" did no harm. Intake: `tools/assets/library.mjs add …` with the options listed in the art README, section 6a.
+
+## Linden (Phase 4)
+
+`world.bonifatiusplatz.linden`, asset `a7a7f747-b924-4a78-8977-ceac9e436228`, `gemini-nano-banana-2.1`, size hint 96×128 → 80×80, style references: the plane tree and the chosen skater. Subject: a single old linden tree as found on a German city square, straight dark grey-brown trunk with a few visible roots, tall heart-shaped dense crown in two fresh greens, clearly different from a plane tree. Same closing style block.
