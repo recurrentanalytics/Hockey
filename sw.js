@@ -1,12 +1,14 @@
 // Service worker: keeps the app's own files and the CesiumJS library on the device so the app
 // starts fast. Google 3D tiles and Cesium ion requests always go to the network: their terms do
 // not allow storing them.
-const CACHE = 'boni-v2';
+const CACHE = 'boni-v3';
 const NEVER = ['tile.googleapis.com', 'api.cesium.com', 'assets.ion.cesium.com'];
 const LIBS = ['cdn.jsdelivr.net/npm/cesium@'];
+// the game itself (generated list: tools/app/precache.cjs) so test.html and index.html run offline
+importScripts('sw-files.js');
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', 'intro.html', 'index.html', 'manifest.webmanifest', 'css/style.css'])).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE.map((f) => new Request(f, { cache: 'reload' }))).catch(() => c.addAll(['./', 'index.html']))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
