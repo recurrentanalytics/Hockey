@@ -1,6 +1,7 @@
 // Trees of a place: every mapped tree becomes a trunk and a canopy with a ground shadow, a size,
 // a species and a collision circle. Everything follows from the geodata and fixed rules, so the
 // same data always gives the same grove. Pure rules first (tested under Node), drawing below.
+import { ladeBild } from './bild.js';
 
 /** One light for the whole world. Compass direction the sun shines from, and its elevation.
  *  Chosen so that in the game camera (looking 118°) light comes from the upper left, as in the art. */
@@ -21,27 +22,58 @@ export const platzmeter = (frame, [e, n]) => {
   return [de * frame.achse_a[0] + dn * frame.achse_a[1], de * frame.achse_b[0] + dn * frame.achse_b[1]];
 };
 
+/** Crown tops in the canopy survey: local maxima of at least `mindest` metres, one per `radius` metres. */
+export function kronengipfel(kronenhoehe, bereich = { a: [-46, 46], b: [-41.4, 41.6], schritt: 0.5 }, mindest = 7, radius = 3) {
+  const gipfel = [], s = bereich.schritt, n = Math.round(radius / s);
+  for (let j = 0; bereich.b[0] + j * s <= bereich.b[1]; j++) for (let i = 0; bereich.a[0] + i * s <= bereich.a[1]; i++) {
+    const a = bereich.a[0] + i * s, b = bereich.b[0] + j * s, v = kronenhoehe(a, b) ?? 0;
+    if (v < mindest) continue;
+    let oben = true;
+    for (let dj = -n; dj <= n && oben; dj++) for (let di = -n; di <= n; di++) {
+      const u = kronenhoehe(a + di * s, b + dj * s) ?? 0;
+      if (u > v || (u === v && (dj < 0 || (dj === 0 && di < 0)))) { oben = false; break; } // ties: the first cell wins
+    }
+    if (oben) gipfel.push([Math.round(a * 100) / 100, Math.round(b * 100) / 100, v]);
+  }
+  return gipfel;
+}
+
+function eintrag(id, en, ab, gemessen, arten, benannt, standort) {
+  const hoehe = gemessen >= 4 ? gemessen : 9 + 7 * streuung(id, 'hoehe');
+  const art = benannt ?? (arten.length ? arten[Math.floor(streuung(id, 'art') * arten.length)] : null);
+  return {
+    id, en, ab, standort, hoehe: Math.round(hoehe * 10) / 10, hoeheQuelle: gemessen >= 4 ? 'Oberflächenmodell' : 'angenommen',
+    krone: Math.round(Math.min(6.5, Math.max(2, 0.32 * hoehe)) * 10) / 10,   // crown radius, m
+    stamm: Math.round(Math.min(0.6, Math.max(0.2, 0.035 * hoehe)) * 100) / 100, // trunk radius, m
+    art: art?.id ?? null, artQuelle: benannt ? 'kartiert' : art ? 'zugeteilt' : null, spiegeln: streuung(id, 'spiegel') < 0.5,
+  };
+}
+
 /**
- * The grove: one record per mapped tree, sorted by id.
+ * The grove: one record per mapped tree, plus (with `ableiten`) one per crown top of the canopy survey
+ * that has no mapped tree within 5 m. Sorted by id.
  * `kronenhoehe(a, b)` returns the measured canopy height at court metres, or null outside the survey.
  * Size: the measured canopy height where the survey covers the tree, otherwise 9 to 16 m by the tree's id.
  * Species: the mapped one if the data has it, otherwise one of `arten` by the tree's id.
+ * `ableiten`: { bereich?, sperre?(a, b) } - sperre keeps derived trees out of places no tree can stand (the court).
  */
-export function hain(features, frame, arten = [], kronenhoehe = () => null) {
-  return features.filter((f) => f.geometry.type === 'Point' && f.properties.natural === 'tree').map((f) => {
+export function hain(features, frame, arten = [], kronenhoehe = () => null, ableiten = null) {
+  const baeume = features.filter((f) => f.geometry.type === 'Point' && f.properties.natural === 'tree').map((f) => {
     const id = f.properties.osm, ab = platzmeter(frame, f.geometry.coordinates);
     let gemessen = 0;
     for (let da = -2.5; da <= 2.5; da += 0.5) for (let db = -2.5; db <= 2.5; db += 0.5) gemessen = Math.max(gemessen, kronenhoehe(ab[0] + da, ab[1] + db) ?? 0);
-    const hoehe = gemessen >= 4 ? gemessen : 9 + 7 * streuung(id, 'hoehe');
     const benannt = arten.find((a) => a.species && [f.properties.species, f.properties.genus, f.properties['species:de']].includes(a.species));
-    const art = benannt ?? (arten.length ? arten[Math.floor(streuung(id, 'art') * arten.length)] : null);
-    return {
-      id, en: f.geometry.coordinates, ab, hoehe: Math.round(hoehe * 10) / 10, hoeheQuelle: gemessen >= 4 ? 'Oberflächenmodell' : 'angenommen',
-      krone: Math.round(Math.min(6.5, Math.max(2, 0.32 * hoehe)) * 10) / 10,   // crown radius, m
-      stamm: Math.round(Math.min(0.6, Math.max(0.2, 0.035 * hoehe)) * 100) / 100, // trunk radius, m
-      art: art?.id ?? null, artQuelle: benannt ? 'kartiert' : art ? 'zugeteilt' : null, spiegeln: streuung(id, 'spiegel') < 0.5,
-    };
-  }).sort((x, y) => (x.id < y.id ? -1 : 1));
+    return eintrag(id, f.geometry.coordinates, ab, gemessen, arten, benannt, 'kartiert');
+  });
+  if (ableiten) {
+    const [e0, n0] = frame.ursprung_utm32, A = frame.achse_a, B = frame.achse_b;
+    for (const [a, b, v] of kronengipfel(kronenhoehe, ableiten.bereich)) {
+      if (ableiten.sperre?.(a, b) || baeume.some((t) => Math.hypot(t.ab[0] - a, t.ab[1] - b) < 5)) continue;
+      const en = [Math.round((e0 + a * A[0] + b * B[0]) * 100) / 100, Math.round((n0 + a * A[1] + b * B[1]) * 100) / 100];
+      baeume.push(eintrag(`dom/${a.toFixed(1)}_${b.toFixed(1)}`, en, [a, b], v, arten, null, 'abgeleitet'));
+    }
+  }
+  return baeume.sort((x, y) => (x.id < y.id ? -1 : 1));
 }
 
 /** Collision: trunk plus root flare. Returns the position pushed out of every trunk it touches. */
@@ -79,7 +111,7 @@ export function schatten(t, frame, fotoBoden, licht = LICHT) {
 /** Canopy heights from the place's survey raster (red = height in 0.2 m steps; 0.5 m cells in court metres). */
 export async function kronenkarte(url, a0 = -46, b0 = -41.4, zelle = 0.5) {
   try {
-    const img = new Image(); img.src = url; await img.decode();
+    const img = await ladeBild(url);
     const c = Object.assign(document.createElement('canvas'), { width: img.width, height: img.height });
     const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0);
     const d = g.getImageData(0, 0, c.width, c.height).data;
@@ -89,7 +121,7 @@ export async function kronenkarte(url, a0 = -46, b0 = -41.4, zelle = 0.5) {
 
 /** Split a tree sprite into trunk and canopy pictures of the full frame: the canopy starts where the outline widens. */
 export async function baumbilder(asset, base) {
-  const img = new Image(); img.src = new URL(asset.file, base).href; await img.decode();
+  const img = await ladeBild(new URL(asset.file, base).href);
   const { w, h } = asset.frame, scale = Math.max(1, Math.round(256 / h));
   const src = Object.assign(document.createElement('canvas'), { width: w, height: h });
   const sg = src.getContext('2d', { willReadFrequently: true }); sg.drawImage(img, 0, 0);
@@ -120,7 +152,7 @@ export async function pflanze({ Cesium, entities, baeume, bilder, frame, pos, fo
     const s = schatten(t, frame, fotoBoden), quer = [-s.richtung[1], s.richtung[0]];
     const rand = Array.from({ length: 20 }, (_, k) => { const w = (k / 20) * 2 * Math.PI, l = Math.cos(w) * s.laengs, q = Math.sin(w) * s.quer; return pos(zuGitter([s.mitte[0] + s.richtung[0] * l + quer[0] * q, s.mitte[1] + s.richtung[1] * l + quer[1] * q]), 0.12); });
     entities.add({ polygon: { hierarchy: rand, perPositionHeight: true, material: Cesium.Color.fromCssColorString('#10160f').withAlpha(s.deckung) } });
-    const text = `Baum ${t.id}\nHöhe ${t.hoehe} m (${t.hoeheQuelle}), Krone ${t.krone} m, Stamm ${t.stamm} m\nArt: ${t.art ?? 'ohne Sprite'}${t.artQuelle ? ' (' + t.artQuelle + ')' : ''}`;
+    const text = `Baum ${t.id} (Standort ${t.standort}${t.standort === 'abgeleitet' ? ' aus der Kronenhöhenkarte, Stamm ungefähr' : ''})\nHöhe ${t.hoehe} m (${t.hoeheQuelle}), Krone ${t.krone} m, Stamm ${t.stamm} m\nArt: ${t.art ?? 'ohne Sprite'}${t.artQuelle ? ' (' + t.artQuelle + ')' : ''}`;
     const b = t.art && bilder[t.art];
     if (b) {
       const seite = t.spiegeln ? 1 : 0, mass = { sizeInMeters: true, width: t.hoehe * b.seiten, height: t.hoehe, verticalOrigin: Cesium.VerticalOrigin.BOTTOM };

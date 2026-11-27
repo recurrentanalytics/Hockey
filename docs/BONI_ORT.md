@@ -159,6 +159,8 @@ Bilder: `docs/ort/boni_welt_schraeg.jpg`, `boni_welt_platz.jpg`, `boni_welt_spie
 In `welt.html` steht auf jedem in OSM kartierten Baumstandort ein Baum aus Stamm und Krone mit Bodenschatten; mit „Losfahren“ steuert man den Spieler aus der Art-Bibliothek hindurch (Pfeiltasten oder WASD, oder auf den Boden tippen; die Kamera folgt im Blickwinkel des Spiels).
 
 - **Standort:** die Punkte aus `locations/boni/geo/baeume.geojson`, unverändert.
+- **Abgeleitete Bäume:** OSM kennt am Platz nur einen Teil der Bäume (11 von grob 36 Kronen im vermessenen Bereich). Jeder Kronengipfel der Höhenkarte ab 7 m, der keinen kartierten Baum im Umkreis von 5 m hat und nicht über dem Bolzplatz liegt, wird deshalb ein weiterer Baum (`standort: 'abgeleitet'`, Kennung `dom/<a>_<b>`, derzeit 32). Sein Stamm steht am Gipfel der Krone, also nur ungefähr richtig. Außerhalb der Höhenkarte (46 m um den Platz) gibt es weiter nur die kartierten Bäume.
+- **Fotografierte Bäume:** Unter jeder gezeichneten Krone ersetzt der Pixel-Boden das Foto durch den Bodenton, der direkt außerhalb der Krone liegt, damit kein Baum unter dem Baum liegt (`pixelboden.js`). Außerhalb des Pixel-Bodens und in den Google-3D-Kacheln bleiben die echten Bäume sichtbar.
 - **Größe:** wo die Kronenhöhenkarte des amtlichen Oberflächenmodells reicht (`assets/intro/boni_schatten_hoehen.png`, ±46 m um den Platz), die dort gemessene Kronenhöhe; sonst 9 bis 16 m, festgelegt über die OSM-Kennung des Baums. Kronenradius 0,32 × Höhe (2 bis 6,5 m), Stammradius 0,035 × Höhe.
 - **Art:** OSM kennt hier nur „Laubbaum“. Solange das so ist, wird jedem Baum über seine Kennung eine der Baumarten der Art-Bibliothek zugeteilt (derzeit Platane und Linde) und er wird gespiegelt oder nicht. Gleiche Daten ergeben immer denselben Hain.
 - **Stamm und Krone:** aus einem Sprite, geteilt an der Zeile, in der der Umriss breiter als der Stamm wird. Ohne freigegebenes Baum-Sprite stehen dort ein schlichter Stamm und eine Kugel in derselben Größe.
@@ -201,3 +203,5 @@ Bilder: `docs/ort/boni_hybrid_platz.jpg`, `docs/ort/boni_hybrid_viertel.png` (Lu
 Bild: `docs/ort/boni_viertel_strasse.jpg`.
 
 Bild mit dem Platzmodell des Intros in der Weltansicht: `docs/ort/boni_welt_introplatz.jpg`.
+
+**Abhängigkeit vom LGLN-Dienst:** Luftbild und Pixel-Boden werden bei jedem Aufruf live vom WMS des LGLN geholt. Antwortet der Dienst nicht (am 27.11.2026 zeitweise HTTP 503 für alle Dienste, möglicherweise nach vielen Testabrufen von diesem Rechner), steht die Welt ohne Boden da; Bäume, Häuser und Spieler funktionieren weiter. Eine im Repository abgelegte Kopie des Luftbilds für den Ausschnitt würde das beheben und steht noch aus.

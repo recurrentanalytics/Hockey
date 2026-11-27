@@ -3,6 +3,7 @@
 // with ordered dithering, outlined along the real mapped edges, and dissolved into the untouched
 // photo with a dithered mask that follows the court and the square. Geometry is never moved: the
 // picture keeps the photo's own georeference, outlines are the survey's own lines.
+import { ladeBild } from './bild.js';
 import { toUtm32, fromUtm32 } from './utm.js';
 
 /** Warm palette of the art standard (docs/art/README.md), plus the greys and browns the square needs. */
@@ -57,14 +58,12 @@ const mercator = (lon, lat) => [(lon * 20037508.342789244) / 180, (Math.log(Math
  * Build the pixel ground. `linien`: rings/lines in court metres to outline; `platzRing`: the square's outline in court metres.
  * Returns { url, west, south, east, north, px } for a single image laid on the globe.
  */
-export async function pixelboden({ frame, linien = [], platzRing = null, halb = 130, px = 1040, wms }) {
+export async function pixelboden({ frame, linien = [], platzRing = null, baeume = [], halb = 130, px = 1040, wms }) {
   const [e0, n0] = frame.ursprung_utm32, A = frame.achse_a, B = frame.achse_b;
   const [lon, lat] = fromUtm32(e0, n0), dLat = halb / 111320, dLon = halb / (111320 * Math.cos((lat * Math.PI) / 180));
   const west = lon - dLon, east = lon + dLon, south = lat - dLat, north = lat + dLat;
   const [x0, y0] = mercator(west, south), [x1, y1] = mercator(east, north);
-  const img = new Image(); img.crossOrigin = 'anonymous';
-  img.src = `${wms}&CRS=EPSG:3857&BBOX=${x0},${y0},${x1},${y1}&WIDTH=${px}&HEIGHT=${px}&FORMAT=image/jpeg`;
-  await img.decode();
+  const img = await ladeBild(`${wms}&CRS=EPSG:3857&BBOX=${x0},${y0},${x1},${y1}&WIDTH=${px}&HEIGHT=${px}&FORMAT=image/jpeg`, true);
   const c = Object.assign(document.createElement('canvas'), { width: px, height: px });
   const g = c.getContext('2d', { willReadFrequently: true });
   g.filter = 'blur(0.8px)';                     // edge simplification: small detail goes before the palette does
@@ -81,6 +80,17 @@ export async function pixelboden({ frame, linien = [], platzRing = null, halb = 
   lg.strokeStyle = '#000'; lg.lineWidth = 1.6; lg.lineJoin = 'round';
   for (const linie of linien) { lg.beginPath(); linie.forEach((p, i) => { const [x, y] = zuBild(p); i ? lg.lineTo(x, y) : lg.moveTo(x, y); }); lg.stroke(); }
   const kante = lg.getImageData(0, 0, px, px).data;
+  // The photo shows the real trees as bare crowns and shadows on the ground. Where a drawn tree stands,
+  // that patch is replaced by the ground colour found just outside its crown, so no tree lies under the tree.
+  const kronen = baeume.filter((t) => Math.abs(t.ab[0]) < halb * 1.5 && Math.abs(t.ab[1]) < halb * 1.5).map((t) => {
+    const r = t.krone * 1.05, c = [0, 0, 0]; let n = 0;
+    for (const f of [1.25, 1.55]) for (let k = 0; k < 16; k++) {
+      const [x, y] = zuBild([t.ab[0] + Math.cos((k / 16) * 2 * Math.PI) * r * f, t.ab[1] + Math.sin((k / 16) * 2 * Math.PI) * r * f]).map(Math.round);
+      if (x < 0 || y < 0 || x >= px || y >= px) continue;
+      const i = (y * px + x) * 4; c[0] += d[i]; c[1] += d[i + 1]; c[2] += d[i + 2]; n++;
+    }
+    return n ? { a: t.ab[0], b: t.ab[1], r, c: c.map((v) => v / n) } : null;
+  }).filter(Boolean);
   const umriss = PALETTE[0];
   for (let y = 0; y < px; y++) for (let x = 0; x < px; x++) {
     const i = (y * px + x) * 4, [a, b] = ort(x, y);
@@ -88,6 +98,10 @@ export async function pixelboden({ frame, linien = [], platzRing = null, halb = 
     // the dissolve is itself dithered, on 2 x 2 cells so the stipple reads as pixels, not as noise
     if (m <= schwelle(x >> 1, y >> 1)) { d[i + 3] = 0; continue; }
     if (kante[i + 3] > 110 && m > 0.45) { d[i] = umriss[0]; d[i + 1] = umriss[1]; d[i + 2] = umriss[2]; d[i + 3] = 255; continue; }
+    for (const k of kronen) {
+      const weg = Math.hypot(a - k.a, b - k.b);
+      if (weg < k.r) { const w = Math.min(1, (k.r - weg) / (k.r * 0.35)); d[i] += (k.c[0] - d[i]) * w; d[i + 1] += (k.c[1] - d[i + 1]) * w; d[i + 2] += (k.c[2] - d[i + 2]) * w; }
+    }
     const t = (schwelle(x, y) - 0.5) * 26;      // ordered dither between neighbouring palette colours
     const aufPlatz = Math.abs(a) <= 12.6 && Math.abs(b) <= 9;
     const strich = aufPlatz ? markierung(a, b, (2 * halb) / px) : null;

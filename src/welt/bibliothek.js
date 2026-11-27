@@ -6,6 +6,7 @@
 const ASSETS = new URL('../../assets/', import.meta.url);
 // The Borstentiere kit (docs/art/README.md) for sprites that carry team colours
 export const KIT = { main: '#1b4a2e', shade: '#0d2c1b', trim: '#ecd9a4', trimShade: '#b8460f', helmet: '#245a38', helmetShade: '#12331f', pants: '#2e2118', pantsShade: '#1a120c' };
+import { ladeBild } from './bild.js';
 
 export const usable = (manifest, preview) => manifest.assets.filter((a) => (a.approved || preview) && a.place && a.worldHeight);
 
@@ -25,9 +26,7 @@ const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 
 /** Frames of an asset as image URLs: recoloured to the kit, enlarged with hard pixels. */
 export async function frameImages(asset, mirror = false) {
-  const img = new Image();
-  img.src = new URL(asset.file, ASSETS).href;
-  await img.decode();
+  const img = await ladeBild(new URL(asset.file, ASSETS).href);
   const { w, h } = asset.frame, n = asset.frames ?? 1, scale = Math.max(1, Math.round(256 / h));
   const sheet = Object.assign(document.createElement('canvas'), { width: w * n, height: h });
   const g = sheet.getContext('2d', { willReadFrequently: true });

@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { hain, ausweichen, verdeckt, schatten, streuung, LICHT } from '../src/welt/baeume.js';
+import { hain, kronengipfel, ausweichen, verdeckt, schatten, streuung, LICHT } from '../src/welt/baeume.js';
 import { schritt, TEMPO } from '../src/welt/spieler.js';
 
 const json = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -54,4 +54,19 @@ test('shadows: one light for all; on the aerial photo only a contact shadow, on 
   assert.ok(Math.abs(wurf - (12 * 0.6) / Math.tan((LICHT.hoehe * Math.PI) / 180)) < 1e-3);
   const other = schatten({ ab: [50, -20], krone: 3, hoehe: 9 }, frame, false);
   assert.ok(Math.abs(other.richtung[0] - gezeichnet.richtung[0]) < 1e-12 && Math.abs(other.richtung[1] - gezeichnet.richtung[1]) < 1e-12);
+});
+
+test('grove: crowns the survey shows without a mapped tree become derived trees, except near mapped trees and on the court', () => {
+  // three crowns: one free (20, 20), one on the court (2, 1), one right at the first mapped tree
+  const erster = hain(features.slice(0, 1), frame, arten)[0].ab;
+  const huegel = [[20, 20, 12], [2, 1, 11], [erster[0] + 1, erster[1], 13]];
+  const karte = (a, b) => Math.max(0, ...huegel.map(([ha, hb, h]) => h - 1.5 * Math.hypot(a - ha, b - hb)));
+  const bereich = { a: [-46, 46], b: [-41.4, 41.6], schritt: 0.5 };
+  const gipfel = kronengipfel(karte, bereich);
+  assert.ok(gipfel.some(([a, b]) => Math.hypot(a - 20, b - 20) < 0.5) && gipfel.some(([a, b]) => Math.hypot(a - 2, b - 1) < 0.5));
+  const alle = hain(features.slice(0, 1), frame, arten, karte, { bereich, sperre: (a, b) => Math.abs(a) < 13.4 && Math.abs(b) < 9.8 });
+  const neu = alle.filter((t) => t.standort === 'abgeleitet');
+  assert.equal(neu.length, 1, 'only the free crown becomes a tree');
+  assert.ok(Math.hypot(neu[0].ab[0] - 20, neu[0].ab[1] - 20) < 0.5 && neu[0].hoeheQuelle === 'Oberflächenmodell' && neu[0].id.startsWith('dom/'));
+  assert.deepEqual(alle, hain(features.slice(0, 1), frame, arten, karte, { bereich, sperre: (a, b) => Math.abs(a) < 13.4 && Math.abs(b) < 9.8 }));
 });

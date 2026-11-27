@@ -63,7 +63,9 @@ async function main() {
   // The grove: size from the canopy survey where it reaches, species and mirroring by the tree's id (baeume.js)
   const ASSETS = new URL('../../assets/', import.meta.url);
   const baumArten = usable(manifest, preview).filter((a) => a.place.layer === 'baeume');
-  const baumListe = hain(baeume.features, frame, baumArten, await kronenkarte(new URL('intro/boni_schatten_hoehen.png', ASSETS).href));
+  // mapped trees, plus the crowns the canopy survey shows where OSM has no tree (not on the court itself)
+  const baumListe = hain(baeume.features, frame, baumArten, await kronenkarte(new URL('intro/boni_schatten_hoehen.png', ASSETS).href),
+    { sperre: (a, b) => Math.abs(a) < 13.4 && Math.abs(b) < 9.8 });
   const baumBilder = Object.fromEntries(await Promise.all(baumArten.map(async (a) => [a.id, await baumbilder(a, ASSETS)])));
   const figur = manifest.assets.find((a) => a.id === 'character.skater.stride' && (a.approved || preview));
   const figurBilder = figur ? { rechts: await frameImages(figur), links: await frameImages(figur, true), seiten: figur.frame.w / figur.frame.h } : null;
@@ -105,7 +107,7 @@ async function main() {
     ...nutzung.features.filter((f) => f.properties.nutzart === 'Weg' && f.geometry.type === 'Polygon').map((f) => inMetern(f.geometry.coordinates[0])),
   ].filter(nah);
   let pixelLayer = null;
-  pixelboden({ frame, linien: umrisse, platzRing: platzFlaeche ? inMetern(platzFlaeche.geometry.coordinates[0]) : null,
+  pixelboden({ frame, baeume: baumListe, linien: umrisse, platzRing: platzFlaeche ? inMetern(platzFlaeche.geometry.coordinates[0]) : null,
     wms: `${LGLN}dop_wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=ni_dop20&STYLES=` }).then((b) => {
     pixelLayer = new Cesium.ImageryLayer(new Cesium.SingleTileImageryProvider({ url: b.url, rectangle: Cesium.Rectangle.fromDegrees(b.west, b.south, b.east, b.north), tileWidth: b.px, tileHeight: b.px }),
       { magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST, minificationFilter: Cesium.TextureMinificationFilter.NEAREST });
