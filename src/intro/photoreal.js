@@ -196,7 +196,70 @@ export async function run({ token, cesiumBase }) {
   // the floor (asphalt, mulch) is a model of its own: environment.js lights it by sun and weather
   const floorModel = await Cesium.Model.fromGltfAsync({ url: new URL('../../assets/intro/boni_boden.glb', import.meta.url).href, modelMatrix: courtMatrix(), show: false, forwardAxis: Cesium.Axis.X });
   scene.primitives.add(floorModel);
-  const env = createEnvironment({ Cesium, viewer, ground: floorModel });
+  // real shadows on the court: invisible casters for every tree and house around it (LGLN surface
+  // model, tools/intro/shadow_casters.py), the fence and goals cast and receive, the floor receives;
+  // the Google mesh keeps its baked light and takes no part
+  const casters = await Cesium.Model.fromGltfAsync({ url: new URL('../../assets/intro/boni_schatten.glb', import.meta.url).href, modelMatrix: courtMatrix(), forwardAxis: Cesium.Axis.X, shadows: Cesium.ShadowMode.CAST_ONLY });
+  // never drawn, only rendered into the shadow map (Cesium compiles that pass with SHADOW_MAP defined)
+  casters.customShader = new Cesium.CustomShader({ fragmentShaderText: `
+    void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+      #ifndef SHADOW_MAP
+      discard;
+      #endif
+    }` });
+  scene.primitives.add(casters);
+  court.shadows = Cesium.ShadowMode.ENABLED;
+  floorModel.shadows = Cesium.ShadowMode.RECEIVE_ONLY;
+  tileset.shadows = Cesium.ShadowMode.DISABLED;
+  viewer.shadows = true;
+  scene.shadowMap.softShadows = true;
+  scene.shadowMap.size = MOBILE ? 2048 : 4096;
+  // the shadow map only has to cover the court: keep its range tight for crisp, unstepped edges
+  scene.preRender.addEventListener(() => { scene.shadowMap.maximumDistance = Cesium.Cartesian3.distance(camera.positionWC, frame.at(0, 0)) + 30; });
+  // the pixel figures' shadows follow the sun too (direction in game metres per metre of height)
+  // and only where the sun reaches them: the canopy's height map (same source as the casters) is
+  // traced towards the sun from each figure
+  let crowns = null;
+  {
+    const img = new Image(); img.src = new URL('../../assets/intro/boni_schatten_hoehen.png', import.meta.url).href;
+    img.decode().then(() => {
+      const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+      const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height).data, h = new Float32Array(c.width * c.height);
+      for (let i = 0; i < h.length; i++) h[i] = d[i * 4] * 0.2;
+      crowns = { w: c.width, h: c.height, z: h };
+    }).catch(() => {});
+  }
+  const R = 46, STEP = 0.5;
+  const crownAt = (a, b) => {
+    const i = Math.round((a + R) / STEP), j = Math.round((b + R * 0.9) / STEP);
+    return i < 0 || j < 0 || i >= crowns.w || j >= crowns.h ? 0 : crowns.z[j * crowns.w + i];
+  };
+  let sunShadow = null;
+  const setSunShadow = (v) => {
+    if (!v || v.sunlit < 0.04 || v.sun.alt < 1) { sunShadow = null; }
+    else {
+      const az = (v.sun.az * Math.PI) / 180, k = Math.min(4, 1 / Math.tan((Math.max(v.sun.alt, 8) * Math.PI) / 180));
+      const dE = -Math.sin(az), dN = -Math.cos(az);           // away from the sun
+      const a = dE * frame.u.x + dN * frame.u.y, b = dE * frame.v.x + dN * frame.v.y;
+      const rise = Math.tan((v.sun.alt * Math.PI) / 180);
+      sunShadow = {
+        x: a * k, y: -b * k, alpha: 0.22 + 0.33 * v.sunlit,
+        /** 0 in the shade of a tree or house … 1 in full sun, for a figure at game position (x, y) */
+        lit(x, y) {
+          if (!crowns) return 1;
+          let hit = 0;
+          for (let t = 0.5, n = 0; t < 45; t += 0.5, n++) {
+            const z = crownAt(x - a * t, -y - b * t);
+            if (z > 0.9 + t * rise) { hit += 1; if (hit > 1) return 0; }
+          }
+          return hit ? 0.5 : 1;
+        },
+      };
+    }
+    if (globalThis.BONI_3D) globalThis.BONI_3D.shadow = sunShadow;
+  };
+  const env = createEnvironment({ Cesium, viewer, ground: floorModel, onChange: (st) => setSunShadow(st.visuals) });
   let rinkAlpha = 0;
 
   // ---------------------------------------------------------------- see-through trees
@@ -346,7 +409,7 @@ export async function run({ token, cesiumBase }) {
     await loaded();
     try {
       const [p] = await scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(...COURT.center)]);
-      if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = floorModel.modelMatrix = courtMatrix(); }
+      if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = floorModel.modelMatrix = casters.modelMatrix = courtMatrix(); }
     } catch { /* keep the measured default */ }
     await loaded();
   }
@@ -404,6 +467,7 @@ export async function run({ token, cesiumBase }) {
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // final view drawn → matrix ready
     globalThis.BONI_3D = {
       toCss,
+      shadow: sunShadow,
       // called by the game on a goal (src/scenes/rink.js)
       onGoal() {
         if (orbit || RECORD_MODE) return;
@@ -418,6 +482,7 @@ export async function run({ token, cesiumBase }) {
   };
   window.introDebug.startGame = startGame;
   window.introDebug.env = env;
+  window.introDebug.viewer = viewer;
 
   // settle into request-render mode once the flight is over (and wake up again for a replay)
   const RECORD = new URLSearchParams(location.search).has('record');

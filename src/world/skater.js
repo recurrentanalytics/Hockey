@@ -324,10 +324,17 @@ export class Skater {
   drawShadow(ctx, ox, oy) {
     const p = project(this.pos.x, this.pos.y);
     hd(ctx, () => {
-      if (FIXED) {
-        // on the real court: a long soft shadow cast towards the lower right, like the trees' shadows
-        ctx.save(); ctx.globalAlpha = 0.45;
-        ctx.drawImage(softShadow(), Math.round((p.x + ox) * RES) - 8, Math.round((p.y + oy) * RES) - 2, 46, 11);
+      const sun = FIXED && globalThis.BONI_3D?.shadow;
+      // in sunshine (not under the trees): checked a few times a second, eased so it never flickers
+      if (sun && (this.litAt = (this.litAt ?? 0) - 1) <= 0) { this.litAt = 8; this.litGoal = sun.lit(this.pos.x, this.pos.y); }
+      this.lit = sun ? (this.lit ?? 1) + ((this.litGoal ?? 1) - (this.lit ?? 1)) * 0.2 : 0;
+      if (sun && this.lit > 0.02) {
+        // on the real court: a shadow thrown away from the sun, as long as the sun is low
+        const e = project(this.pos.x + sun.x * 1.25, this.pos.y + sun.y * 1.25);
+        const dx = (e.x - p.x) * RES, dy = (e.y - p.y) * RES, len = Math.hypot(dx, dy);
+        ctx.save(); ctx.globalAlpha = sun.alpha * this.lit;
+        ctx.translate(Math.round((p.x + ox) * RES), Math.round((p.y + oy) * RES)); ctx.rotate(Math.atan2(dy, dx));
+        ctx.drawImage(softShadow(), -4, -5, len + 10, 10);
         ctx.restore();
       }
       ctx.drawImage(softShadow(), Math.round((p.x + ox) * RES) - 15, Math.round((p.y + oy) * RES) - 4);

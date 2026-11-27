@@ -103,6 +103,7 @@ export function createEnvironment({ Cesium, viewer, ground, onChange }) {
       u_warm: { type: Cesium.UniformType.FLOAT, value: 0 },
       u_wet: { type: Cesium.UniformType.FLOAT, value: 0 },
       u_snow: { type: Cesium.UniformType.FLOAT, value: 0 },
+      u_night: { type: Cesium.UniformType.FLOAT, value: 0 },
     },
     fragmentShaderText: `
       void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
@@ -110,7 +111,13 @@ export function createEnvironment({ Cesium, viewer, ground, onChange }) {
         float f = texture(u_flecks, fract(uv + u_shift)).r;
         vec3 c = material.diffuse;
         vec3 light = mix(vec3(0.66, 0.6, 0.46), vec3(0.85, 0.55, 0.25), u_warm);
-        c *= 1.0 + f * u_sun * light;
+        // real tree shadows come from the shadow map; the mask only adds the light that falls between the leaves
+        c *= mix(1.0, 0.8, u_sun) * (1.0 + f * u_sun * light * 0.45);
+        // at night two street lamps by the fence light the court in warm pools
+        vec2 q = vec2(uv.x * 1.4, uv.y);
+        vec2 l1 = q - vec2(0.38, 0.95), l2 = q - vec2(1.02, 0.95);
+        float pool = (exp(-dot(l1, l1) * 20.0) + exp(-dot(l2, l2) * 20.0)) * u_night;
+        c = c * (1.0 + pool * 3.5) + vec3(1.0, 0.7, 0.35) * pool * 0.5;
         c = mix(c, c * 0.58 + vec3(0.05, 0.06, 0.08), u_wet);
         float n = fract(sin(dot(floor(uv * 420.0), vec2(12.9898, 78.233))) * 43758.5453);
         c = mix(c, vec3(0.93, 0.95, 0.98) - n * 0.07, u_snow);
@@ -161,6 +168,10 @@ export function createEnvironment({ Cesium, viewer, ground, onChange }) {
     floor.setUniform('u_warm', v.golden);
     floor.setUniform('u_wet', v.wet);
     floor.setUniform('u_snow', v.snow);
+    floor.setUniform('u_night', 1 - v.day);
+    // shadows: crisp and deep in sunshine, gone under clouds and at night
+    viewer.shadows = v.sunlit > 0.04;
+    viewer.scene.shadowMap.darkness = 1 - 0.4 * Math.min(1, v.sunlit * 1.2);
     falling = v.falling; amount = v.precip;
     // the pixel figures get the same light
     const screen = document.getElementById('screen');

@@ -57,6 +57,8 @@ Bild: `docs/ort/boni_bolzplatz_grundriss.jpg` (Luftbild © GeoBasis-DE / LGLN, C
 - **Ohne Token** oder wenn das Laden scheitert, läuft die Luftbild-Version unten.
 - **Bekannte Eigenheit:** Im Google-Modell überdecken die Baumkronen den Platz großteils. Das Spiel zeichnet Feld, Banden und Tore ohnehin selbst über diese Stelle.
 - **Vorschauvideo in der Entwicklungsumgebung:** `CESIUM_DIR=<node_modules/cesium/Build/Cesium> node tools/intro/record.cjs <ordner> 960 540 20 proxy` (der Token kommt dort vom Netzwerk-Proxy).
+- **Echte Schatten:** `tools/intro/shadow_casters.py` baut aus dem amtlichen Höhenmodell (DOM1 minus DGM1, ALKIS-Gebäude, LGLN CC BY 4.0) eine unsichtbare, weichgezeichnete Kronen- und Dachfläche im Umkreis von 46 m: `assets/intro/boni_schatten.glb`. Sie wird nur in die Schattenkarte gezeichnet. Bäume und Häuser werfen so beim echten Sonnenstand Schatten auf den Platz; Zaun und Tore werfen und empfangen Schatten. Das Google-Modell behält sein eingebranntes Licht. Dieselben Höhen als kleine Karte (`boni_schatten_hoehen.png`) sagen dem Spiel, ob eine Figur in der Sonne steht; nur dann wirft sie einen Sonnenschatten. Bei Wolken und nachts sind die Schatten aus, nachts leuchten zwei Laternenkegel.
+  Neu erzeugen: `python3 tools/intro/shadow_casters.py hoehe.png gebaeude.png assets/intro/boni_schatten.glb` (Rasterbilder aus dem LGLN-WMS wie bei `boni_hoehe.png`).
 
 ### Rückfallebene: Luftbild-Version (`src/intro/aerial.js`)
 
