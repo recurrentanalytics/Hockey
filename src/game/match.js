@@ -716,9 +716,15 @@ export class Match {
   checkGoal() {
     if (this.state !== 'play') return false;
     const p = this.puck;
+    p.mouth ??= {};
     for (const side of [-1, 1]) {
       const depth = side * p.pos.x;
-      if (depth > RINK.goalLineX + p.radius && depth < RINK.goalLineX + GOAL.depth && Math.abs(p.pos.y) < HW && p.z < GOAL.height) {
+      // Only a ball that enters through the goal mouth counts: remember whether it last came from
+      // in front of the goal line between the posts, or from beside or behind the net.
+      const ay = Math.abs(p.pos.y);
+      if (depth <= RINK.goalLineX && ay < HW + 0.3) p.mouth[side] = true;
+      else if (depth > RINK.goalLineX && (ay >= HW || depth >= RINK.goalLineX + GOAL.depth)) p.mouth[side] = false;
+      if (p.mouth[side] && depth > RINK.goalLineX + p.radius && depth < RINK.goalLineX + GOAL.depth && ay < HW && p.z < GOAL.height) {
         // The team shooting at this net scores (teams change ends between periods).
         const scorer = this.sides.home.attack === side ? 'home' : 'away';
         const counts = this.ref?.phase !== 'shootout';

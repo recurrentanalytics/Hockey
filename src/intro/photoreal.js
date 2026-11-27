@@ -13,6 +13,8 @@ const COURT = {
   long: 25.2, // metres, side A–D
 };
 const Q = new URLSearchParams(location.search);
+// ?quick: test mode, no flight and no tap: straight into the game on the real court
+const QUICK = Q.has('quick');
 const FINAL_HEADING = ((+Q.get('heading') || 118.2) * Math.PI) / 180; // view direction A→B, clockwise from north
 const FINAL_TILT = ((+Q.get('tilt') || 60) * Math.PI) / 180;            // 60° from vertical, like PROJ {x:16, y:8}
 
@@ -324,7 +326,7 @@ export async function run({ token, cesiumBase }) {
     if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = courtMatrix(); }
   } catch { /* keep the estimate */ }
   await loaded();
-  const stops = [23.2, 19.2, 13.8, 10.2, 0];
+  const stops = QUICK ? [] : [23.2, 19.2, 13.8, 10.2, 0];
   for (let i = 0; i < stops.length; i++) {
     say(`Lade den Boni … ${Math.round(((i + 1) / stops.length) * 100)} %`);
     coverBar.style.width = `${Math.round(((i + 1) / stops.length) * 100)}%`;
@@ -335,7 +337,7 @@ export async function run({ token, cesiumBase }) {
   // button press (browsers only allow speech after a user gesture)
   fixedT = 0;
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  if (!RECORD_MODE) {
+  if (!RECORD_MODE && !QUICK) {
     say('▶  Antippen oder Taste drücken');
     cover.classList.add('ready');
     await new Promise((res) => {
@@ -400,6 +402,7 @@ export async function run({ token, cesiumBase }) {
   window.addEventListener('resize', () => scene.requestRender());
 
   if (new URLSearchParams(location.search).has('record')) { window.introReady = true; return; }
+  if (QUICK) { skip = true; fixedT = END; window.introReady = true; startGame(); return; }
   fixedT = null; start = performance.now();
   window.introReady = true;
 
