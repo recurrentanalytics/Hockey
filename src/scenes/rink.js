@@ -26,11 +26,13 @@ const fmt = (sec) => { const s = Math.max(0, Math.ceil(sec)); return `${Math.flo
 const LOOKAHEAD = 0.3;
 
 /** Line-ups per mode. `ai` lists the sides the team AI plays for. */
+const N = FIXED ? 3 : 4;
 const MODES = {
   practice: { home: { team: 'blazers', skaters: 2 }, away: { team: 'waves', skaters: 0 }, ai: [] },
-  ai:       { home: { team: 'blazers', skaters: 4, lines: 2 }, away: { team: 'waves', skaters: 4, lines: 2 }, ai: ['home', 'away'] },
-  versus:   { home: { team: 'blazers', skaters: 4, lines: 2 }, away: { team: 'waves', skaters: 4, lines: 2 }, ai: ['home', 'away'] },
-  coop:     { home: { team: 'blazers', skaters: 4, lines: 2 }, away: { team: 'waves', skaters: 4, lines: 2 }, ai: ['home', 'away'] },
+  // on the small real Boni court (23 × 17 m) it is 3 on 3 plus goalies, like the kids play there
+  ai:       { home: { team: 'blazers', skaters: N, lines: 2 }, away: { team: 'waves', skaters: N, lines: 2 }, ai: ['home', 'away'] },
+  versus:   { home: { team: 'blazers', skaters: N, lines: 2 }, away: { team: 'waves', skaters: N, lines: 2 }, ai: ['home', 'away'] },
+  coop:     { home: { team: 'blazers', skaters: N, lines: 2 }, away: { team: 'waves', skaters: N, lines: 2 }, ai: ['home', 'away'] },
 };
 export class RinkScene {
   /**

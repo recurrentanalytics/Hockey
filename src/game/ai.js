@@ -6,6 +6,8 @@
 //   offence – the carrier drives, shoots or passes; the others find open ice to receive
 //   defence – the closest skater pressures the carrier and pokes, the rest mark men goal-side
 import { RINK, GOAL, SHOT } from '../config.js';
+// positions below were tuned for the 60 m arena; they scale with the rink in use
+const K = RINK.length / 60, KY = RINK.width / 30;
 import { RINK_CORE } from '../world/rink.js';
 
 const HW = GOAL.width / 2;
@@ -225,8 +227,8 @@ export class AI {
       const pX = A * p.pos.x;
       others.forEach((s) => {
         const fwd = s.slot < 2;
-        const X = fwd ? clamp(pX + 4, -12, 18) : clamp(pX - 9, -20, 6);
-        const y = (s.slot % 2 ? 1 : -1) * (fwd ? 6 : 4);
+        const X = fwd ? clamp(pX + 4 * K, -12 * K, 18 * K) : clamp(pX - 9 * K, -20 * K, 6 * K);
+        const y = (s.slot % 2 ? 1 : -1) * (fwd ? 6 : 4) * KY;
         targets.set(s, legal(A * X, y));
       });
     }
@@ -334,7 +336,7 @@ export class AI {
     if (s.ai.decideT <= 0) {
       s.ai.decideT = lv.react + Math.random() * 0.15;
       const inFront = Math.abs(s.pos.y) < (A * (gx - s.pos.x)) * 0.9 + 1.5;
-      if (X > 8 && X < RINK.goalLineX - 0.5 && goalDist < 16 && inFront) {
+      if (X > 8 * K && X < RINK.goalLineX - 0.5 && goalDist < 16 * Math.max(K, 0.55) && inFront) {
         let chance = goalDist < 8 ? 0.3 : goalDist < 12 ? 0.18 : 0.08;
         // A defender in the shooting lane: look for a pass or a better angle instead.
         const goal = { x: gx, y: 0 };

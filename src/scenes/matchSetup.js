@@ -4,6 +4,7 @@ import { panel } from '../engine/draw.js';
 import { choice, avoidSameTeam } from '../ui/menu.js';
 import { MenuScene } from './menuScene.js';
 import { RinkScene } from './rink.js';
+import { FIXED } from '../world/projection.js';
 
 export class MatchSetupScene extends MenuScene {
   constructor(app) {
@@ -14,7 +15,7 @@ export class MatchSetupScene extends MenuScene {
       items: [
         choice('DEIN TEAM', 'homeTeam', () => avoidSameTeam('awayTeam')),
         choice('GEGNER', 'awayTeam', () => avoidSameTeam('homeTeam')),
-        choice('SPIELORT', 'venue'),
+        ...(FIXED ? [] : [choice('SPIELORT', 'venue')]), // the real Boni court has no other venue
         choice('REGELN', 'ruleset'),
         choice('SPIELZEIT', 'periodLength'),
         choice('SCHWIERIGKEIT', 'difficulty'),

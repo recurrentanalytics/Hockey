@@ -7,6 +7,7 @@ import { settings } from '../settings.js';
 import { PLAYER_COLORS } from '../config.js';
 import { MenuScene } from './menuScene.js';
 import { RinkScene } from './rink.js';
+import { FIXED } from '../world/projection.js';
 
 export class TwoPlayerScene extends MenuScene {
   constructor(app) {
@@ -20,7 +21,7 @@ export class TwoPlayerScene extends MenuScene {
         choice('HEIMTEAM', 'homeTeam', () => avoidSameTeam('awayTeam')),
         choice('GASTTEAM', 'awayTeam', () => avoidSameTeam('homeTeam')),
         choice('KAMERA', 'twoPlayerCamera'),
-        choice('SPIELORT', 'venue'),
+        ...(FIXED ? [] : [choice('SPIELORT', 'venue')]),
         { label: 'LOS GEHTS', color: PAL.yellow, disabled: () => this.slots.some((s) => !s), onSelect: () => this.start() },
         { label: 'ZURÜCK', onSelect: () => app.pop() },
       ],

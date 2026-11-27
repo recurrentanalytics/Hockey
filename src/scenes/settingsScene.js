@@ -2,6 +2,7 @@ import { choice } from '../ui/menu.js';
 import { MenuScene } from './menuScene.js';
 import { ControlsScene } from './controls.js';
 import { toggleFullscreen, isFullscreen, canFullscreen } from '../engine/fullscreen.js';
+import { FIXED } from '../world/projection.js';
 
 export class SettingsScene extends MenuScene {
   constructor(app) {
@@ -12,7 +13,7 @@ export class SettingsScene extends MenuScene {
       items: [
         { label: 'STEUERUNG', value: () => '>', onSelect: () => app.push(new ControlsScene(app)) },
         choice('TON', 'sound'),
-        choice('SPIELORT', 'venue'),
+        ...(FIXED ? [] : [choice('SPIELORT', 'venue')]),
         choice('REGELN', 'ruleset'),
         choice('BALL ODER PUCK', 'gameBall'),
         choice('SPIELZEIT', 'periodLength'),
