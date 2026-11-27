@@ -1,6 +1,14 @@
 // Draws the arena + entities into a viewport of the world layer.
 import { PAL } from '../engine/palette.js';
 import { bakeRink, bakeGoal } from './rink.js';
+import { project } from './projection.js';
+import { asset } from '../engine/assets.js';
+
+// World objects from the art library, standing on the concourse outside the boards (metres).
+const SCENERY = [
+  { id: 'world.bonifatiusplatz.plane-tree', x: -28.9, y: -13.3 },
+  { id: 'world.bonifatiusplatz.plane-tree', x: 28.9, y: -13.3 },
+];
 
 export class WorldView {
   constructor() {
@@ -9,6 +17,22 @@ export class WorldView {
       sortY: g.sortY,
       draw: (ctx, ox, oy) => ctx.drawImage(g.canvas, g.x + ox, g.y + oy),
     }));
+    this.props = null;
+  }
+
+  /** Scenery entities; empty until the art library has loaded. */
+  scenery() {
+    if (this.props) return this.props;
+    const props = [];
+    for (const s of SCENERY) {
+      const a = asset(s.id);
+      if (!a) return []; // not loaded yet: try again next frame
+      const p = project(s.x, s.y);
+      const d = a.density ?? 1; // an asset at density 2 covers half its pixel size in world pixels
+      props.push({ sortY: s.y, draw: (ctx, ox, oy) => ctx.drawImage(a.img, p.x - a.anchor.x / d + ox, p.y - a.anchor.y / d + oy, a.img.width / d, a.img.height / d) });
+    }
+    this.props = props;
+    return props;
   }
 
   /**
@@ -31,7 +55,7 @@ export class WorldView {
     ctx.drawImage(this.rink.background, this.rink.x0 + ox, this.rink.y0 + oy);
 
     for (const e of entities) e.drawShadow?.(ctx, ox, oy);
-    const sorted = [...entities, ...this.goals].sort((a, b) => a.sortY - b.sortY);
+    const sorted = [...entities, ...this.goals, ...this.scenery()].sort((a, b) => a.sortY - b.sortY);
     for (const e of sorted) e.draw(ctx, ox, oy);
 
     ctx.drawImage(this.rink.foreground, this.rink.x0 + ox, this.rink.y0 + oy);

@@ -1,5 +1,6 @@
 // Two low-resolution layers scaled up to the screen with nearest-neighbour:
-//  - world: zoomable (its resolution grows when zooming out, so pixel art stays sharp)
+//  - world: zoomable (its resolution grows when zooming out, so pixel art stays sharp),
+//           with VIEW.worldDensity pixels per world pixel for detailed art
 //  - ui:    fixed resolution, always on top
 import { VIEW } from '../config.js';
 import { makeCanvas } from './raster.js';
@@ -52,16 +53,20 @@ export class Display {
   setZoom(z, force = false) {
     z = Math.max(0.4, Math.min(1, Math.round(z * 64) / 64));
     const w = Math.round(this.width / z), h = Math.round(this.height / z);
-    if (!force && w === this.world.width && h === this.world.height) { this.zoom = z; return; }
+    if (!force && w === this.worldWidth && h === this.worldHeight) { this.zoom = z; return; }
     this.zoom = z;
-    this.world.width = w;
-    this.world.height = h;
+    const d = VIEW.worldDensity;
+    this.world.width = w * d;
+    this.world.height = h * d;
     this.wctx = this.world.getContext('2d');
     this.wctx.imageSmoothingEnabled = false;
+    // Everything drawn to the world layer is in world pixels; the layer itself is finer.
+    this.wctx.setTransform(d, 0, 0, d, 0, 0);
   }
 
-  get worldWidth() { return this.world.width; }
-  get worldHeight() { return this.world.height; }
+  /** World layer size in world pixels. */
+  get worldWidth() { return this.world.width / VIEW.worldDensity; }
+  get worldHeight() { return this.world.height / VIEW.worldDensity; }
 
   beginFrame() {
     this.uctx.clearRect(0, 0, this.width, this.height);

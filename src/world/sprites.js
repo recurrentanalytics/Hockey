@@ -1,4 +1,5 @@
 // Hand-made pixel-art skater, recoloured per team. Facing right; left is mirrored.
+import { asset } from '../engine/assets.js';
 import { PAL } from '../engine/palette.js';
 import { Surface, rgba, makeCanvas } from '../engine/raster.js';
 
@@ -110,6 +111,47 @@ export function skaterSprites(team) {
   s = { right, left: right.map(mirror) };
   cache.set(team, s);
   return s;
+}
+
+const artCache = new Map();
+// In order of preference: the chosen skater's stride, its still, then the small pilot skater.
+// Only approved assets are loaded, unless the game runs with ?preview=art.
+const SKATER_ART = ['character.skater.stride', 'character.skater.glide', 'character.skater.skate'];
+
+/**
+ * Skater frames from the art library (asset `character.skater.skate`), recoloured for a team.
+ * Returns null until the asset has loaded; callers then use skaterSprites() instead.
+ * The manifest entry's `teamColors` maps sprite colours to team colour names.
+ */
+export function skaterArt(team) {
+  const a = SKATER_ART.map(asset).find(Boolean);
+  if (!a) return null;
+  let art = artCache.get(team);
+  if (art?.id === a.id) return art;
+  const { w, h } = a.frame;
+  // A team without its own shade of a colour (trimShade) uses the plain colour.
+  const swap = new Map(Object.entries(a.teamColors ?? {}).map(([from, to]) => [rgba(from), rgba(team[to] ?? team[to.replace(/Shade$/, '')])]));
+  const sheet = makeCanvas(a.img.width, a.img.height);
+  const g = sheet.getContext('2d');
+  g.drawImage(a.img, 0, 0);
+  const data = g.getImageData(0, 0, sheet.width, sheet.height);
+  const px = new Uint32Array(data.data.buffer);
+  for (let i = 0; i < px.length; i++) {
+    const to = swap.get(px[i]);
+    if (to !== undefined) px[i] = to;
+  }
+  g.putImageData(data, 0, 0);
+  const right = Array.from({ length: a.frames }, (_, f) => {
+    const c = makeCanvas(w, h);
+    c.getContext('2d').drawImage(sheet, f * w, 0, w, h, 0, 0, w, h);
+    return c;
+  });
+  // Sizes and anchor in world pixels: an asset drawn at density 2 covers half its pixel size.
+  const d = a.density ?? 1;
+  const hand = a.hand ? { x: a.hand.x / d, y: a.hand.y / d } : { x: 5, y: 15 };
+  art = { id: a.id, right, left: right.map(mirror), w: w / d, h: h / d, px: 1 / d, ax: a.anchor.x / d, ay: a.anchor.y / d, idle: a.idleFrame ?? 0, hand };
+  artCache.set(team, art);
+  return art;
 }
 
 let shadowCanvas = null;

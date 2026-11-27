@@ -2,7 +2,7 @@
 
 How art gets from an idea into the running game. SpriteCook produces the art; Claude drives it through the SpriteCook plugin; this repository holds the results, their manifest and the checks.
 
-Status: the plugin is installed and its capabilities are documented below from its own skill files (version 0.1.15, skills 2026.10.20). **No asset has been generated yet**, because the SpriteCook server needs a one-time sign-in by the account owner. Everything marked *proposed* gets locked only after the pilot run.
+Status (2026-11-27): the plugin is installed and signed in, and the pilot set in section 6 has been generated, fitted, checked and loaded into the running game. The owner has chosen the skater (candidate 6 of the large, cute round); its still is approved and in the manifest; its stride animation (`character.skater.stride`, take 2) was approved the same day. Both are in the game. Plugin version 0.1.15, skills 2026.10.20. Items still marked *proposed* have not been confirmed by the project owner.
 
 ## 1. What SpriteCook can do
 
@@ -23,10 +23,11 @@ The plugin is a hosted MCP server (`https://mcp.spritecook.ai/mcp/claude`) plus 
 
 Limits that shape our pipeline:
 
-- **Size is the hard part.** Our skater is 22×26 px today and the game renders at 216 px height. Reference-guided models return larger sprites, so every character goes through: generate → pick → nearest-neighbour downscale locally → upload → "clean redraw at the same pixel size" with the upload as reference.
+- **Size is the hard part, and the pilot settled it.** The game renders at 216 px height and a skater is about 30 px tall. The reference-guided model returned 84 px for a 32 px request; shrinking that by 3 destroyed the face, and the documented "clean redraw" of the shrunk image came back at 56 px. The exact-size model (`pixel-engine-image-v1`) draws a clean 32×32 character directly. **Play-size sprites therefore come from the exact-size model; the reference-guided models are for large art** (world objects, portraits, style studies). See `pilot/size-comparison.png`.
+- **The exact-size model takes no style references.** Consistency at play size rests on reusing the same `style` text and prompt wording, kept under `prompts/`.
 - **Style consistency comes from references, not from prompts alone.** Once the first approved assets exist they are passed as `style_asset_ids` (up to 10) on every later generation.
 - **The palette is guidance only.** Outputs contain hundreds of near-duplicate shades; we quantise locally to the project palette (nearest colour, no dithering).
-- **Animation canvases are not aligned to the still.** Frames have to be re-anchored locally to one ground line.
+- **Animation canvases are not aligned to the still.** A 32×32 still came back as 36×36 frames. `fit.mjs strip` puts all frames on one ground line.
 - **The Godot export skill does not apply.** This game is plain JavaScript on a canvas.
 
 ## 2. Visual identity (*proposed*)
@@ -57,13 +58,15 @@ Palette: the game's current palette (`src/engine/palette.js`) is cool and blue-g
 | Stone grey / shade | `#b9b3a4` / `#7d7868` |
 | Asphalt | `#4b4a52` |
 
-**Team colours.** Players are recoloured per team in the engine, as today. Characters are therefore generated in fixed key colours that the engine swaps: jersey `#ff00aa`, jersey shade `#aa0071`, trim `#00ffd5`, helmet `#ffe600`, helmet shade `#b3a100`, pants `#5a00ff`, pants shade `#3c00aa`. Key colours appear nowhere else in a sprite.
+**Team colours.** Players are recoloured per team in the engine. A character is generated once in a reference kit (red jersey, yellow trim, white helmet, navy shorts). After colour reduction, its manifest entry lists which sprite colours are team colours (`teamColors`: sprite hex → `main`, `shade`, `trim`, `trimShade`, `helmet`, `helmetShade`, `pants`, `pantsShade`; a team without a `trimShade` gets its `trim` there), and the engine swaps exactly those. The reference kit colours must not be used for anything else on the sprite; skin, outline, gloves and skates stay fixed.
+
+**The Borstentiere kit** is not invented here: it follows the club's own jersey templates, `img/jersey_front.png` and `img/jersey_back.png` in the club website project (`~/coding/boni-borstentiere-website`), and the Bonny comic there for helmet and trousers. Forest green jersey `#1b4a2e` / `#0d2c1b`, cream stripe `#ecd9a4` with orange `#b8460f`, green helmet `#245a38`, dark brown trousers `#2e2118`. It is the team `borstentiere` in `src/config.js` and the default home team. The owner confirmed these colours on 2026-11-27. The boar crest, the name BONI and the number 61 are not on the sprite yet: a recolour cannot draw them.
 
 ## 3. Asset specifications
 
 | Kind | Folder | Frame | Anchor | Notes |
 | --- | --- | --- | --- | --- |
-| Character | `assets/characters/<name>/` | 32×32 (figure about 26 px tall) | feet, bottom row | faces right; the engine mirrors |
+| Character | `assets/characters/<name>/` | 36×36 (generated at 32×32; figure about 30 px tall) | feet, bottom row | faces right; the engine mirrors |
 | Animation | same folder, one file per motion | same frame, 4–8 frames side by side | same as the still | one ground line across all frames |
 | Equipment | `assets/equipment/` | 16×16 or 32×16 | grip or centre | sticks, pucks, balls, goals |
 | Prop | `assets/props/` | up to 32×32 | ground contact | benches, cones, bins |
@@ -90,7 +93,7 @@ Rules for every file: PNG, 8-bit RGBA, alpha only 0 or 255, at most 32 colours, 
 }
 ```
 
-Optional fields: `maxColors`, `opaque`, `softAlpha` (intended translucency), `grounded: false` (flying or bouncing motion). Signed URLs, tokens and account data never go into the manifest.
+Optional fields: `teamColors`, `idleFrame` and `hand` (stick grip, sprite pixels from the anchor) for characters; `maxColors`, `opaque`, `softAlpha` (intended translucency), `grounded: false` (flying or bouncing motion). Signed URLs, tokens and account data never go into the manifest.
 
 ## 5. Workflow
 
@@ -98,7 +101,7 @@ Optional fields: `maxColors`, `opaque`, `softAlpha` (intended translucency), `gr
 2. **Balance.** `get_credit_balance`; stop if the batch does not fit.
 3. **Generate.** Style block + subject; approved assets as `style_asset_ids`. Props in sheets, characters singly.
 4. **Inspect.** Look at the result at native size and at 4× zoom, on light and dark backgrounds. Reject and regenerate at most twice; then change the prompt.
-5. **Fit.** Downscale-and-redraw to the frame size if needed, quantise to the palette, re-anchor animation frames, fix edges.
+5. **Fit.** `node tools/assets/fit.mjs` does the local steps: `frame` (trim, stand on the frame's bottom edge, reduce colours), `strip` (animation sheet onto one ground line), `shrink`, and `preview` (contact sheet on light and dark).
 6. **Export.** Save under `assets/…`, add the manifest entry with `asset_id` and `sha12`, keep the prompt under `docs/art/prompts/`.
 7. **Check.** `npm run assets:check` must report no errors.
 8. **Integrate and look.** Load it in the game and take a screenshot of it in play. An asset is done when it looks right there, not when the file validates.
@@ -106,23 +109,48 @@ Optional fields: `maxColors`, `opaque`, `softAlpha` (intended translucency), `gr
 
 `npm run assets:check` verifies: naming and folders, declared frame size against the real image, removed background, hard pixel edges, colour count, non-empty frames, a steady ground line across animation frames, anchor position, file hash, and that no PNG sits in `assets/` unlisted.
 
-## 6. Pilot set
+## Who chooses
 
-Five assets that exercise every route once:
+The project owner chooses every asset. Nothing generated goes into the game on Claude's judgement.
 
-| # | Asset | Route | Decides |
+1. Generated images land in `art/candidates/<date>-<subject>/` (not in Git, not loaded by the game), together with `candidates.json`, which records the SpriteCook asset id of each number.
+2. `node tools/assets/fit.mjs sheet <folder>` writes `sheet.png`: every candidate numbered, enlarged on a light and a dark background, and at native size.
+3. The owner answers with numbers, or asks for another round.
+4. Only the chosen images are fitted, moved to `assets/` and entered in the manifest with `"approved": { "date": "YYYY-MM-DD" }`.
+5. The game loads approved assets only. `npm run assets:check` lists everything still waiting. Opening the game with `?preview=art` shows waiting assets too, for judging them in play.
+
+## Pixel density
+
+The world layer has two pixels per world pixel (`VIEW.worldDensity`). Positions, cameras and the built-in sprites still use world pixels, so the game plays and frames exactly as before. An asset with `"density": 2` in the manifest is drawn at half its pixel size and so shows twice the detail: a 56 px figure stands as tall as a 28 px one. Until the arena, goalie and puck are replaced, they stay at the coarse density.
+
+## 6. Pilot set (done)
+
+| Asset | File | Route | In the game |
 | --- | --- | --- | --- |
-| 1 | Skater, neutral kit in key colours, still | generate → downscale → redraw | character proportions and outline |
-| 2 | Skater push-and-glide cycle, 6 frames | prepare mid-stride pose → `animate_game_art` | animation quality at our size |
-| 3 | Hockey stick | exact-size model, 32×16 | whether exact-size output matches the style without references |
-| 4 | Puck and ISHD ball | exact-size model, 16×16 | smallest readable size |
-| 5 | One Bonifatiusplatz object (street lamp or plane tree) | generate with assets 1 and 3 as style references | world objects next to characters |
+| Skater stride, 8 frames of 36×36 | `assets/characters/skater/skate.png` | exact-size still → `animate_game_art` → `strip` | every skater, recoloured for all four teams |
+| Hockey stick, 64×16 | `assets/equipment/stick.png` | exact-size model | title screen |
+| Puck, 16×16 | `assets/equipment/puck.png` | exact-size model | title screen |
+| Plane tree, 80×80 | `assets/world/bonifatiusplatz/plane-tree.png` | reference-guided model, styled on the large skater study | far corners of the arena |
 
-Expected cost: roughly 5 stills, 2 redraws and 1 animation plus retries. Still prices are 12 credits each; the animation price has to be read from `list_generation_models` after sign-in.
+Pictures: `pilot/assets.png` (the files at 5×), `pilot/ingame-faceoff.png`, `pilot/ingame-corner.png`, `pilot/ingame-title.png` (screenshots of the running game), `pilot/size-comparison.png` (shrunk redraws against exact-size output). Prompts: `prompts/pilot.md`.
+
+Cost: 140 credits in total, including the rejected routes (stills 6 each at exact size and 12 each reference-guided, the 8-frame animation 20).
+
+What the pilot showed:
+
+- The whole chain runs without manual steps: generate, download, fit, check, load, screenshot.
+- The stride animation keeps the character consistent across all 8 frames. Two frames have small gaps in the arm outline.
+- Team recolouring by exact colour swap works for all four teams.
+- The stick and the puck are far larger than their in-play size (the puck in play is 5×3 px), so they serve as UI art, not as play sprites.
+- The goalie, the stick in play, the puck in play and the arena are still code-drawn and do not match the new skater yet.
+- The tree stands in an arena corner only to prove the route; a world for it does not exist yet.
 
 ## 7. Open decisions
 
-- **Stick in play.** The stick is drawn live as a line today so it can aim, wind up and poke. A sprite cannot rotate freely without breaking the pixel grid. Proposed: keep the live stick in play and take its colours from the stick asset; use the sprite for menus, pickups and UI.
-- **Skater size.** 32×32 frames are larger than today's 22×26. Either the figure stays about 26 px tall inside the larger frame (proposed), or the whole game scale changes.
-- **Engine loading.** The game bakes all sprites in code and has no image loader. The loader, with the code-drawn sprites as fallback, is built together with the first real asset.
+- **Skater: still and stride approved (2026-11-27).** Candidate 6 as the still (`assets/characters/skater/glide.png`) and take 2 of its stride (`assets/characters/skater/stride.png`, 8 frames), both 84×84 at density 2, so the figure stands 41 world pixels tall; `pilot/skater-teams.png` shows the still in all five kits, the Borstentiere first. The game uses the stride for every skater. Shot, cheer and knockdown still move only the live-drawn stick or turn the sprite: the arms do not move. Prompts and local steps: `prompts/skater.md`.
+- **The four pilot assets are not approved.** They stay in the manifest without approval, visible only with `?preview=art`. The chosen skater takes precedence over the small pilot skater there too.
+- **Stick in play.** It stays a live-drawn line so it can aim, wind up and poke. A sprite cannot rotate freely without breaking the pixel grid.
+- **Skater pose.** The generated skater swings the arms like a speed skater; the hands do not hold the live-drawn stick. A two-handed stick-carrying pose needs its own still and animation.
+- **Goalie.** Next character to generate, so both player types match. The full list of motions the game already animates in code, and what each needs from the new art, is in `prompts/skater.md`.
+- **Palette.** The arena still uses the cool built-in palette; the warm palette above is not applied anywhere yet.
 - **World geometry.** The game is a rink only. The Bonifatiusplatz world built from OpenStreetMap footprints is a separate pipeline (Python; Blender is not installed here) and has not been started.

@@ -10,7 +10,7 @@ import { decodePng } from './png.mjs';
 
 export const KINDS = { character: 'characters', equipment: 'equipment', prop: 'props', world: 'world', ui: 'ui', tile: 'tiles' };
 const SEGMENT = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const MAX_FRAME = 128;        // px; the game renders at 216 px height
+const MAX_FRAME = 128;        // px of the image, at either density
 const DEFAULT_MAX_COLORS = 32;
 
 function listPngs(dir, base = dir) {
@@ -110,6 +110,9 @@ export function validate(root) {
       if (Math.max(...counts) > mean * 1.5 || Math.min(...counts) < mean * 0.6) warn(`frame sizes differ a lot (opaque pixels ${counts.join(', ')}): check for scale drift`);
     }
     if (a.anchor && stats[0].count > 0 && Math.abs(stats[0].bottom - a.anchor.y) > 2) warn(`anchor row ${a.anchor.y} is not at the sprite's lowest row ${stats[0].bottom}`);
+    if (a.density !== undefined && a.density !== 1 && a.density !== 2) err('density must be 1 or 2');
+    if (!a.approved) warn('waiting for the owner\'s approval: the game does not use it yet');
+    else if (typeof a.approved.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(a.approved.date)) err('approved needs a date (YYYY-MM-DD)');
     if (!a.source) warn('no "source" recorded (SpriteCook asset_id, model and prompt id, or "hand-drawn")');
   }
 

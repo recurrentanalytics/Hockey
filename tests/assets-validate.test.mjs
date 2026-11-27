@@ -29,7 +29,7 @@ const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex').slice
 /** Write a library with one asset; `entry` overrides manifest fields. */
 function library(png, entry = {}, extraFiles = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'assets-'));
-  const asset = { id: 'character.skater.skate', kind: 'character', file: 'characters/skater/skate.png', frame: { w: W, h: H }, frames: 1, anchor: { x: 4, y: 9 }, sha12: sha(png), source: 'hand-drawn', ...entry };
+  const asset = { id: 'character.skater.skate', kind: 'character', file: 'characters/skater/skate.png', frame: { w: W, h: H }, frames: 1, anchor: { x: 4, y: 9 }, sha12: sha(png), source: 'hand-drawn', approved: { date: '2026-11-27' }, ...entry };
   for (const [file, buf] of Object.entries({ [asset.file]: png, ...extraFiles })) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
     fs.writeFileSync(path.join(root, file), buf);
@@ -65,6 +65,8 @@ const BAD = [
   ['a badly formed id', strip(1), { id: 'Skater' }, /id must look like/],
   ['a missing anchor', strip(1), { anchor: undefined }, /anchor/],
   ['an oversized frame', strip(1), { frame: { w: 200, h: H } }, /engine limit/],
+  ['an approval without a date', strip(1), { approved: { date: 'yes' } }, /approved needs a date/],
+  ['an unknown density', strip(1), { density: 3 }, /density must be 1 or 2/],
 ];
 for (const [what, png, entry, pattern] of BAD) {
   test(`rejects ${what}`, () => {
@@ -72,6 +74,12 @@ for (const [what, png, entry, pattern] of BAD) {
     assert.ok(errors.some((e) => pattern.test(e)), `errors: ${JSON.stringify(errors)}`);
   });
 }
+
+test('an asset without approval is reported, not rejected', () => {
+  const { errors, warnings } = validate(library(strip(1), { approved: undefined }));
+  assert.deepEqual(errors, []);
+  assert.match(warnings[0], /waiting for the owner's approval/);
+});
 
 test('rejects a PNG that is not in the manifest', () => {
   const errors = errorsOf(strip(1), {}, { 'props/stray.png': strip(1) });
@@ -88,4 +96,43 @@ test('the project asset library is valid', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'assets');
   const { errors } = validate(root);
   assert.deepEqual(errors, []);
+});
+
+// ---- tools/assets/fit.mjs
+import { strip as fitStrip, frame as fitFrame, reduceColors, shrink, bounds } from '../tools/assets/fit.mjs';
+
+test('fit: strip puts every animation frame on the same ground line', () => {
+  const sheet = decodePng(strip(4, { bottom: [9, 7, 8, 6] }));
+  const out = fitStrip(sheet, 4, 10, 12);
+  assert.equal(out.width, 40);
+  assert.equal(out.height, 12);
+  for (let f = 0; f < 4; f++) {
+    const b = bounds(out, f * 10, (f + 1) * 10);
+    assert.equal(b.maxY, 11, `frame ${f} stands on the bottom row`);
+    assert.equal(b.minX - f * 10, 3, `frame ${f} keeps its horizontal place`);
+  }
+  assert.equal(fitStrip(sheet, 4, 10, 12, [0, 2]).width, 20, 'picking frames shortens the strip');
+});
+
+test('fit: frame trims and stands the sprite centred on the bottom edge', () => {
+  const out = fitFrame(decodePng(strip(1, { bottom: [6] })), 12, 12);
+  assert.deepEqual(bounds(out), { minX: 4, maxX: 7, minY: 6, maxY: 11, w: 4, h: 6 });
+  assert.throws(() => fitFrame(decodePng(strip(1)), 3, 3), /larger than/);
+});
+
+test('fit: colour reduction merges similar colours and keeps alpha hard', () => {
+  const im = decodePng(strip(1, { colors: 20, alpha: 200 }));
+  reduceColors(im, 4);
+  const seen = new Set();
+  for (let i = 0; i < im.data.length; i += 4) {
+    assert.ok(im.data[i + 3] === 0 || im.data[i + 3] === 255);
+    if (im.data[i + 3]) seen.add(`${im.data[i]},${im.data[i + 1]},${im.data[i + 2]}`);
+  }
+  assert.ok(seen.size <= 4 && seen.size > 0, `${seen.size} colours`);
+});
+
+test('fit: shrink halves an image with nearest-neighbour sampling', () => {
+  const out = shrink(decodePng(strip(2)), 2);
+  assert.equal(out.width, 8);
+  assert.equal(out.height, 5);
 });

@@ -1,6 +1,7 @@
 import { PAL } from '../engine/palette.js';
 import { drawText } from '../engine/font.js';
 import { MainMenuScene } from './mainMenu.js';
+import { asset } from '../engine/assets.js';
 
 export class TitleScene {
   constructor(app) {
@@ -31,6 +32,14 @@ export class TitleScene {
     drawText(ctx, 'HOCKEY', W / 2 + 2, 80 + bob, { color: PAL.redDark, scale: 5, align: 'center' });
     drawText(ctx, 'HOCKEY', W / 2, 78 + bob, { color: PAL.yellow, scale: 5, align: 'center' });
     drawText(ctx, '4 ON 4 ROLLER HOCKEY', W / 2, 112, { color: PAL.cloud, align: 'center', shadow: PAL.ink });
+    // Stick and puck from the art library, once loaded.
+    const stick = asset('equipment.stick'), puck = asset('equipment.puck');
+    if (stick && puck) {
+      // UI layer: drawn at their own pixel size.
+      const sx = Math.round(W / 2 - 44);
+      ctx.drawImage(stick.img, sx, 122);
+      ctx.drawImage(puck.img, sx + 68, 122);
+    }
     if (Math.floor(this.t * 2) % 2 === 0) {
       const prompt = input.lastKind === 'touch' || input.pointers.touchSeen ? 'TAP TO START' : 'PRESS START';
       drawText(ctx, prompt, W / 2, 150, { color: PAL.white, scale: 2, align: 'center', shadow: PAL.ink });

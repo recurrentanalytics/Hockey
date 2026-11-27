@@ -17,7 +17,7 @@ const DEFAULTS = {
   autoFullscreen: true,
   sound: 0.75,
   rumble: true,
-  homeTeam: 'blazers',
+  homeTeam: 'borstentiere',
   awayTeam: 'waves',
 };
 

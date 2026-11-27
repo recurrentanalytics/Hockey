@@ -6,7 +6,7 @@ import { pixelLine } from '../engine/draw.js';
 import { drawText } from '../engine/font.js';
 import { RINK_CORE, goalBox } from './rink.js';
 import { project } from './projection.js';
-import { skaterSprites, shadowSprite, ANCHOR_X, ANCHOR_Y, SPRITE_W } from './sprites.js';
+import { skaterSprites, skaterArt, shadowSprite, ANCHOR_X, ANCHOR_Y, SPRITE_W, SPRITE_H } from './sprites.js';
 
 export const REACH = 0.72;      // body centre → blade, metres
 export const POKE_TIME = 0.24;
@@ -216,8 +216,8 @@ export class Skater {
     ctx.drawImage(shadowSprite(), Math.round(p.x + ox - 7), Math.round(p.y + oy - 2));
   }
 
-  drawStick(ctx, p, ox, oy) {
-    const hx = Math.round(p.x + ox + this.facing * 5), hy = Math.round(p.y + oy - 15);
+  drawStick(ctx, p, ox, oy, hand = { x: 5, y: 15 }) {
+    const hx = Math.round(p.x + ox + this.facing * hand.x), hy = Math.round(p.y + oy - hand.y);
     const b = this.bladePoint();
     const bp = project(b.x, b.y, this.bladeHeight());
     const bx = Math.round(bp.x + ox), by = Math.round(bp.y + oy);
@@ -234,28 +234,34 @@ export class Skater {
 
   draw(ctx, ox, oy) {
     const p = project(this.pos.x, this.pos.y);
-    const frame = this.pushing ? Math.floor(this.anim) % 4 : 0;
+    // Art-library frames when they have loaded, otherwise the built-in sprite.
+    const art = skaterArt(this.team) ?? { ...this.sprites, w: SPRITE_W, h: SPRITE_H, ax: ANCHOR_X, ay: ANCHOR_Y, idle: 0 };
     const right = this.facing >= 0;
-    const img = (right ? this.sprites.right : this.sprites.left)[frame];
-    const ax = right ? ANCHOR_X : SPRITE_W - 1 - ANCHOR_X;
-    const x = Math.round(p.x + ox - ax), y = Math.round(p.y + oy - ANCHOR_Y);
+    const frames = right ? art.right : art.left;
+    // `anim` advances one built-in frame (a quarter stride) per unit.
+    const frame = this.pushing ? Math.floor(this.anim * frames.length / 4) % frames.length : art.idle;
+    const img = frames[frame];
+    const ax = right ? art.ax : art.w - (art.px ?? 1) - art.ax; // px: one sprite pixel in world pixels
+    // Half world pixels are whole pixels on the finer world layer.
+    const snap = (v) => Math.round(v * 2) / 2;
+    const x = snap(p.x + ox - ax), y = snap(p.y + oy - art.ay);
     if (this.downT > 0) {
       // On the floor: the sprite turned 90° (exact quarter turns stay pixel-crisp).
       ctx.save();
       ctx.translate(Math.round(p.x + ox), Math.round(p.y + oy));
       ctx.rotate(right ? Math.PI / 2 : -Math.PI / 2);
-      ctx.drawImage(img, -ax, -ANCHOR_Y + 4);
+      ctx.drawImage(img, -ax, -art.ay + 4, art.w, art.h);
       ctx.restore();
     } else {
       const behind = this.bladePoint().y < this.pos.y - 0.05;
-      if (behind) this.drawStick(ctx, p, ox, oy);
-      ctx.drawImage(img, x, y);
-      if (!behind) this.drawStick(ctx, p, ox, oy);
+      if (behind) this.drawStick(ctx, p, ox, oy, art.hand);
+      ctx.drawImage(img, x, y, art.w, art.h);
+      if (!behind) this.drawStick(ctx, p, ox, oy, art.hand);
     }
 
     const h = this.human;
     if (!h) return;
-    const tx = Math.round(p.x + ox), ty = y - 9;
+    const tx = Math.round(p.x + ox), ty = Math.round(y) - 9;
     drawText(ctx, h.tag, tx, ty, { color: h.color, align: 'center', shadow: PAL.ink });
     ctx.fillStyle = h.color;
     ctx.fillRect(tx - 1, ty + 6, 3, 1);

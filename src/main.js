@@ -12,6 +12,7 @@ import { Toasts } from './ui/hud.js';
 import { Backdrop } from './scenes/backdrop.js';
 import { Audio } from './engine/audio.js';
 import { TitleScene } from './scenes/title.js';
+import { loadAssets } from './engine/assets.js';
 
 const canvas = document.getElementById('screen');
 canvas.focus({ preventScroll: true }); // works when allowed; otherwise the first click focuses it
@@ -64,6 +65,7 @@ input.keyboard.onKeyDown = (code) => {
   autoFullscreen();
 };
 app.push(new TitleScene(app));
+loadAssets(); // art arrives in the background; built-in sprites show until then
 
 function drawPortraitHint() {
   if (!(display.portrait && input.pointers.touchSeen)) return;

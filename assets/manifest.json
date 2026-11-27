@@ -1,4 +1,188 @@
 {
   "version": 1,
-  "assets": []
+  "assets": [
+    {
+      "id": "character.skater.skate",
+      "kind": "character",
+      "file": "characters/skater/skate.png",
+      "frame": {
+        "w": 36,
+        "h": 36
+      },
+      "frames": 8,
+      "anchor": {
+        "x": 18,
+        "y": 35
+      },
+      "idleFrame": 2,
+      "hand": {
+        "x": 7,
+        "y": 14
+      },
+      "maxColors": 16,
+      "teamColors": {
+        "#d43123": "main",
+        "#b1231a": "shade",
+        "#831f15": "shade",
+        "#f8ce39": "trim",
+        "#eab844": "trim",
+        "#f0efec": "helmet",
+        "#c9c8c9": "helmetShade",
+        "#273147": "pants"
+      },
+      "source": {
+        "asset_id": "f7d85492-dd70-456c-bff6-1734707027dd",
+        "model": "pixel-engine-v1.1",
+        "prompt": "docs/art/prompts/pilot.md",
+        "still_asset_id": "9b232157-95f4-40e4-819e-cccaa5d821d1",
+        "still_model": "pixel-engine-image-v1"
+      },
+      "sha12": "5d0e49f80227"
+    },
+    {
+      "id": "character.skater.glide",
+      "kind": "character",
+      "file": "characters/skater/glide.png",
+      "frame": {
+        "w": 84,
+        "h": 84
+      },
+      "frames": 1,
+      "density": 2,
+      "anchor": {
+        "x": 46,
+        "y": 83
+      },
+      "hand": {
+        "x": 11,
+        "y": 30
+      },
+      "teamColors": {
+        "#bc4330": "main",
+        "#8a2519": "shade",
+        "#edb51a": "trim",
+        "#ca860b": "trimShade",
+        "#f7efdc": "helmet",
+        "#fefefc": "helmet",
+        "#b3ab98": "helmetShade",
+        "#8f8171": "helmetShade",
+        "#2c324a": "pants",
+        "#1d2339": "pantsShade"
+      },
+      "approved": {
+        "date": "2026-11-27"
+      },
+      "source": {
+        "asset_id": "9eeb43be-a11b-4be0-82a3-27e9583b318f",
+        "model": "gemini-nano-banana-2.1",
+        "prompt": "docs/art/prompts/skater.md",
+        "style_asset_ids": [
+          "ac3f660c-397a-430f-b292-eb5bc6447c1f"
+        ]
+      },
+      "sha12": "81ead612b4f8"
+    },
+    {
+      "id": "character.skater.stride",
+      "kind": "character",
+      "file": "characters/skater/stride.png",
+      "frame": {
+        "w": 84,
+        "h": 84
+      },
+      "frames": 8,
+      "density": 2,
+      "anchor": {
+        "x": 45,
+        "y": 83
+      },
+      "idleFrame": 0,
+      "hand": {
+        "x": 11,
+        "y": 30
+      },
+      "teamColors": {
+        "#b8402f": "main",
+        "#882619": "shade",
+        "#9e3324": "shade",
+        "#5b1d14": "shade",
+        "#e1a315": "trim",
+        "#ca860b": "trimShade",
+        "#f5ecd8": "helmet",
+        "#faf5f0": "helmet",
+        "#b6ad9d": "helmetShade",
+        "#a39787": "helmetShade",
+        "#7a7064": "helmetShade",
+        "#21273f": "pants"
+      },
+      "approved": {
+        "date": "2026-11-27"
+      },
+      "source": {
+        "asset_id": "918a831b-bacd-4d33-bb67-043aca7c6943",
+        "model": "pixel-engine-v1.5",
+        "prompt": "docs/art/prompts/skater.md",
+        "still_asset_id": "9eeb43be-a11b-4be0-82a3-27e9583b318f"
+      },
+      "sha12": "df0a2d8d19c7"
+    },
+    {
+      "id": "equipment.stick",
+      "kind": "equipment",
+      "file": "equipment/stick.png",
+      "frame": {
+        "w": 64,
+        "h": 16
+      },
+      "frames": 1,
+      "maxColors": 16,
+      "source": {
+        "asset_id": "9137c39d-3e6f-4f3d-8bcc-80be7792786b",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/pilot.md"
+      },
+      "sha12": "0635038a2622"
+    },
+    {
+      "id": "equipment.puck",
+      "kind": "equipment",
+      "file": "equipment/puck.png",
+      "frame": {
+        "w": 16,
+        "h": 16
+      },
+      "frames": 1,
+      "maxColors": 16,
+      "source": {
+        "asset_id": "d9f2b19e-e1c9-492d-8511-cb6327a12e8f",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/pilot.md"
+      },
+      "sha12": "aab99916dc10"
+    },
+    {
+      "id": "world.bonifatiusplatz.plane-tree",
+      "kind": "world",
+      "file": "world/bonifatiusplatz/plane-tree.png",
+      "frame": {
+        "w": 80,
+        "h": 80
+      },
+      "frames": 1,
+      "anchor": {
+        "x": 40,
+        "y": 78
+      },
+      "maxColors": 16,
+      "source": {
+        "asset_id": "5e75d280-01cf-4bb1-8d6b-5b3ec9196e83",
+        "model": "gemini-nano-banana-2.1",
+        "prompt": "docs/art/prompts/pilot.md",
+        "style_asset_ids": [
+          "ac3f660c-397a-430f-b292-eb5bc6447c1f"
+        ]
+      },
+      "sha12": "17dd5f17043b"
+    }
+  ]
 }
