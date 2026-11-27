@@ -4,6 +4,7 @@
 // device the Google photorealistic 3D tiles can be switched on as well; without it the view
 // stands on the aerial photo alone. An inspection view, not gameplay yet.
 import { fromUtm32, toUtm32 } from './utm.js';
+import { placeLibrary, usable } from './bibliothek.js';
 
 const CESIUM_VERSION = '1.147.0';    // keep in step with src/intro/photoreal.js
 const GOOGLE_3D_TILES = 2275207;     // Cesium ion asset, as in the intro
@@ -40,13 +41,20 @@ const LAYERS = [
   { id: 'baeume', name: 'Bäume (OSM, schematisch)', on: true },
   { id: 'einfriedungen', name: 'Zäune, Mauern (OSM)', on: true },
   { id: 'platz', name: 'Bolzplatz (Verein)', on: true },
+  { id: 'bibliothek', name: 'Art-Bibliothek (SpriteCook)', on: true },
 ];
 const USE_COLOR = { 'Straßenverkehr': '#8d8a85', 'Weg': '#d9c79a', 'Wohnbaufläche': '#e8dcc0', 'Sport-, Freizeit- und Erholungsfläche': '#8fbf6a' };
 
 async function main() {
   status('Lade Geodaten …');
-  const [frame, gebaeude, nutzung, wege, baeume, einfriedungen, platz] = await Promise.all(
-    ['rahmen.json', 'gebaeude.geojson', 'nutzung.geojson', 'wege.geojson', 'baeume.geojson', 'einfriedungen.geojson', 'platz.geojson'].map(load));
+  const [frame, gebaeude, nutzung, wege, baeume, einfriedungen, platz, ausstattung] = await Promise.all(
+    ['rahmen.json', 'gebaeude.geojson', 'nutzung.geojson', 'wege.geojson', 'baeume.geojson', 'einfriedungen.geojson', 'platz.geojson', 'ausstattung.geojson'].map(load));
+  // The art library: sprites stand where their manifest entry binds them (see bibliothek.js)
+  const manifest = await fetch(new URL('../../assets/manifest.json', import.meta.url)).then((r) => (r.ok ? r.json() : { assets: [] })).catch(() => ({ assets: [] }));
+  const preview = Q.get('preview') === 'art';
+  const geo = { baeume, ausstattung, einfriedungen, wege, platz };
+  // a layer that has a sprite does not need its schematic stand-in as well
+  for (const a of usable(manifest, preview)) if (a.place.layer === 'baeume') LAYERS.find((l) => l.id === 'baeume').on = false;
   status('Lade 3D-Ansicht …');
   const Cesium = await loadCesium(Q.get('cesiumBase') || `https://cdn.jsdelivr.net/npm/cesium@${CESIUM_VERSION}/Build/Cesium/`);
   Cesium.Ion.defaultAccessToken = undefined; // nothing here needs Cesium ion unless the Google layer is switched on
@@ -129,6 +137,8 @@ async function main() {
         label: { text: p.name, font: 'bold 14px sans-serif', fillColor: css('#ffffff'), outlineColor: css('#000000'), outlineWidth: 3, style: Cesium.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new Cesium.Cartesian2(10, -10), disableDepthTestDistance: Infinity } });
       if (p.art === 'achse') court.add({ polyline: { positions: f.geometry.coordinates.map((q) => pos(q, 0.4)), width: 3, material: new Cesium.PolylineArrowMaterialProperty(css(p.name === 'a' ? '#ffd23f' : '#3fd2ff')) } });
     }
+    const library = layer('bibliothek');
+    placeLibrary({ Cesium, entities: library, manifest, geo, frame, pos, preview }).then((n) => { $('bibliothek').textContent = `${n} Sprites aus der Art-Bibliothek` + (preview ? ' (mit wartenden)' : ''); });
     scene.requestRender();
   }
 

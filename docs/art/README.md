@@ -2,7 +2,7 @@
 
 How art gets from an idea into the running game. SpriteCook produces the art; Claude drives it through the SpriteCook plugin; this repository holds the results, their manifest and the checks.
 
-Status (2026-11-27, after merging the GitHub state): this branch now carries the full game from GitHub (skeleton-drawn chibi figures in `src/world/figures.js`, the Borstentiere and Bonny built in, the real Boni court, intro). The art library described here (manifest, loader, checker, fit tools, the owner's approvals) is intact, but **the game does not draw library sprites at the moment**: the hooks written for the older sprite renderer (`skaterArt`, the tree in the arena corner, the `borstentiere` entry and `worldDensity` in `config.js`) went with that renderer. The approved skater still and stride stay in `assets/characters/skater/` as approved art waiting for a place in the figure system. Sections below that mention those hooks describe the state before the merge.
+Status (2026-11-27, Phase 3): the pipeline runs from SpriteCook to the running world view. `tools/assets/library.mjs` takes a generated picture, fits it, names and files it by its id, writes the manifest entry and runs the checks; the entry also says where the asset stands, and `welt.html` puts it there (a tree on every mapped tree, a bench on every mapped bench, skater, stick and puck on the court). The initial set is in the table in section 6a. The owner has approved the skater still and stride; tree, bench, stick and puck wait for approval and show only with `?preview=art`. The 2D match (`index.html`) still draws its own skeleton figures and does not use library sprites; the hooks for the older sprite renderer described further down are gone.
 
 ## 1. What SpriteCook can do
 
@@ -144,6 +144,34 @@ What the pilot showed:
 - The stick and the puck are far larger than their in-play size (the puck in play is 5×3 px), so they serve as UI art, not as play sprites.
 - The goalie, the stick in play, the puck in play and the arena are still code-drawn and do not match the new skater yet.
 - The tree stands in an arena corner only to prove the route; a world for it does not exist yet.
+
+## 6a. Initial set and the one-command intake (Phase 3)
+
+| Asset | Id | Size | Stands | State |
+| --- | --- | --- | --- | --- |
+| Player | `character.skater.glide` | 84×84 | – | approved |
+| Animation: stride, 8 frames | `character.skater.stride` | 84×84 × 8 | court centre, 1.4 m tall, in the Borstentiere kit | approved |
+| Hockey stick | `equipment.stick` | 76×62 | on the court next to the player | waiting |
+| Puck | `equipment.puck` | 36×28 | on the court, true size (7 cm, hard to see) | waiting |
+| Tree: plane tree | `world.bonifatiusplatz.plane-tree` | 80×80 | on each of the 82 trees mapped in `baeume.geojson`, 14 m tall (assumed) | waiting |
+| Environmental object: park bench | `prop.bench` | 70×64 | on each of the 22 benches mapped in `ausstattung.geojson` | waiting |
+
+Pictures: `set/bogen.png` (bench, puck, stick as generated), `set/welt-baeume.jpg`, `set/welt-platz.jpg` (in the world view with `?preview=art`). Prompts: `prompts/set.md`, `prompts/skater.md`, `prompts/pilot.md`. Bench, stick and puck were generated with the chosen skater as style reference (`gemini-nano-banana-2.1`, 12 credits each).
+
+From a downloaded picture to the world it is one command; nothing is placed by hand:
+
+```sh
+node tools/assets/library.mjs add art/candidates/<folder>/bench.png prop.bench --height 0.9 \
+     --place ausstattung:amenity=bench --asset <SpriteCook id> --model gemini-nano-banana-2.1 --prompt docs/art/prompts/set.md
+node tools/assets/library.mjs approve prop.bench      # the owner's yes
+node tools/assets/library.mjs list
+```
+
+- **Name and folder** come from the id (`kind.subject[.variant]` → `assets/<kind folder>/<subject>[/<variant>].png`).
+- **Fit:** trimmed, stood on the bottom edge, at most 32 colours, hard alpha; animation strips with `--frames n` on one ground line.
+- **Placement** is part of the manifest entry: `place.layer` + `place.match` (every matching point of a geodata layer in `locations/<ort>/geo`) or `place.court` (court metres), plus `worldHeight` in metres. `src/welt/bibliothek.js` reads it. A layer that has a sprite hides its schematic stand-in.
+- **Approval** stays with the owner: a re-added picture loses it; `approve` sets it.
+- **Not automated:** the generation call itself (it runs through the SpriteCook tools in a Claude session and spends credits), the choice between candidates, and separating team colours on a new character (see `prompts/skater.md`).
 
 ## 7. Open decisions
 
