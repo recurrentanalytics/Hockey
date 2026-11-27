@@ -1,5 +1,9 @@
 node_modules/
 .DS_Store
+
+# Playwright output (tests/e2e)
+test-results/
+playwright-report/
 art/candidates/
 
 # Android build (web files are copied in by tools/android/build.sh)

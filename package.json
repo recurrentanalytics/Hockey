@@ -2,8 +2,20 @@
   "name": "borstenboom",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "node --test \"tests/*.test.mjs\"",
-    "assets:check": "node tools/assets/validate.mjs assets"
+    "test:sim": "node --test tests/simulation.test.mjs",
+    "test:e2e": "playwright test",
+    "assets:check": "node tools/assets/validate.mjs assets",
+    "precache:check": "node tools/app/precache.cjs --check",
+    "balance": "node tools/test/balance.mjs",
+    "ci": "npm run assets:check && npm run precache:check && npm test && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "cesium": "1.147.0"
   }
 }
