@@ -133,3 +133,23 @@ python3 serve.py                                            # Ansicht: http://lo
 - Der Ausschnitt ist ein Quadrat um die Platzmitte (`geodaten.halbe_seite_m` in `tools/ort/boni.json`, derzeit 200 m). Für Nachbarblöcke den Wert vergrößern.
 - Die Ansicht legt die Ebenen auf Wunsch über das Luftbild oder die Liegenschaftskarte des LGLN und rechnet den Zeiger in Platzmeter um. Bilder: `docs/ort/boni_geodaten_ansicht.jpg`, `docs/ort/boni_geodaten_luftbild.jpg` (Luftbild © GeoBasis-DE / LGLN, CC BY 4.0).
 - Das Spiel liest diese Daten noch nicht. Sie sind die Grundlage für die Welt um den Platz.
+
+## Weltansicht (`welt.html`)
+
+Der Boni als begehbare 3D-Ansicht aus den Vektor-Geodaten, im selben 3D-Unterbau wie das Intro (CesiumJS):
+
+```sh
+python3 serve.py      # dann http://localhost:8000/welt.html   (?sicht=oben|schraeg|spiel|platz)
+```
+
+- **Boden:** das amtliche Luftbild DOP20, live aus dem WMS des LGLN (3 km um den Platz), auf dem Ellipsoid.
+- **Gebäude:** die ALKIS-Grundrisse als Volumen. Die Höhe kommt aus `hoehe_m` (OSM-Höhe oder Schätzung aus Geschossen); Grundrisse ohne Angabe stehen heller und 10 m hoch, Durchfahrten und Arkaden 4 m.
+- **Flächen und Wege:** ALKIS-Nutzung halb durchsichtig über dem Luftbild, OSM-Wege als Linien, Zäune und Mauern als 1,4 m hohe Wände.
+- **Bäume:** an ihrer OSM-Position, als Kegel mit angenommener Größe (9 m hoch, 3 m Kronenradius). Die Größe steht nicht in den Daten.
+- **Bolzplatz:** Zaunlinie, Ecken A–D und die Achsen a (gelb) und b (blau).
+- **Kamera:** frei drehen, zoomen, kippen; Knöpfe für Schrägblick, Draufsicht, Platz und die Spielkamera (Richtung 118,2°, 60° aus der Senkrechten).
+- **Zeiger und Klick:** Position in UTM und Platzmetern, Eigenschaften des angeklickten Objekts.
+- **Google-3D-Kacheln:** zuschaltbar, wenn auf dem Gerät der Cesium-Token des Vereins gespeichert ist (wie im Intro). Dann stehen die Grundrisse halb durchsichtig auf der gemessenen Bodenhöhe der Kacheln. Dieser Teil ist ohne Token geschrieben und noch nicht ausprobiert.
+- **Gelände:** keins. Ohne die Google-Kacheln ist die Welt eben.
+
+Bilder: `docs/ort/boni_welt_schraeg.jpg`, `boni_welt_platz.jpg`, `boni_welt_spielkamera.jpg` (Luftbild © GeoBasis-DE / LGLN, CC BY 4.0). Die Koordinaten rechnet `src/welt/utm.js` um; ein Test hält sie mit `tools/ort/utm.py` gleich.
