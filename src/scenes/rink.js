@@ -119,6 +119,8 @@ export class RinkScene {
   }
 
   update(dt) {
+    // a short slow motion right after a goal
+    if (this.slowT > 0) { this.slowT -= dt; dt *= 0.35; }
     const { input } = this.app;
     if (input.touch.pausePressed) return this.pause();
     for (const h of this.match.humans) {
@@ -166,7 +168,7 @@ export class RinkScene {
         case 'post': sfx.play('post', e.speed / 20); sfx.play('ooh'); this.shake = Math.max(this.shake, 0.15); this.app.world.jiggle(Math.sign(m.puck.pos.x), 0.35); break;
         case 'save': sfx.play('save'); this.fx.puff(m.puck.pos.x, m.puck.pos.y); if (e.speed > 20 || e.dist < 5) sfx.play('ooh', 0.8); break;
         case 'hit': if (e.approach > 4.5 || e.victim.downT > 0) sfx.play('hit', e.approach / 8); if (e.approach > 5) { this.shake = Math.max(this.shake, 0.2); this.fx.stars(e.victim.pos.x, e.victim.pos.y); } if (e.victim.downT > 0) this.fx.puff(e.victim.pos.x, e.victim.pos.y, 0.1, 9); break;
-        case 'goal': sfx.play('horn'); this.shake = 0.5; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); this.app.world.jiggle(this.lampSide, 1); if (e.side === 'home') this.waveT = 3.5; this.fx.confetti(m.puck.pos.x - Math.sign(m.puck.pos.x) * 3, m.puck.pos.y); break;
+        case 'goal': sfx.play('horn'); this.shake = 0.5; this.slowT = 1.1; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); this.app.world.jiggle(this.lampSide, 1); if (e.side === 'home') this.waveT = 3.5; this.fx.confetti(m.puck.pos.x - Math.sign(m.puck.pos.x) * 3, m.puck.pos.y); break;
         case 'whistle': sfx.play('whistle'); break;
         case 'break': case 'final': sfx.play('buzzer'); if (e.type === 'final') sfx.play('cheer'); break;
         case 'attempt': if (!e.scored) sfx.play('save', 0.6); break;

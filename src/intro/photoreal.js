@@ -236,7 +236,7 @@ export async function run({ token, cesiumBase }) {
 
   // ---------------------------------------------------------------- narration
   const caption = document.getElementById('caption'), titleName = document.getElementById('titleName'), titleSub = document.getElementById('titleSub');
-  titleName.textContent = GAME_TITLE.name; titleSub.textContent = GAME_TITLE.sub;
+  titleName.innerHTML = '<div class="logo"><span class="l1">BORSTEN</span><span class="l2">BOOM!</span></div>'; titleSub.textContent = GAME_TITLE.sub;
   const voice = {
     warned: false,
     speak(text) {

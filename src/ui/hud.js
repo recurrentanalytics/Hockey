@@ -1,9 +1,14 @@
 // Shared UI bits: title header, button hint bar, toasts.
 import { PAL } from '../engine/palette.js';
-import { drawText, textWidth, drawTextOutlined } from '../engine/font.js';
+import { drawText, textWidth, drawTextOutlined, drawLogo } from '../engine/font.js';
 import { panel } from '../engine/draw.js';
 
 export function header(ctx, W, title, subtitle) {
+  if (title === 'BORSTENBOOM!') {
+    drawLogo(ctx, W / 2, 3, 40);
+    if (subtitle) drawTextOutlined(ctx, subtitle, W / 2, 45, { color: PAL.cloud, align: 'center' });
+    return;
+  }
   drawTextOutlined(ctx, title, W / 2, 16, { color: PAL.white, scale: 2, align: 'center', big: true });
   ctx.fillStyle = PAL.yellow;
   const w = textWidth(title, 2, true);

@@ -5,6 +5,7 @@ import { PAL } from '../engine/palette.js';
 import { pixelLine } from '../engine/draw.js';
 import { drawText } from '../engine/font.js';
 import { RINK_CORE, goalBox } from './rink.js';
+import { FIXED } from './projection.js';
 import { project } from './projection.js';
 import { skaterFigures, SK_W, SK_AX, SK_AY } from './sprites.js';
 
@@ -316,7 +317,15 @@ export class Skater {
 
   drawShadow(ctx, ox, oy) {
     const p = project(this.pos.x, this.pos.y);
-    hd(ctx, () => ctx.drawImage(softShadow(), Math.round((p.x + ox) * RES) - 15, Math.round((p.y + oy) * RES) - 4));
+    hd(ctx, () => {
+      if (FIXED) {
+        // on the real court: a long soft shadow cast towards the lower right, like the trees' shadows
+        ctx.save(); ctx.globalAlpha = 0.45;
+        ctx.drawImage(softShadow(), Math.round((p.x + ox) * RES) - 8, Math.round((p.y + oy) * RES) - 2, 46, 11);
+        ctx.restore();
+      }
+      ctx.drawImage(softShadow(), Math.round((p.x + ox) * RES) - 15, Math.round((p.y + oy) * RES) - 4);
+    });
     // Controlled player: a ring in the player's colour round the skates.
     if (this.human) ctx.drawImage(ringSprite(this.human.color), Math.round(p.x + ox - 9), Math.round(p.y + oy - 3));
   }

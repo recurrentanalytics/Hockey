@@ -45,6 +45,7 @@ export const OPTIONS = {
     { value: 20, label: '20 MIN' },
   ],
   difficulty: [
+    { value: 'kids', label: 'KIDS' },
     { value: 'easy', label: 'LEICHT' },
     { value: 'normal', label: 'NORMAL' },
     { value: 'hard', label: 'SCHWER' },

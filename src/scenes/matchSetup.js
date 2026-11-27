@@ -35,7 +35,7 @@ export class MatchSetupScene extends MenuScene {
   }
 
   drawExtra(ctx, W) {
-    const note = '4 GEGEN 4 MIT TORHÜTERN NACH DEN GEWÄHLTEN REGELN';
+    const note = `${FIXED ? 3 : 4} GEGEN ${FIXED ? 3 : 4} MIT TORHÜTERN NACH DEN GEWÄHLTEN REGELN`;
     const nw = textWidth(note) + 10;
     panel(ctx, Math.round(W / 2 - nw / 2), 167, nw, 11, { fill: PAL.ink, border: null, alpha: 0.7 });
     drawText(ctx, note, W / 2, 170, { color: PAL.cloud, align: 'center' });

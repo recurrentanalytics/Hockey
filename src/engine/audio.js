@@ -27,6 +27,7 @@ export class Audio {
       for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
     }
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+    if (globalThis.BONI_3D && !this.amb) this.ambience(); // outdoor sound on the real court
   }
 
   get ready() {
@@ -95,7 +96,13 @@ export class Audio {
         this.tone(t, 0.5, { freq: 2630, gain: 0.12 * v });
         this.noise(t, 0.03, { type: 'highpass', freq: 3000, gain: 0.3 * v });
         break;
-      case 'boards':  // dull thud into the boards
+      case 'boards':  // dull thud into the boards (on the real Boni court: the ball rattles the fence)
+        if (globalThis.BONI_3D) {
+          this.noise(t, 0.35, { type: 'highpass', freq: 2400, gain: 0.35 * v });
+          for (const f of [1320, 1710, 2290]) this.tone(t, 0.45, { type: 'square', freq: f, gain: 0.025 * v });
+          this.noise(t, 0.1, { type: 'lowpass', freq: 500, gain: 0.3 * v });
+          break;
+        }
         this.noise(t, 0.16, { type: 'lowpass', freq: 380, gain: 0.8 * v });
         this.tone(t, 0.12, { freq: 95, gain: 0.35 * v, slide: 60 });
         break;
@@ -157,6 +164,24 @@ export class Audio {
   /**
    * Play part of a song file (e.g. the Borstentiere hymn as goal song), fading out after `seconds`.
    */
+  /** Outdoor sound at the Boni: soft city rumble, leaves, and birds chirping now and then. */
+  ambience() {
+    if (!this.ctx || this.amb) return;
+    const c = this.ctx;
+    const bed = c.createBufferSource(); bed.buffer = this.noiseBuf; bed.loop = true;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+    const g = c.createGain(); g.gain.value = 0.05;
+    bed.connect(lp).connect(g).connect(this.master); bed.start();
+    this.amb = { bed, g };
+    const chirp = () => {
+      if (!this.ctx) return;
+      const t = c.currentTime + 0.02, base = 2600 + Math.random() * 1800, n = 2 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < n; i++) this.tone(t + i * 0.11, 0.08, { freq: base * (1 + 0.08 * Math.sin(i)), gain: 0.03, slide: base * 1.25 });
+      this.amb.timer = setTimeout(chirp, 1400 + Math.random() * 4200);
+    };
+    chirp();
+  }
+
   song(src, seconds = 14, from = 0) {
     if (!settings.sound) return;
     try {

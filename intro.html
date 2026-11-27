@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#0e0f1a" />
   <title>Borstenboom!</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="assets/fonts/fonts.css" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="assets/app/icon-192.png" />
   <link rel="apple-touch-icon" href="assets/app/icon-192.png" />
@@ -38,8 +39,16 @@
     #title { position: absolute; left: 0; right: 0; top: 7%; text-align: center; opacity: 0; transition: opacity .8s, transform .8s; transform: translateY(-12px);
              text-shadow: 0 3px 0 #16110d, 0 0 18px rgba(0,0,0,.55); }
     #title.on { opacity: 1; transform: none; }
-    #title .club { font-size: clamp(30px, 7vw, 76px); letter-spacing: .05em; color: #ff3b4a; -webkit-text-stroke: 2px #16110d; }
-    #title .sub { font: italic 600 clamp(15px, 2.6vw, 28px) Georgia, serif; margin-top: .25em; color: #fff; }
+    /* BORSTENBOOM! logo: the same lettering as in the game (src/engine/font.js drawLogo) */
+    .logo { display: inline-flex; flex-direction: column; align-items: center; transform: rotate(-2.6deg); font-family: 'Luckiest Guy', sans-serif; line-height: .92; }
+    .logo span { -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: .08em #16110d; paint-order: stroke fill;
+                 filter: drop-shadow(.05em .08em 0 #16110d); }
+    .logo .l1 { font-size: 1em; background-image: linear-gradient(#fff3a8, #ffc21a); }
+    .logo .l2 { font-size: 1.33em; background-image: linear-gradient(#ff7a6b, #e8243c); }
+    #title .club { font-size: clamp(34px, 7.5vw, 84px); }
+    #title .sub { font: 700 clamp(15px, 2.6vw, 28px) Fredoka, Arial, sans-serif; margin-top: .3em; color: #fff; text-shadow: 0 2px 0 #16110d, 0 0 12px rgba(0,0,0,.6); }
+    #cover .logo { font-size: clamp(30px, 6vw, 64px); margin-bottom: 10px; }
+    #coverText, #go, #token button { font-family: Fredoka, Arial, sans-serif !important; font-weight: 700; }
     #go { position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); pointer-events: auto; opacity: 0; transition: opacity .6s;
           font: inherit; font-size: clamp(16px, 2.6vw, 24px); color: #16110d; background: #ffd23f; border: 3px solid #16110d; border-radius: 999px;
           padding: .55em 1.4em; box-shadow: 0 4px 0 #16110d; cursor: pointer; }
@@ -58,7 +67,7 @@
   <div id="cesium"></div>
   <canvas id="gl"></canvas>
   <canvas id="screen" tabindex="0" style="display:none"></canvas>
-  <div id="cover"><div id="coverText"></div><div id="coverTrack"><div id="coverBar"></div></div></div>
+  <div id="cover"><div class="logo"><span class="l1">BORSTEN</span><span class="l2">BOOM!</span></div><div id="coverText"></div><div id="coverTrack"><div id="coverBar"></div></div></div>
   <div id="ui">
     <div id="title"><div class="club" id="titleName"></div><div class="sub" id="titleSub"></div></div>
     <div id="caption"></div>

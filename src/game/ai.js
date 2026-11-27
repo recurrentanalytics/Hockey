@@ -16,6 +16,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // speed: share of top speed · react: seconds between decisions
 // poke: chance to poke when in range · shotErr: aim error (m) · pass: chance to pass under pressure
 const LEVELS = {
+  kids:   { speed: 0.7,  react: 0.5,  poke: 0.08, shotErr: 0.6, pass: 0.3, read: 0.85 }, // slow, forgiving, rarely steals the ball
   easy:   { speed: 0.82, react: 0.38, poke: 0.18, shotErr: 0.4, pass: 0.45, read: 0.6 },
   normal: { speed: 0.92, react: 0.24, poke: 0.3, shotErr: 0.26, pass: 0.65, read: 0.35 },
   hard:   { speed: 1.0,  react: 0.14, poke: 0.45, shotErr: 0.15, pass: 0.85, read: 0.2 },

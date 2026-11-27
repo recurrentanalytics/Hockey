@@ -3,6 +3,7 @@
 //  - ui:    fixed resolution, always on top
 import { VIEW, RES } from '../config.js';
 import { makeCanvas } from './raster.js';
+import { setHiresText } from './font.js';
 
 export class Display {
   constructor(canvas, settings) {
@@ -41,6 +42,12 @@ export class Display {
     this.ui.height = this.height;
     this.uctx = this.ui.getContext('2d');
     this.uctx.imageSmoothingEnabled = false;
+    // full-resolution text layer on top of the UI layer (real fonts, see font.js)
+    this.text ??= makeCanvas(1, 1);
+    this.text.width = Math.max(1, Math.round(this.width * s));
+    this.text.height = Math.max(1, Math.round(this.height * s));
+    this.tctx = this.text.getContext('2d');
+    setHiresText(this.uctx, this.tctx, s);
     this.setZoom(this.zoom, true);
   }
 
@@ -68,6 +75,8 @@ export class Display {
 
   beginFrame() {
     this.uctx.clearRect(0, 0, this.width, this.height);
+    this.tctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.tctx.clearRect(0, 0, this.text.width, this.text.height);
   }
 
   present() {
@@ -78,6 +87,8 @@ export class Display {
     const dw = this.width * this.scale, dh = this.height * this.scale;
     sctx.drawImage(this.world, this.ox, this.oy, dw, dh);
     sctx.drawImage(this.ui, this.ox, this.oy, dw, dh);
+    sctx.imageSmoothingEnabled = true;
+    sctx.drawImage(this.text, this.ox, this.oy, dw, dh);
   }
 
   /** Client (CSS px) → UI layer pixel coordinates. */

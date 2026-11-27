@@ -1,5 +1,5 @@
 import { PAL } from '../engine/palette.js';
-import { drawText, drawTextOutlined } from '../engine/font.js';
+import { drawText, drawTextOutlined, drawLogo } from '../engine/font.js';
 import { MainMenuScene } from './mainMenu.js';
 
 export class TitleScene {
@@ -36,8 +36,8 @@ export class TitleScene {
         x += adv;
       });
     };
-    word('BORSTEN', 30, PAL.white, PAL.slate);
-    word('BOOM!', 70, PAL.red, PAL.redDark);
+    drawLogo(ctx, W / 2, 14 + Math.sin(this.t * 2) * 1.5, 86);
+    void word;
     // Taglines, including the Boni Borstentiere's own
     const lines = ['EIN INLINEHOCKEY-ABENTEUER', 'DER BONI BORSTENTIERE', 'WAS SIND WIR? EIN BORSTENTIER!', 'HAARE OPTIONAL', 'ZUSAMMEN SIND WIR STARK!', 'MIT BONNY AUS DER EILENRIEDE'];
     drawTextOutlined(ctx, lines[Math.floor(this.t / 3) % lines.length], W / 2, 112, { color: PAL.pink, align: 'center' });

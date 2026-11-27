@@ -8,7 +8,7 @@ import { TournamentScene } from './tournamentScene.js';
 export class MainMenuScene extends MenuScene {
   constructor(app) {
     super(app, {
-      title: 'INLINE HOCKEY',
+      title: 'BORSTENBOOM!',
       subtitle: 'HAUPTMENÜ',
       top: 64,
       width: 150,
