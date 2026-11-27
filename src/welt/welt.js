@@ -7,6 +7,8 @@ import { fromUtm32, toUtm32 } from './utm.js';
 import { placeLibrary, usable, frameImages } from './bibliothek.js';
 import { hain, kronenkarte, baumbilder, pflanze } from './baeume.js';
 import { starte } from './spieler.js';
+import { pixelboden } from './pixelboden.js';
+import { platzmeter } from './baeume.js';
 
 const CESIUM_VERSION = '1.147.0';    // keep in step with src/intro/photoreal.js
 const GOOGLE_3D_TILES = 2275207;     // Cesium ion asset, as in the intro
@@ -36,10 +38,11 @@ function loadCesium(dir) {
 
 const LAYERS = [
   { id: 'luftbild', name: 'Luftbild DOP20 (LGLN)', on: true },
+  { id: 'pixelboden', name: 'Pixel-Boden um den Platz', on: true },
   { id: 'google', name: 'Google-3D-Kacheln', on: false },
-  { id: 'nutzung', name: 'Straßen, Wege, Flächen (ALKIS)', on: true },
+  { id: 'nutzung', name: 'Straßen, Wege, Flächen (ALKIS)', on: false },
   { id: 'gebaeude', name: 'Gebäude als Volumen (ALKIS)', on: true },
-  { id: 'wege', name: 'Wegelinien (OSM)', on: true },
+  { id: 'wege', name: 'Wegelinien (OSM)', on: false },
   { id: 'baeume', name: 'Bäume mit Schatten (OSM-Standorte)', on: true },
   { id: 'einfriedungen', name: 'Zäune, Mauern (OSM)', on: true },
   { id: 'platz', name: 'Bolzplatz (Verein)', on: true },
@@ -49,8 +52,8 @@ const USE_COLOR = { 'Straßenverkehr': '#8d8a85', 'Weg': '#d9c79a', 'Wohnbauflä
 
 async function main() {
   status('Lade Geodaten …');
-  const [frame, gebaeude, nutzung, wege, baeume, einfriedungen, platz, ausstattung] = await Promise.all(
-    ['rahmen.json', 'gebaeude.geojson', 'nutzung.geojson', 'wege.geojson', 'baeume.geojson', 'einfriedungen.geojson', 'platz.geojson', 'ausstattung.geojson'].map(load));
+  const [frame, gebaeude, nutzung, wege, baeume, einfriedungen, platz, ausstattung, flaechen] = await Promise.all(
+    ['rahmen.json', 'gebaeude.geojson', 'nutzung.geojson', 'wege.geojson', 'baeume.geojson', 'einfriedungen.geojson', 'platz.geojson', 'ausstattung.geojson', 'flaechen.geojson'].map(load));
   // The art library: sprites stand where their manifest entry binds them (see bibliothek.js)
   const manifest = await fetch(new URL('../../assets/manifest.json', import.meta.url)).then((r) => (r.ok ? r.json() : { assets: [] })).catch(() => ({ assets: [] }));
   const preview = Q.get('preview') === 'art';
@@ -87,6 +90,24 @@ async function main() {
   scene.globe.depthTestAgainstTerrain = false;
   scene.skyAtmosphere.show = false; scene.fog.enabled = false;
   viewer.creditDisplay.addStaticCredit(new Cesium.Credit('Wege, Bäume, Höhen © OpenStreetMap-Mitwirkende, ODbL', true));
+
+  // ---- the pixel ground: the aerial photo round the court as pixel art, dissolving into the real photo (pixelboden.js)
+  const inMetern = (ring) => ring.map((p) => platzmeter(frame, p));
+  const nah = (ring) => ring.some((p) => Math.hypot(...p) < 75);
+  const platzFlaeche = flaechen.features.find((f) => f.properties.leisure === 'playground' && f.geometry.type === 'Polygon' && f.geometry.coordinates[0].some((p) => Math.hypot(...platzmeter(frame, p)) < 30));
+  const umrisse = [
+    ...platz.features.filter((f) => f.properties.art === 'zaun').map((f) => inMetern(f.geometry.coordinates[0])),
+    ...flaechen.features.filter((f) => f.properties.leisure === 'playground' && f.geometry.type === 'Polygon').map((f) => inMetern(f.geometry.coordinates[0])),
+    ...nutzung.features.filter((f) => f.properties.nutzart === 'Weg' && f.geometry.type === 'Polygon').map((f) => inMetern(f.geometry.coordinates[0])),
+  ].filter(nah);
+  let pixelLayer = null;
+  pixelboden({ frame, linien: umrisse, platzRing: platzFlaeche ? inMetern(platzFlaeche.geometry.coordinates[0]) : null,
+    wms: `${LGLN}dop_wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=ni_dop20&STYLES=` }).then((b) => {
+    pixelLayer = new Cesium.ImageryLayer(new Cesium.SingleTileImageryProvider({ url: b.url, rectangle: Cesium.Rectangle.fromDegrees(b.west, b.south, b.east, b.north), tileWidth: b.px, tileHeight: b.px }),
+      { magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST, minificationFilter: Cesium.TextureMinificationFilter.NEAREST });
+    pixelLayer.show = LAYERS.find((l) => l.id === 'pixelboden').on;
+    viewer.imageryLayers.add(pixelLayer);
+  }).catch((e) => status('Pixel-Boden nicht erzeugt: ' + e.message));
 
   // ---- geometry: UTM metres → positions on the globe. `ground` is the height everything stands on:
   // 0 on the plain aerial photo (the globe is the ellipsoid, no terrain model), the measured street
@@ -200,7 +221,8 @@ async function main() {
     label.innerHTML = `<input type="checkbox" ${l.on ? 'checked' : ''} ${usable ? '' : 'disabled'}> ${l.name}${usable ? '' : ' <small>(braucht den Cesium-Token des Vereins)</small>'}`;
     label.querySelector('input').onchange = async (ev) => {
       l.on = ev.target.checked;
-      if (l.id === 'luftbild') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
+      if (l.id === 'pixelboden') { if (pixelLayer) pixelLayer.show = l.on; }
+      else if (l.id === 'luftbild') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
       else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); scene.globe.show = true; } }
       else sources[l.id].show = l.on;
       scene.requestRender();

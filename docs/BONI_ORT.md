@@ -169,3 +169,18 @@ In `welt.html` steht auf jedem in OSM kartierten Baumstandort ein Baum aus Stamm
 - **Noch nicht:** Häuser und Zäune halten den Spieler nicht auf. Art, Kronenform und Stammumfang sind keine Messwerte. Der Sonnenstand des Luftbilds ist nicht ausgewertet.
 
 Bilder: `docs/art/set/welt-fahren.jpg`, `docs/art/set/welt-hinter-baum.jpg`.
+
+## Pixel-Boden: vom Luftbild zur Pixelart (`src/welt/pixelboden.js`)
+
+Rund um den Bolzplatz wird das Luftbild selbst zu Pixelart; das Viertel außen bleibt das unveränderte Foto. Schalter „Pixel-Boden um den Platz“ in `welt.html`.
+
+- **Quelle:** dasselbe DOP20, einmal für 260 × 260 m um die Platzmitte geholt und mit seiner eigenen Georeferenz wieder auf den Boden gelegt. Nichts wird verschoben oder verzerrt.
+- **Pixelraster:** fest in der Welt, 0,25 m je Pixel, ohne Glättung dargestellt. Es wandert nicht mit der Kamera.
+- **Kantenvereinfachung:** leichte Glättung vor der Farbreduktion, damit Kleinteiliges (Äste, Rauschen) zu Flächen wird.
+- **Palette und Dithering:** die warme Palette des Art-Standards (17 Farben) mit geordnetem 4×4-Raster zwischen benachbarten Tönen.
+- **Umrisse:** dunkle Linie nur entlang echter, kartierter Kanten: Zaun des Bolzplatzes, Umriss des Spielplatzes (OSM), Wegeflächen (ALKIS), und nur dort, wo der Stil schon überwiegt.
+- **Platzboden:** innerhalb des Zauns nur Asphalttöne; Hell und Dunkel des Fotos bleiben, Farbrauschen nicht. Darauf die Markierung des Spiels (Spielfläche 22,8 × 17,2 m, Mittellinie, Torlinien bei 9,2 m).
+- **Maske:** volle Pixelart bis 6 m um den Zaun, dann weich abnehmend bis 26 m, auf der Spielplatzfläche bis 62 m. Der Übergang ist selbst gerastert (2×2-Pixel-Punkte lösen sich ins Foto auf), es gibt keine gerade Kante und kein Rechteck.
+- **Grenzen:** Das Luftbild ist eine Winteraufnahme; Grün entsteht nicht, wo das Foto keins hat. Mit den Google-3D-Kacheln ist der Pixel-Boden nicht zu sehen (die Kacheln ersetzen den Boden). Häuser sind weiter schlichte Volumen, Straßen und Autos außerhalb der Maske unverändert Foto.
+
+Bilder: `docs/ort/boni_hybrid_platz.jpg`, `docs/ort/boni_hybrid_viertel.png` (Luftbild © GeoBasis-DE / LGLN, CC BY 4.0).

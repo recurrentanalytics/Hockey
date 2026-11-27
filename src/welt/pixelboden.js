@@ -1,0 +1,99 @@
+// The ground round the court as pixel art, made from the real aerial photo: fetched once for the
+// surroundings of the court, laid on a world-fixed pixel grid, reduced to the BORSTENBOOM palette
+// with ordered dithering, outlined along the real mapped edges, and dissolved into the untouched
+// photo with a dithered mask that follows the court and the square. Geometry is never moved: the
+// picture keeps the photo's own georeference, outlines are the survey's own lines.
+import { toUtm32, fromUtm32 } from './utm.js';
+
+/** Warm palette of the art standard (docs/art/README.md), plus the greys and browns the square needs. */
+export const PALETTE = ['#2a1d1a', '#f7efdc', '#d9c79a', '#b9b3a4', '#8f8b86', '#7d7868', '#5d5a57', '#4b4a52', '#8fbf6a', '#6f9e4c', '#3f6b3a', '#2c4a2a', '#e2a742', '#a8763f', '#6b4a2f', '#c8553d', '#8a3324']
+  .map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)));
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+/** Ordered-dither threshold in (0, 1) for a grid cell. */
+export const schwelle = (x, y) => (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
+
+export function naechste(r, g, b, palette = PALETTE) {
+  let best = 0, bd = Infinity;
+  for (let i = 0; i < palette.length; i++) { const p = palette[i], d = (r - p[0]) ** 2 * 2 + (g - p[1]) ** 2 * 4 + (b - p[2]) ** 2 * 3; if (d < bd) { bd = d; best = i; } }
+  return palette[best];
+}
+
+/** Distance in metres from a point (court metres) to the fenced court; 0 inside. */
+export function abstandPlatz(a, b, halbA = 12.6, halbB = 9) { return Math.hypot(Math.max(0, Math.abs(a) - halbA), Math.max(0, Math.abs(b) - halbB)); }
+
+/** How much pixel art (0..1) at a distance from the court: all of it up to 6 m, then a soft fall; it reaches further on the square itself. */
+export function maske(abstand, aufDemPlatz) {
+  const weit = aufDemPlatz ? 62 : 26, t = Math.min(1, Math.max(0, (abstand - 6) / (weit - 6)));
+  return 1 - t * t * (3 - 2 * t);
+}
+
+/** Asphalt tones for the court floor: the photo's light and dark survive, its colour noise does not. */
+export const ASPHALT = ['#b9b3a4', '#9a958c', '#8f8b86', '#7d7868', '#5d5a57'].map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)));
+const LINIE = { weiss: [247, 239, 220], rot: [200, 85, 61] };
+/**
+ * The game's own floor markings inside the fence, in court metres (play area 22.8 x 17.2 m, goal lines at
+ * 9.2 m, as in the game on the real court). Returns a colour or null. `zelle` is the pixel size in metres.
+ */
+export function markierung(a, b, zelle = 0.25, feld = { halbA: 11.4, halbB: 8.6, torlinie: 9.2 }) {
+  const aa = Math.abs(a), bb = Math.abs(b), w = zelle * 1.01;
+  if (aa > feld.halbA + w || bb > feld.halbB + w) return null;
+  if (aa > feld.halbA - w || bb > feld.halbB - w) return LINIE.weiss;            // edge of the play area
+  if (aa < w / 2 + zelle / 2) return LINIE.rot;                                   // centre line
+  if (Math.abs(aa - feld.torlinie) < w / 2 + zelle / 2 && bb < feld.halbB) return LINIE.rot; // goal lines
+  if (Math.hypot(a, b) < 0.45) return LINIE.rot;                                  // centre spot
+  return null;
+}
+
+export function imVieleck([x, y], ring) {
+  let drin = false;
+  for (let i = 0; i < ring.length - 1; i++) { const [x1, y1] = ring[i], [x2, y2] = ring[i + 1]; if ((y1 > y) !== (y2 > y) && x < x1 + ((y - y1) * (x2 - x1)) / (y2 - y1)) drin = !drin; }
+  return drin;
+}
+
+const mercator = (lon, lat) => [(lon * 20037508.342789244) / 180, (Math.log(Math.tan(((90 + lat) * Math.PI) / 360)) * 20037508.342789244) / Math.PI];
+
+/**
+ * Build the pixel ground. `linien`: rings/lines in court metres to outline; `platzRing`: the square's outline in court metres.
+ * Returns { url, west, south, east, north, px } for a single image laid on the globe.
+ */
+export async function pixelboden({ frame, linien = [], platzRing = null, halb = 130, px = 1040, wms }) {
+  const [e0, n0] = frame.ursprung_utm32, A = frame.achse_a, B = frame.achse_b;
+  const [lon, lat] = fromUtm32(e0, n0), dLat = halb / 111320, dLon = halb / (111320 * Math.cos((lat * Math.PI) / 180));
+  const west = lon - dLon, east = lon + dLon, south = lat - dLat, north = lat + dLat;
+  const [x0, y0] = mercator(west, south), [x1, y1] = mercator(east, north);
+  const img = new Image(); img.crossOrigin = 'anonymous';
+  img.src = `${wms}&CRS=EPSG:3857&BBOX=${x0},${y0},${x1},${y1}&WIDTH=${px}&HEIGHT=${px}&FORMAT=image/jpeg`;
+  await img.decode();
+  const c = Object.assign(document.createElement('canvas'), { width: px, height: px });
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.filter = 'blur(0.8px)';                     // edge simplification: small detail goes before the palette does
+  g.drawImage(img, 0, 0, px, px);
+  g.filter = 'none';
+  const bild = g.getImageData(0, 0, px, px), d = bild.data;
+  // court metres of a pixel: exact at the four corners, linear in between (millimetres over this window)
+  const ab = (lo, la) => { const [e, n] = toUtm32(lo, la); return [(e - e0) * A[0] + (n - n0) * A[1], (e - e0) * B[0] + (n - n0) * B[1]]; };
+  const nw = ab(west, north), ne = ab(east, north), sw = ab(west, south), se = ab(east, south);
+  const ort = (x, y) => { const u = (x + 0.5) / px, v = (y + 0.5) / px; return [(nw[0] * (1 - u) + ne[0] * u) * (1 - v) + (sw[0] * (1 - u) + se[0] * u) * v, (nw[1] * (1 - u) + ne[1] * u) * (1 - v) + (sw[1] * (1 - u) + se[1] * u) * v]; };
+  const zuBild = ([a, b]) => { const [lo, la] = fromUtm32(e0 + a * A[0] + b * B[0], n0 + a * A[1] + b * B[1]); return [((lo - west) / (east - west)) * px, ((north - la) / (north - south)) * px]; };
+  // outlines of the real mapped edges, drawn hard (no anti-aliasing survives the threshold)
+  const lc = Object.assign(document.createElement('canvas'), { width: px, height: px }), lg = lc.getContext('2d', { willReadFrequently: true });
+  lg.strokeStyle = '#000'; lg.lineWidth = 1.6; lg.lineJoin = 'round';
+  for (const linie of linien) { lg.beginPath(); linie.forEach((p, i) => { const [x, y] = zuBild(p); i ? lg.lineTo(x, y) : lg.moveTo(x, y); }); lg.stroke(); }
+  const kante = lg.getImageData(0, 0, px, px).data;
+  const umriss = PALETTE[0];
+  for (let y = 0; y < px; y++) for (let x = 0; x < px; x++) {
+    const i = (y * px + x) * 4, [a, b] = ort(x, y);
+    const m = maske(abstandPlatz(a, b), platzRing ? imVieleck([a, b], platzRing) : false);
+    // the dissolve is itself dithered, on 2 x 2 cells so the stipple reads as pixels, not as noise
+    if (m <= schwelle(x >> 1, y >> 1)) { d[i + 3] = 0; continue; }
+    if (kante[i + 3] > 110 && m > 0.45) { d[i] = umriss[0]; d[i + 1] = umriss[1]; d[i + 2] = umriss[2]; d[i + 3] = 255; continue; }
+    const t = (schwelle(x, y) - 0.5) * 26;      // ordered dither between neighbouring palette colours
+    const aufPlatz = Math.abs(a) <= 12.6 && Math.abs(b) <= 9;
+    const strich = aufPlatz ? markierung(a, b, (2 * halb) / px) : null;
+    // inside the fence the floor is the game's: asphalt tones only, and the play area's lines on top
+    const [r, gr, bl] = strich ?? (aufPlatz ? naechste(d[i] + t, d[i + 1] + t, d[i + 2] + t, ASPHALT) : naechste(d[i] + t, d[i + 1] + t, d[i + 2] + t));
+    d[i] = r; d[i + 1] = gr; d[i + 2] = bl; d[i + 3] = 255;
+  }
+  g.putImageData(bild, 0, 0);
+  return { url: c.toDataURL('image/png'), west, south, east, north, px };
+}
