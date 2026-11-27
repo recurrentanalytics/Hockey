@@ -1,0 +1,44 @@
+{
+ "abgerufen": "2026-11-27",
+ "bbox_utm32": [
+  550475,
+  5804366,
+  550875,
+  5804766
+ ],
+ "overpass_abfrage": "[out:json][timeout:120][bbox:52.38718,9.74166,52.39082,9.74761];\n(\n  nw[\"building\"];\n  nw[\"building:part\"];\n  nw[\"highway\"];\n  nw[\"area:highway\"];\n  nw[\"leisure\"];\n  nw[\"landuse\"];\n  nw[\"natural\"];\n  nw[\"barrier\"];\n  nw[\"playground\"];\n  nw[\"amenity\"];\n  nw[\"man_made\"];\n  nw[\"shop\"];\n  nw[\"tourism\"];\n  nw[\"historic\"];\n  nw[\"railway\"];\n  nw[\"sport\"];\n  relation[type=multipolygon];\n);\nout body geom qt;\n",
+ "quellen": [
+  {
+   "datei": "roh/alkis_gebaeude.gml.gz",
+   "url": "https://opendata.lgln.niedersachsen.de/doorman/noauth/alkis_wfs_einfach?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=ave:GebaeudeBauwerk&COUNT=1000&SRSNAME=urn:ogc:def:crs:EPSG::25832&BBOX=550475,5804366,550875,5804766,urn:ogc:def:crs:EPSG::25832",
+   "stand": "2026-11-27T11:53:28.033+01:00",
+   "lizenz": "© GeoBasis-DE / LGLN (2026), CC BY 4.0",
+   "bytes": 288399,
+   "sha256": "912cfa110c714f0e58e1e76e06edf7e466043fda35b91188e7896ca142c15875"
+  },
+  {
+   "datei": "roh/alkis_nutzung.gml.gz",
+   "url": "https://opendata.lgln.niedersachsen.de/doorman/noauth/alkis_wfs_einfach?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=ave:Nutzung&COUNT=1000&SRSNAME=urn:ogc:def:crs:EPSG::25832&BBOX=550475,5804366,550875,5804766,urn:ogc:def:crs:EPSG::25832",
+   "stand": "2026-11-27T11:53:28.373+01:00",
+   "lizenz": "© GeoBasis-DE / LGLN (2026), CC BY 4.0",
+   "bytes": 154344,
+   "sha256": "169fe7bfb676265794cd648d6b7a6eada03f117e88f92fc7f0b0a51f638d7188"
+  },
+  {
+   "datei": "roh/alkis_gebaeude_4258.gml.gz",
+   "url": "https://opendata.lgln.niedersachsen.de/doorman/noauth/alkis_wfs_einfach?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=ave:GebaeudeBauwerk&COUNT=1000&SRSNAME=urn:ogc:def:crs:EPSG::4258&BBOX=550475,5804366,550875,5804766,urn:ogc:def:crs:EPSG::25832",
+   "stand": "2026-11-27T11:53:28.650+01:00",
+   "lizenz": "© GeoBasis-DE / LGLN (2026), CC BY 4.0",
+   "bytes": 325485,
+   "sha256": "64ef2167e4201fba7298588a4a05df341a6796653f94214fb20852b0947053d8"
+  },
+  {
+   "datei": "roh/osm.json.gz",
+   "url": "https://overpass-api.de/api/interpreter mit der Abfrage in abruf.json",
+   "stand": "2026-11-27T10:53:12Z",
+   "lizenz": "© OpenStreetMap-Mitwirkende, ODbL 1.0",
+   "bytes": 534466,
+   "sha256": "8143732fe93bc48edd2eff2bc4db7b7a24c30316cd71457812ba95c009e8130a"
+  }
+ ]
+}

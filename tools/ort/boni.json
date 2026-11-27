@@ -11,5 +11,11 @@
     "ausschnitt": { "x0": -2176, "y0": -2395.7, "w": 6120, "h": 6128.6 }
   },
   "raster": { "hoehe_px": 1224, "alkis_px": 2448, "luftbild_px": 2448 },
+  "geodaten": {
+    "beschreibung": "Vektor-Geodaten (tools/ort/geodaten.py): Quadrat um die Platzmitte, Kantenlänge 2 × halbe_seite_m. Für Nachbarblöcke vergrößern, dann abrufen und bauen.",
+    "ziel": "locations/boni/geo",
+    "halbe_seite_m": 200,
+    "erwartet": { "quer_m": 18.0, "laengs_m": 25.2, "blickrichtung_grad": 118.2 }
+  },
   "asphalt": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/clean_asphalt/clean_asphalt_diff_2k.jpg"
 }

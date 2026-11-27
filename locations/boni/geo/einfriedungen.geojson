@@ -1,0 +1,12 @@
+{"type":"FeatureCollection","name":"einfriedungen","titel":"Zäune, Mauern, Hecken, Tore, Poller","quelle":"OpenStreetMap","lizenz":"© OpenStreetMap-Mitwirkende, ODbL 1.0","crs":{"type":"name","properties":{"name":"urn:ogc:def:crs:EPSG::25832"}},"features":[
+{"geometry":{"coordinates":[550756.81,5804386.78],"type":"Point"},"properties":{"barrier":"gate","locked":"yes","osm":"node/11068912951"},"type":"Feature"},
+{"geometry":{"coordinates":[550574.19,5804619.09],"type":"Point"},"properties":{"barrier":"gate","locked":"yes","osm":"node/12817530770"},"type":"Feature"},
+{"geometry":{"coordinates":[550507.29,5804475.04],"type":"Point"},"properties":{"barrier":"gate","locked":"yes","material":"metal","osm":"node/12817703219"},"type":"Feature"},
+{"geometry":{"coordinates":[550567.01,5804742.15],"type":"Point"},"properties":{"access":"private","barrier":"gate","locked":"yes","osm":"node/12847285372"},"type":"Feature"},
+{"geometry":{"coordinates":[550825.92,5804368.19],"type":"Point"},"properties":{"barrier":"bollard","osm":"node/13049756914"},"type":"Feature"},
+{"geometry":{"coordinates":[[550529.9,5804466.91],[550485.58,5804442.57]],"type":"LineString"},"properties":{"barrier":"retaining_wall","osm":"way/174484007"},"type":"Feature"},
+{"geometry":{"coordinates":[[550481.37,5804440.26],[550455.59,5804426.11]],"type":"LineString"},"properties":{"barrier":"retaining_wall","osm":"way/174484008"},"type":"Feature"},
+{"geometry":{"coordinates":[[550448.77,5804432.62],[550487.59,5804445.55],[550516.12,5804459.95]],"type":"LineString"},"properties":{"barrier":"hedge","osm":"way/1075585439"},"type":"Feature"},
+{"geometry":{"coordinates":[[550814.67,5804381.56],[550816.85,5804380.26],[550813.61,5804374.86],[550826.61,5804367.08],[550815.19,5804348.0],[550810.66,5804346.87],[550800.4,5804353.01],[550799.94,5804354.86],[550799.55,5804356.41],[550800.02,5804357.18],[550801.38,5804359.61]],"type":"LineString"},"properties":{"barrier":"fence","osm":"way/1372362648"},"type":"Feature"},
+{"geometry":{"coordinates":[[550820.37,5804390.96],[550824.34,5804388.58],[550816.9,5804376.13],[550827.9,5804369.57],[550850.32,5804406.72],[550849.96,5804410.19],[550836.7,5804418.37],[550833.95,5804413.38]],"type":"LineString"},"properties":{"barrier":"fence","osm":"way/1372362649"},"type":"Feature"}
+]}

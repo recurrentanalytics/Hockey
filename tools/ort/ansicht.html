@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geodaten-Ansicht – BORSTENBOOM!</title>
+<!--
+  Prüfansicht für die Vektor-Geodaten eines Ortes (locations/<ort>/geo, erzeugt von tools/ort/geodaten.py).
+  Start: python3 serve.py, dann http://localhost:8000/tools/ort/ansicht.html (anderer Ort: ?ort=<id>).
+  Kein Spielbestandteil: zeigt nur, ob Grundrisse, Wege und Platz richtig liegen. Das Luftbild und die
+  Liegenschaftskarte kommen live vom LGLN (© GeoBasis-DE / LGLN, CC BY 4.0) und brauchen Netz.
+-->
+<style>
+  html, body { margin: 0; height: 100%; font: 13px/1.4 system-ui, sans-serif; color: #1d1a16; background: #e9e4d6; }
+  body { display: flex; }
+  aside { width: 270px; flex: none; overflow: auto; padding: 12px 14px; box-sizing: border-box; background: #f7f1e3; border-right: 1px solid #c9bfa6; }
+  main { flex: 1; position: relative; min-width: 0; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+  h1 { font-size: 15px; margin: 0 0 2px; } h2 { font-size: 12px; margin: 14px 0 4px; text-transform: uppercase; letter-spacing: .05em; color: #6b6250; }
+  label { display: flex; align-items: center; gap: 6px; padding: 1px 0; cursor: pointer; }
+  .farbe { width: 14px; height: 10px; border: 1px solid #0006; flex: none; }
+  .zahl { margin-left: auto; color: #6b6250; font-variant-numeric: tabular-nums; }
+  #lage, #info { font-variant-numeric: tabular-nums; white-space: pre-wrap; word-break: break-word; }
+  #info { background: #fffaf0; border: 1px solid #c9bfa6; padding: 6px 8px; min-height: 3em; }
+  #pruefung span { display: block; } .ok { color: #2f6b2f; } .nein { color: #a22; font-weight: 600; }
+  small { color: #6b6250; }
+  @media (max-width: 700px) { body { flex-direction: column; } aside { width: auto; max-height: 40%; border-right: 0; border-bottom: 1px solid #c9bfa6; } }
+</style>
+</head>
+<body>
+<aside>
+  <h1 id="titel">Geodaten</h1>
+  <small id="unter"></small>
+  <h2>Ausrichtung</h2>
+  <label><input type="radio" name="dreh" value="nord" checked> Nord oben</label>
+  <label><input type="radio" name="dreh" value="platz"> Platzansicht (Achse a nach rechts, Blick A → B)</label>
+  <h2>Untergrund</h2>
+  <label><input type="radio" name="grund" value="" checked> keiner</label>
+  <label><input type="radio" name="grund" value="dop"> Luftbild DOP20 (LGLN)</label>
+  <label><input type="radio" name="grund" value="alkis"> Liegenschaftskarte (LGLN)</label>
+  <label><input type="checkbox" id="gitter" checked> Gitter 50 m</label>
+  <h2>Ebenen</h2>
+  <div id="ebenen"></div>
+  <h2>Zeiger</h2>
+  <div id="lage">–</div>
+  <h2>Objekt (Klick)</h2>
+  <div id="info">Auf ein Objekt klicken.</div>
+  <h2>Prüfung</h2>
+  <div id="pruefung"></div>
+  <p><small>Ziehen verschiebt, Mausrad oder Zwei-Finger-Geste zoomt. Daten: ALKIS © GeoBasis-DE / LGLN, CC BY 4.0; © OpenStreetMap-Mitwirkende, ODbL.</small></p>
+</aside>
+<main><canvas id="karte"></canvas></main>
+<script type="module">
+const ort = new URLSearchParams(location.search).get('ort') || 'boni';
+const basis = `../../locations/${ort}/geo/`;
+const WMS = 'https://opendata.lgln.niedersachsen.de/doorman/noauth/';
+const GRUND = { dop: ['dop_wms', 'ni_dop20', 'image/jpeg'], alkis: ['alkis_wms', 'ALKIS', 'image/png'] };
+// Reihenfolge = Zeichenreihenfolge von unten nach oben
+const EBENEN = [
+  { id: 'nutzung', name: 'Nutzung (ALKIS)', fuell: (e) => ({ 'Straßenverkehr': '#b9b3a4', 'Weg': '#d8cfb8', 'Wohnbaufläche': '#efe6cf', 'Sport-, Freizeit- und Erholungsfläche': '#bcd39a' }[e.nutzart] || '#e3d9e6'), strich: '#0002' },
+  { id: 'flaechen', name: 'Flächen (OSM)', fuell: (e) => (e.leisure === 'pitch' ? '#e0863c66' : e.leisure === 'playground' ? '#e2a74255' : e.leisure === 'garden' ? '#6f9e4c55' : '#7fb2d633'), strich: '#3f6b3a' },
+  { id: 'gebaeude', name: 'Gebäude (ALKIS)', fuell: (e) => (e.art === 'Bauteil' ? '#c8553d55' : e.name ? '#b0452f' : '#c8553d'), strich: '#2a1d1a', breite: 1.2 },
+  { id: 'osm_gebaeude', name: 'Gebäude (OSM, Abgleich)', aus: true, strich: '#1c5fd0', breite: 1 },
+  { id: 'wege', name: 'Wege (OSM)', strich: (e) => (['footway', 'path', 'steps', 'pedestrian', 'cycleway'].includes(e.highway) ? '#8a5a1c' : '#4b4a52'), breite: (e) => (['footway', 'path', 'steps'].includes(e.highway) ? 1.2 : 2.2), strichelung: (e) => (e.highway === 'steps' ? [2, 2] : ['footway', 'path'].includes(e.highway) ? [5, 3] : []) },
+  { id: 'einfriedungen', name: 'Zäune, Mauern (OSM)', strich: '#7a1fa2', breite: 1.6, punkt: '#7a1fa2' },
+  { id: 'baeume', name: 'Bäume (OSM)', strich: '#2f7d32', breite: 2, punkt: '#2f7d32', radius: 4 },
+  { id: 'ausstattung', name: 'Ausstattung (OSM)', punkt: (e) => (e.playground ? '#d81b60' : e.highway === 'street_lamp' ? '#f5b301' : '#555'), radius: (e) => (e.playground ? 4 : 2.5) },
+  { id: 'platz', name: 'Bolzplatz (Verein)', fuell: '#ffffff22', strich: '#d00000', breite: 2.5, punkt: '#d00000', radius: 3.5, beschriftung: true },
+];
+const wert = (v, e) => (typeof v === 'function' ? v(e) : v);
+const lade = (n) => fetch(basis + n).then((r) => { if (!r.ok) throw new Error(n + ': ' + r.status); return r.json(); });
+
+const [rahmen, pruefung, ...daten] = await Promise.all([lade('rahmen.json'), lade('pruefung.json'), ...EBENEN.map((l) => lade(l.id + '.geojson'))]);
+EBENEN.forEach((l, i) => { l.daten = daten[i]; l.an = !l.aus; });
+document.getElementById('titel').textContent = 'Geodaten ' + ort;
+document.getElementById('unter').textContent = `${rahmen.crs_name} (${rahmen.crs}), Ausschnitt ${rahmen.ausschnitt_utm32[2] - rahmen.ausschnitt_utm32[0]} × ${rahmen.ausschnitt_utm32[3] - rahmen.ausschnitt_utm32[1]} m`;
+
+const [E0, N0] = rahmen.ursprung_utm32, A = rahmen.achse_a, B = rahmen.achse_b, BOX = rahmen.ausschnitt_utm32;
+const cv = document.getElementById('karte'), g = cv.getContext('2d');
+// Ansicht: Mitte in UTM, Pixel je Meter, Drehung (Bildachsen als Einheitsvektoren in Ost/Nord)
+const sicht = { e: E0, n: N0, ppm: 2.2, rechts: [1, 0], hoch: [0, 1] };
+let grund = '', bilder = {}, gewaehlt = null;
+const zuBild = (e, n) => {
+  const de = e - sicht.e, dn = n - sicht.n;
+  return [cv.clientWidth / 2 + (de * sicht.rechts[0] + dn * sicht.rechts[1]) * sicht.ppm, cv.clientHeight / 2 - (de * sicht.hoch[0] + dn * sicht.hoch[1]) * sicht.ppm];
+};
+const zuWelt = (x, y) => {
+  const r = (x - cv.clientWidth / 2) / sicht.ppm, h = -(y - cv.clientHeight / 2) / sicht.ppm;
+  return [sicht.e + r * sicht.rechts[0] + h * sicht.hoch[0], sicht.n + r * sicht.rechts[1] + h * sicht.hoch[1]];
+};
+const ringe = (geo) => (geo.type === 'Polygon' ? [geo.coordinates] : geo.type === 'MultiPolygon' ? geo.coordinates : []);
+const linien = (geo) => (geo.type === 'LineString' ? [geo.coordinates] : geo.type === 'MultiLineString' ? geo.coordinates : []);
+
+function pfad(ring) { ring.forEach(([e, n], i) => { const [x, y] = zuBild(e, n); i ? g.lineTo(x, y) : g.moveTo(x, y); }); }
+
+function zeichne() {
+  const dpr = devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = '#e9e4d6'; g.fillRect(0, 0, w, h);
+  const bild = bilder[grund];
+  if (bild?.complete && bild.naturalWidth) {
+    // Bildecke oben links = (West, Nord); eine Bildspalte = Ost, eine Bildzeile = Süd
+    const [x0, y0] = zuBild(BOX[0], BOX[3]), sx = (BOX[2] - BOX[0]) / bild.naturalWidth * sicht.ppm, sy = (BOX[3] - BOX[1]) / bild.naturalHeight * sicht.ppm;
+    g.save();
+    g.transform(sicht.rechts[0] * sx, -sicht.hoch[0] * sx, -sicht.rechts[1] * sy, sicht.hoch[1] * sy, x0, y0);
+    g.globalAlpha = 0.92; g.drawImage(bild, 0, 0); g.restore();
+  }
+  if (document.getElementById('gitter').checked) {
+    g.strokeStyle = '#0000001f'; g.lineWidth = 1; g.beginPath();
+    for (let e = Math.ceil(BOX[0] / 50) * 50; e <= BOX[2]; e += 50) { g.moveTo(...zuBild(e, BOX[1])); g.lineTo(...zuBild(e, BOX[3])); }
+    for (let n = Math.ceil(BOX[1] / 50) * 50; n <= BOX[3]; n += 50) { g.moveTo(...zuBild(BOX[0], n)); g.lineTo(...zuBild(BOX[2], n)); }
+    g.stroke();
+    g.strokeStyle = '#00000066'; g.setLineDash([6, 4]); g.beginPath(); pfad([[BOX[0], BOX[1]], [BOX[2], BOX[1]], [BOX[2], BOX[3]], [BOX[0], BOX[3]], [BOX[0], BOX[1]]]); g.stroke(); g.setLineDash([]);
+  }
+  for (const l of EBENEN) {
+    if (!l.an) continue;
+    for (const f of l.daten.features) {
+      const e = f.properties, geo = f.geometry, hell = f === gewaehlt;
+      for (const poly of ringe(geo)) {
+        g.beginPath(); poly.forEach(pfad); g.closePath();
+        const fuell = wert(l.fuell, e);
+        if (fuell) { g.fillStyle = fuell; g.fill('evenodd'); }
+        g.strokeStyle = hell ? '#00e5ff' : wert(l.strich, e) || '#0000'; g.lineWidth = hell ? 3 : wert(l.breite, e) || 0.6; g.stroke();
+      }
+      for (const lin of linien(geo)) {
+        g.beginPath(); pfad(lin);
+        g.strokeStyle = hell ? '#00e5ff' : wert(l.strich, e) || '#333'; g.lineWidth = hell ? 4 : wert(l.breite, e) || 1; g.setLineDash(wert(l.strichelung, e) || []); g.stroke(); g.setLineDash([]);
+      }
+      if (geo.type === 'Point') {
+        const [x, y] = zuBild(...geo.coordinates);
+        g.beginPath(); g.arc(x, y, (wert(l.radius, e) || 3) * (hell ? 1.8 : 1), 0, 7); g.fillStyle = hell ? '#00e5ff' : wert(l.punkt, e) || '#333'; g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 1; g.stroke();
+        if (l.beschriftung && e.name) { g.fillStyle = '#d00000'; g.font = 'bold 12px system-ui'; g.fillText(e.name, x + 6, y - 6); }
+      }
+      if (l.beschriftung && e.art === 'achse') { const [x, y] = zuBild(...geo.coordinates[1]); g.fillStyle = '#d00000'; g.font = 'bold 12px system-ui'; g.fillText(e.name, x + 4, y + 4); }
+    }
+  }
+  // Maßstabsbalken und Nordpfeil
+  const m = [1, 2, 5, 10, 20, 50, 100, 200].find((v) => v * sicht.ppm >= 70) || 500;
+  g.fillStyle = '#fffc'; g.fillRect(12, h - 34, m * sicht.ppm + 16, 24);
+  g.fillStyle = '#1d1a16'; g.fillRect(20, h - 18, m * sicht.ppm, 3); g.font = '12px system-ui'; g.fillText(m + ' m', 20, h - 22);
+  const nx = w - 34, ny = 40, nord = [sicht.rechts[1], sicht.hoch[1]]; // Nordrichtung im Bild
+  g.strokeStyle = g.fillStyle = '#1d1a16'; g.lineWidth = 2; g.beginPath(); g.moveTo(nx - nord[0] * 16, ny + nord[1] * 16); g.lineTo(nx + nord[0] * 16, ny - nord[1] * 16); g.stroke();
+  g.font = 'bold 12px system-ui'; g.fillText('N', nx + nord[0] * 22 - 4, ny - nord[1] * 22 + 4);
+}
+
+// ---- Bedienung
+const ebenenDiv = document.getElementById('ebenen');
+for (const l of EBENEN) {
+  const lab = document.createElement('label');
+  const farbe = wert(l.fuell, {}) || wert(l.strich, {}) || wert(l.punkt, {}) || '#888';
+  lab.innerHTML = `<input type="checkbox" ${l.an ? 'checked' : ''}><span class="farbe" style="background:${farbe}"></span>${l.name}<span class="zahl">${l.daten.features.length}</span>`;
+  lab.title = `${l.daten.titel}\nQuelle: ${l.daten.quelle}\n${l.daten.lizenz}`;
+  lab.querySelector('input').onchange = (ev) => { l.an = ev.target.checked; zeichne(); };
+  ebenenDiv.append(lab);
+}
+document.getElementById('gitter').onchange = zeichne;
+for (const r of document.querySelectorAll('input[name=dreh]')) r.onchange = () => {
+  if (r.value === 'platz') { sicht.rechts = A; sicht.hoch = B; } else { sicht.rechts = [1, 0]; sicht.hoch = [0, 1]; }
+  zeichne();
+};
+for (const r of document.querySelectorAll('input[name=grund]')) r.onchange = () => {
+  grund = r.value;
+  if (grund && !bilder[grund]) {
+    const [dienst, layer, fmt] = GRUND[grund], px = Math.round((BOX[2] - BOX[0]) * 5); // 0,2 m je Pixel wie DOP20
+    const b = new Image();
+    b.onload = zeichne;
+    b.onerror = () => { document.getElementById('info').textContent = 'Untergrund nicht geladen (kein Netz oder Dienst nicht erreichbar).'; };
+    b.src = `${WMS}${dienst}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${layer}&STYLES=&CRS=EPSG:25832&BBOX=${BOX.join(',')}&WIDTH=${px}&HEIGHT=${Math.round((BOX[3] - BOX[1]) * 5)}&FORMAT=${fmt}`;
+    bilder[grund] = b;
+  }
+  zeichne();
+};
+
+const imRing = (p, ring) => { let d = false; for (let i = 0; i < ring.length - 1; i++) { const [x1, y1] = ring[i], [x2, y2] = ring[i + 1]; if ((y1 > p[1]) !== (y2 > p[1]) && p[0] < x1 + (p[1] - y1) * (x2 - x1) / (y2 - y1)) d = !d; } return d; };
+const zurStrecke = (p, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy, t = l ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l)) : 0; return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy); };
+function treffer(p) {
+  const nah = 6 / sicht.ppm;
+  for (const l of [...EBENEN].reverse()) {
+    if (!l.an) continue;
+    for (const f of l.daten.features) {
+      const geo = f.geometry;
+      if (geo.type === 'Point' && Math.hypot(geo.coordinates[0] - p[0], geo.coordinates[1] - p[1]) < nah) return [l, f];
+      for (const lin of linien(geo)) for (let i = 0; i < lin.length - 1; i++) if (zurStrecke(p, lin[i], lin[i + 1]) < nah) return [l, f];
+    }
+    for (const f of l.daten.features) for (const poly of ringe(f.geometry)) if (imRing(p, poly[0]) && !poly.slice(1).some((r) => imRing(p, r))) return [l, f];
+  }
+  return null;
+}
+let zug = null;
+const finger = new Map();
+cv.onpointerdown = (ev) => { cv.setPointerCapture(ev.pointerId); finger.set(ev.pointerId, [ev.offsetX, ev.offsetY]); zug = { x: ev.offsetX, y: ev.offsetY, weg: 0 }; };
+cv.onpointermove = (ev) => {
+  const [e, n] = zuWelt(ev.offsetX, ev.offsetY), de = e - E0, dn = n - N0;
+  document.getElementById('lage').textContent = `Ost  ${e.toFixed(2)}\nNord ${n.toFixed(2)}\nPlatz a ${(de * A[0] + dn * A[1]).toFixed(2)} m, b ${(de * B[0] + dn * B[1]).toFixed(2)} m`;
+  if (!finger.has(ev.pointerId)) return;
+  const alt = finger.get(ev.pointerId);
+  if (finger.size === 2) { // Zwei Finger: Abstand bestimmt den Zoom
+    const anderer = [...finger].find(([id]) => id !== ev.pointerId)[1];
+    const vor = Math.hypot(alt[0] - anderer[0], alt[1] - anderer[1]), nach = Math.hypot(ev.offsetX - anderer[0], ev.offsetY - anderer[1]);
+    if (vor > 0) sicht.ppm = Math.max(0.3, Math.min(60, sicht.ppm * nach / vor));
+  } else {
+    const dx = ev.offsetX - alt[0], dy = ev.offsetY - alt[1];
+    sicht.e -= (dx * sicht.rechts[0] - dy * sicht.hoch[0]) / sicht.ppm; sicht.n -= (dx * sicht.rechts[1] - dy * sicht.hoch[1]) / sicht.ppm;
+    if (zug) zug.weg += Math.abs(dx) + Math.abs(dy);
+  }
+  finger.set(ev.pointerId, [ev.offsetX, ev.offsetY]);
+  zeichne();
+};
+cv.onpointerup = cv.onpointercancel = (ev) => {
+  finger.delete(ev.pointerId);
+  if (zug && zug.weg < 4) {
+    const t = treffer(zuWelt(ev.offsetX, ev.offsetY));
+    gewaehlt = t ? t[1] : null;
+    document.getElementById('info').textContent = t ? `${t[0].name}\n` + Object.entries(t[1].properties).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join('\n') : 'Kein Objekt an dieser Stelle.';
+    zeichne();
+  }
+  zug = null;
+};
+cv.onwheel = (ev) => {
+  ev.preventDefault();
+  const vor = zuWelt(ev.offsetX, ev.offsetY);
+  sicht.ppm = Math.max(0.3, Math.min(60, sicht.ppm * Math.exp(-ev.deltaY * 0.0015)));
+  const nach = zuWelt(ev.offsetX, ev.offsetY);
+  sicht.e += vor[0] - nach[0]; sicht.n += vor[1] - nach[1];
+  zeichne();
+};
+const namen = { projektion: 'Projektion', platz: 'Platzmaße und Richtung', platz_in_alkis: 'Platz in amtlicher Fläche', osm_gegen_alkis: 'OSM gegen ALKIS' };
+document.getElementById('pruefung').innerHTML = Object.entries(namen).filter(([k]) => pruefung[k]).map(([k, n]) => `<span class="${pruefung[k].bestanden ? 'ok' : 'nein'}">${pruefung[k].bestanden ? '✓' : '✗'} ${n}</span>`).join('')
+  + (pruefung.osm_gegen_alkis ? `<small>OSM-Gebäudeecken liegen im Median ${pruefung.osm_gegen_alkis.median_m} m neben der amtlichen Kante.</small>` : '');
+window.ansicht = { sicht, EBENEN, zeichne, zuBild, zuWelt, rahmen }; // für die Konsole und Tests
+addEventListener('resize', zeichne);
+zeichne();
+</script>
+</body>
+</html>

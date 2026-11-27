@@ -117,3 +117,19 @@ Der Ausschnitt (1224 × 1226 m um den Platz, UTM 32 / EPSG:25832) und das Pixelr
 
 Die Kronenkarte ist nicht bitgleich, weil der LGLN-Dienst das 1-m-Raster bei jedem Abruf leicht anders auf Pixel umrechnet. An Kronen- und Dachkanten wirkt sich das stark aus, am Platz selbst kaum. Die Dateien im Spiel bleiben unverändert. Wer sie neu erzeugt, bekommt einen gleichwertigen, nicht identischen Stand. Abhilfe für später: den Ausschnitt auf das 1-m-Raster des LGLN ausrichten (ganze Meter in UTM), damit Pixel und Rasterzellen deckungsgleich sind.
 
+
+## Vektor-Geodaten (Grundrisse, Wege, Platz)
+
+Neben den Rasterbildern oben gibt es den Boni jetzt als Vektordatensatz in `locations/boni/geo/`: amtliche Gebäudegrundrisse und Nutzungsflächen (ALKIS-WFS des LGLN, CC BY 4.0), dazu Wege, Flächen, Bäume, Zäune und Ausstattung aus OpenStreetMap (ODbL), alles in ETRS89 / UTM 32N und mit dem Platzrahmen (Achsen a und b wie in `shadow_casters.py`). Quellen, Lizenzen, Prüfergebnisse und die Liste dessen, was fehlt oder unsicher ist, stehen in `locations/boni/geo/README.md`; die Datei wird mit erzeugt.
+
+```sh
+python3 tools/ort/geodaten.py abrufen tools/ort/boni.json   # Rohdaten neu laden (Netz), nach locations/boni/geo/roh/
+python3 tools/ort/geodaten.py bauen   tools/ort/boni.json   # Ebenen, Rahmen, Prüfung und Bericht aus den Rohdaten
+python3 tools/ort/geodaten.py pruefen tools/ort/boni.json   # Neubau im Speicher, Vergleich mit den Dateien
+python3 serve.py                                            # Ansicht: http://localhost:8000/tools/ort/ansicht.html
+```
+
+- Die Rohdaten sind eingecheckt (gepackt, 180 KB), damit `bauen` ohne Netz dasselbe Ergebnis liefert. `abrufen` holt einen neuen Stand; danach ändern sich die Ebenen.
+- Der Ausschnitt ist ein Quadrat um die Platzmitte (`geodaten.halbe_seite_m` in `tools/ort/boni.json`, derzeit 200 m). Für Nachbarblöcke den Wert vergrößern.
+- Die Ansicht legt die Ebenen auf Wunsch über das Luftbild oder die Liegenschaftskarte des LGLN und rechnet den Zeiger in Platzmeter um. Bilder: `docs/ort/boni_geodaten_ansicht.jpg`, `docs/ort/boni_geodaten_luftbild.jpg` (Luftbild © GeoBasis-DE / LGLN, CC BY 4.0).
+- Das Spiel liest diese Daten noch nicht. Sie sind die Grundlage für die Welt um den Platz.

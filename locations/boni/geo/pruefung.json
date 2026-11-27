@@ -1,0 +1,67 @@
+{
+ "projektion": {
+  "hin_und_zurueck_max_m": 0.000716,
+  "gegen_lgln_punkte": 3454,
+  "gegen_lgln_max_m": 4e-05,
+  "gegen_lgln_mittel_m": 4e-05,
+  "bestanden": true
+ },
+ "platz": {
+  "seiten_m": {
+   "AB": 17.97,
+   "BC": 25.27,
+   "CD": 18.02,
+   "DA": 25.17
+  },
+  "innenwinkel_grad": {
+   "A": 90.36,
+   "B": 89.76,
+   "C": 89.92,
+   "D": 89.96
+  },
+  "flaeche_m2": 453.81,
+  "kompassrichtung_b_grad": 118.42,
+  "erwartet": {
+   "quer_m": 18.0,
+   "laengs_m": 25.2,
+   "blickrichtung_grad": 118.2
+  },
+  "bestanden": true
+ },
+ "platz_in_alkis": {
+  "flaechen": [
+   {
+    "oid": "DENIAL4300004Y2OTN",
+    "nutzart": "Sport-, Freizeit- und Erholungsfläche",
+    "bezeichnung": "Spielplatz, Bolzplatz"
+   }
+  ],
+  "bestanden": true
+ },
+ "platz_gegen_osm": {
+  "osm": "way/179243848",
+  "osm_seiten_m": [
+   17.34,
+   17.33,
+   10.59,
+   10.58
+  ],
+  "osm_flaeche_m2": 183.47,
+  "mittelpunkt_abstand_m": 0.14,
+  "richtung_abweichung_grad": 2.17,
+  "hinweis": "OSM zeichnet nur die Asphaltfläche des Bolzplatzes; der Zaun des Vereins umfasst mehr"
+ },
+ "osm_gegen_alkis": {
+  "ecken": 1973,
+  "median_m": 0.164,
+  "p90_m": 0.992,
+  "max_m": 7.46,
+  "beste_verschiebung_m": [
+   0.0,
+   -0.1
+  ],
+  "median_bei_bester_verschiebung_m": 0.152,
+  "bestanden": true
+ },
+ "bestanden": true
+}

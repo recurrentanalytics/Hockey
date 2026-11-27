@@ -1,0 +1,35 @@
+{
+ "ort": "boni",
+ "crs": "EPSG:25832",
+ "crs_name": "ETRS89 / UTM Zone 32N",
+ "einheit": "Meter",
+ "ursprung_utm32": [
+  550675.46,
+  5804566.23
+ ],
+ "ursprung_wgs84": [
+  9.7446425,
+  52.3890002
+ ],
+ "achse_a": [
+  -0.466829,
+  -0.884347
+ ],
+ "achse_b": [
+  0.884347,
+  -0.466829
+ ],
+ "achsen": "a längs des Platzes (Ecke A → D), b quer (Ecke A → B); Platzmeter = ((E−E0)·a, (N−N0)·b)",
+ "gitterazimut_a_grad": 207.83,
+ "gitterazimut_b_grad": 117.83,
+ "meridiankonvergenz_grad": 0.59,
+ "kompassrichtung_b_grad": 118.42,
+ "massstab_utm": 0.999632,
+ "massstab_hinweis": "Gitterstrecke = Naturstrecke × massstab_utm (am Boni 0,37 mm je Meter kürzer)",
+ "ausschnitt_utm32": [
+  550475,
+  5804366,
+  550875,
+  5804766
+ ]
+}

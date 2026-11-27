@@ -16,3 +16,24 @@ def to_utm32(lon, lat):
     x = eta + sum(al[j] * math.cos(2 * (j + 1) * xi) * math.sinh(2 * (j + 1) * eta) for j in range(3))
     y = xi + sum(al[j] * math.sin(2 * (j + 1) * xi) * math.cosh(2 * (j + 1) * eta) for j in range(3))
     return E0 + K0 * a * x, K0 * a * y
+
+def from_utm32(e, n_):
+    """ETRS89 / UTM 32N → (Länge, Breite) in Grad. Umkehrung der Reihe oben, gleiche Genauigkeit."""
+    n = F / (2 - F)
+    a = A / (1 + n) * (1 + n * n / 4 + n ** 4 / 64)
+    be = [n / 2 - 2 * n * n / 3 + 37 * n ** 3 / 96, n * n / 48 + n ** 3 / 15, 17 * n ** 3 / 480]
+    de = [2 * n - 2 * n * n / 3 - 2 * n ** 3, 7 * n * n / 3 - 8 * n ** 3 / 5, 56 * n ** 3 / 15]
+    xi, eta = n_ / (K0 * a), (e - E0) / (K0 * a)
+    xi1 = xi - sum(be[j] * math.sin(2 * (j + 1) * xi) * math.cosh(2 * (j + 1) * eta) for j in range(3))
+    eta1 = eta - sum(be[j] * math.cos(2 * (j + 1) * xi) * math.sinh(2 * (j + 1) * eta) for j in range(3))
+    chi = math.asin(math.sin(xi1) / math.cosh(eta1))
+    phi = chi + sum(de[j] * math.sin(2 * (j + 1) * chi) for j in range(3))
+    return math.degrees(LON0 + math.atan2(math.sinh(eta1), math.cos(xi1))), math.degrees(phi)
+
+def konvergenz_grad(lon, lat):
+    """Meridiankonvergenz: Gitternord gegen geografisch Nord, in Grad (positiv östlich von 9° Ost)."""
+    return math.degrees(math.atan(math.tan(math.radians(lon) - LON0) * math.sin(math.radians(lat))))
+
+def massstab(e):
+    """Streckenverzerrung der Abbildung am Rechtswert e: Gitterstrecke = Naturstrecke × Faktor."""
+    return K0 * (1 + ((e - E0) / K0) ** 2 / (2 * 6381000.0 ** 2))

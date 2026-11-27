@@ -1,0 +1,10 @@
+{"type":"FeatureCollection","name":"platz","titel":"Bolzplatz: Zaun, Ecken, Platzrahmen","quelle":"tools/ort/boni.json","lizenz":"Verein; Luftbild © GeoBasis-DE / LGLN (2026), CC BY 4.0","crs":{"type":"name","properties":{"name":"urn:ogc:def:crs:EPSG::25832"}},"features":[
+{"geometry":{"coordinates":[[[550673.37,5804581.53],[550689.31,5804573.24],[550677.56,5804550.88],[550661.62,5804559.28],[550673.37,5804581.53]]],"type":"Polygon"},"properties":{"art":"zaun","genauigkeit_m":1.0,"name":"Bonifatiusplatz, Hannover-List","quelle":"Luftbild DOP20 (LGLN), Lage und Form vom Verein bestätigt","seiten_m":{"AB":17.97,"BC":25.27,"CD":18.02,"DA":25.17}},"type":"Feature"},
+{"geometry":{"coordinates":[550673.37,5804581.53],"type":"Point"},"properties":{"art":"ecke","name":"A","platz_ab":[-12.55,-9.0]},"type":"Feature"},
+{"geometry":{"coordinates":[550689.31,5804573.24],"type":"Point"},"properties":{"art":"ecke","name":"B","platz_ab":[-12.66,8.97]},"type":"Feature"},
+{"geometry":{"coordinates":[550677.56,5804550.88],"type":"Point"},"properties":{"art":"ecke","name":"C","platz_ab":[12.6,9.02]},"type":"Feature"},
+{"geometry":{"coordinates":[550661.62,5804559.28],"type":"Point"},"properties":{"art":"ecke","name":"D","platz_ab":[12.62,-9.0]},"type":"Feature"},
+{"geometry":{"coordinates":[550675.46,5804566.23],"type":"Point"},"properties":{"art":"ursprung","name":"Platzmitte"},"type":"Feature"},
+{"geometry":{"coordinates":[[550675.46,5804566.23],[550670.8,5804557.39]],"type":"LineString"},"properties":{"art":"achse","laenge_m":10,"name":"a"},"type":"Feature"},
+{"geometry":{"coordinates":[[550675.46,5804566.23],[550684.31,5804561.56]],"type":"LineString"},"properties":{"art":"achse","laenge_m":10,"name":"b"},"type":"Feature"}
+]}
