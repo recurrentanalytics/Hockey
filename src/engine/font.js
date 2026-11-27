@@ -205,16 +205,17 @@ export function drawTextOutlined(ctx, text, x, y, { color = '#fffaf4', outline =
 }
 
 // ------------------------------------------------------------------ high-resolution text
-// Text on the UI layer is drawn with real fonts (Fredoka, Luckiest Guy; assets/fonts) on a
-// full-resolution canvas laid over the pixel layers, so menus, HUD and banners are crisp and
-// playful. Text on other canvases (world layer, baked sprites) keeps the pixel font.
+// Text on the UI layer is drawn with Pixelify Sans (assets/fonts) on a full-resolution canvas
+// laid over the pixel layers: cute pixel lettering, but crisp at any screen size. Text on other
+// canvases (world layer, baked sprites) keeps the bitmap font. The logo, Bonny and the goal burst
+// are pixel-art images made with SpriteCook (assets/pixel).
 const HI = { ui: null, ctx: null, base: null };
 /** Called by Display: the UI layer context, the full-resolution text context and its scale. */
 export function setHiresText(uiCtx, textCtx, scale) {
   HI.ui = uiCtx; HI.ctx = textCtx; HI.base = new DOMMatrix().scale(scale, scale);
 }
 const measure = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;
-const fontFor = (scale, big) => (big ? `${9.5 * scale}px "Luckiest Guy", Fredoka, sans-serif` : `700 ${7.2 * scale}px Fredoka, sans-serif`);
+const fontFor = (scale, big) => (big ? `700 ${10 * scale}px "Pixelify Sans", sans-serif` : `600 ${7.6 * scale}px "Pixelify Sans", sans-serif`);
 const hiresOn = () => !!HI.ctx;
 function hiresWidth(text, scale, big) { measure.font = fontFor(scale, big); return Math.ceil(measure.measureText(text).width); }
 function hiresBegin(ctx, scale, big) {
@@ -228,32 +229,27 @@ function hiresBegin(ctx, scale, big) {
 }
 const baseline = (y, scale, big) => y + (big ? 7.4 : 5.4) * scale; // pixel glyphs are top-aligned
 
-/** BORSTENBOOM! logo, the same lettering everywhere: yellow BORSTEN over a bigger red BOOM!. */
-export function drawLogo(ctx, cx, top, height, { lines = 2 } = {}) {
-  if (!hiresOn() || ctx !== HI.ui) return drawText(ctx, 'BORSTENBOOM!', cx, top, { big: true, scale: 2, align: 'center', color: '#ffd23f' });
-  const c = HI.ctx;
+// pixel-art images (SpriteCook): logo, Bonny, goal burst
+const ART = {};
+if (typeof Image !== 'undefined') {
+  for (const name of ['logo', 'bonny', 'tor']) { const img = new Image(); img.src = new URL(`../../assets/pixel/${name}.png`, import.meta.url).href; ART[name] = img; }
+}
+/** Draw a pixel-art image on the full-resolution layer: centred at cx, top edge at top, height h (UI px). */
+export function drawArt(ctx, name, cx, top, h, { alpha = 1, scale = 1 } = {}) {
+  const img = ART[name];
+  if (!img?.complete || !img.naturalWidth || !hiresOn() || ctx !== HI.ui) return;
+  const c = HI.ctx, w = (h * img.naturalWidth) / img.naturalHeight;
   c.save();
   c.setTransform(HI.base.multiply(ctx.getTransform()));
-  c.globalAlpha = ctx.globalAlpha;
-  c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.lineJoin = 'round';
-  const draw = (text, x, y, size, fill) => {
-    c.font = `${size}px "Luckiest Guy", sans-serif`;
-    c.lineWidth = size * 0.2; c.strokeStyle = '#16110d';
-    c.fillStyle = '#16110d'; c.fillText(text, x + size * 0.06, y + size * 0.1); // drop shadow
-    c.strokeText(text, x + size * 0.06, y + size * 0.1);
-    c.strokeText(text, x, y);
-    const g = c.createLinearGradient(0, y - size * 0.8, 0, y);
-    g.addColorStop(0, fill[0]); g.addColorStop(1, fill[1]);
-    c.fillStyle = g; c.fillText(text, x, y);
-  };
-  c.translate(cx, top + height / 2); c.rotate(-0.045); c.translate(-cx, -(top + height / 2));
-  if (lines === 2) {
-    draw('BORSTEN', cx, top + height * 0.44, height * 0.42, ['#fff3a8', '#ffc21a']);
-    draw('BOOM!', cx, top + height * 0.98, height * 0.56, ['#ff7a6b', '#e8243c']);
-  } else {
-    draw('BORSTEN', cx - height * 0.95, top + height * 0.86, height * 0.86, ['#fff3a8', '#ffc21a']);
-    draw('BOOM!', cx + height * 2.2, top + height * 0.92, height, ['#ff7a6b', '#e8243c']);
-  }
+  c.globalAlpha = ctx.globalAlpha * alpha;
+  c.imageSmoothingEnabled = false;
+  c.translate(cx, top + h / 2); c.scale(scale, scale);
+  c.drawImage(img, -w / 2, -h / 2, w, h);
   c.restore();
-  return 0;
+}
+
+/** BORSTENBOOM! logo: the SpriteCook pixel-art lettering, the same image everywhere. */
+export function drawLogo(ctx, cx, top, height) {
+  if (ART.logo?.complete && ART.logo.naturalWidth && hiresOn() && ctx === HI.ui) return drawArt(ctx, 'logo', cx, top, height);
+  return drawText(ctx, 'BORSTENBOOM!', cx, top, { big: true, scale: 2, align: 'center', color: '#ffd23f' });
 }

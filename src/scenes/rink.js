@@ -1,6 +1,6 @@
 // On-ice scene: runs a Match and draws it with single, shared or split cameras.
 import { PAL } from '../engine/palette.js';
-import { drawText, textWidth, drawTextOutlined } from '../engine/font.js';
+import { drawText, textWidth, drawTextOutlined, drawArt } from '../engine/font.js';
 import { panel } from '../engine/draw.js';
 import { PLAYER_COLORS, TEAMS, RINK, GOAL, isBoarTeam } from '../config.js';
 import { settings } from '../settings.js';
@@ -119,6 +119,7 @@ export class RinkScene {
   }
 
   update(dt) {
+    if (this.torT > 0) this.torT -= dt;
     // a short slow motion right after a goal
     if (this.slowT > 0) { this.slowT -= dt; dt *= 0.35; }
     const { input } = this.app;
@@ -168,7 +169,7 @@ export class RinkScene {
         case 'post': sfx.play('post', e.speed / 20); sfx.play('ooh'); this.shake = Math.max(this.shake, 0.15); this.app.world.jiggle(Math.sign(m.puck.pos.x), 0.35); break;
         case 'save': sfx.play('save'); this.fx.puff(m.puck.pos.x, m.puck.pos.y); if (e.speed > 20 || e.dist < 5) sfx.play('ooh', 0.8); break;
         case 'hit': if (e.approach > 4.5 || e.victim.downT > 0) sfx.play('hit', e.approach / 8); if (e.approach > 5) { this.shake = Math.max(this.shake, 0.2); this.fx.stars(e.victim.pos.x, e.victim.pos.y); } if (e.victim.downT > 0) this.fx.puff(e.victim.pos.x, e.victim.pos.y, 0.1, 9); break;
-        case 'goal': sfx.play('horn'); this.shake = 0.5; this.slowT = 1.1; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); this.app.world.jiggle(this.lampSide, 1); if (e.side === 'home') this.waveT = 3.5; this.fx.confetti(m.puck.pos.x - Math.sign(m.puck.pos.x) * 3, m.puck.pos.y); break;
+        case 'goal': sfx.play('horn'); this.shake = 0.5; this.slowT = 1.1; if (!e.shootout) this.torT = 2.2; this.cheerT = 3; this.lampSide = Math.sign(m.puck.pos.x); this.app.world.jiggle(this.lampSide, 1); if (e.side === 'home') this.waveT = 3.5; this.fx.confetti(m.puck.pos.x - Math.sign(m.puck.pos.x) * 3, m.puck.pos.y); break;
         case 'whistle': sfx.play('whistle'); break;
         case 'break': case 'final': sfx.play('buzzer'); if (e.type === 'final') sfx.play('cheer'); break;
         case 'attempt': if (!e.scored) sfx.play('save', 0.6); break;
@@ -188,7 +189,9 @@ export class RinkScene {
       }
       if (e.type === 'goal') {
         const boar = BOAR_TEAMS.has(m.sides[e.side].team);
-        this.banner = { text: e.shootout ? 'TRIFFT!' : boar ? 'TOOORRR!!!' : 'TOR!', sub: e.shootout ? name(e.side) : this.goalText(e), t: 2.4 };
+        // the TOOOR! burst (pixel art) is the headline; the banner keeps the scorer line
+        this.banner = { text: e.shootout ? 'TRIFFT!' : ' ', sub: e.shootout ? name(e.side) : this.goalText(e), t: 2.4 };
+        void boar;
         // The club hymn is the Borstentiere goal song.
         if (boar && !e.shootout) this.app.audio.song('audio/hymne.mp3', 10);
         if (!e.shootout) this.notice = { text: this.creditText(e), t: 3 };
@@ -469,6 +472,10 @@ export class RinkScene {
       drawText(ui, this.title, 4, 4, { color: PAL.cloud, shadow: PAL.ink });
     }
     this.drawBanner(ui, W, H);
+    if (this.torT > 0) {
+      const age = 2.2 - this.torT, pop = age < 0.25 ? 0.3 + (age / 0.25) * 0.9 : age < 0.4 ? 1.2 - ((age - 0.25) / 0.15) * 0.2 : 1;
+      drawArt(ui, 'tor', W / 2, H * 0.06, 92, { scale: pop, alpha: Math.min(1, this.torT / 0.35) });
+    }
 
     if (!isTop) return;
     if (input.touch.enabled) {

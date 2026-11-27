@@ -5,8 +5,8 @@ import { panel } from '../engine/draw.js';
 
 export function header(ctx, W, title, subtitle) {
   if (title === 'BORSTENBOOM!') {
-    drawLogo(ctx, W / 2, 3, 40);
-    if (subtitle) drawTextOutlined(ctx, subtitle, W / 2, 45, { color: PAL.cloud, align: 'center' });
+    drawLogo(ctx, W / 2, 1, 50);
+    if (subtitle) drawTextOutlined(ctx, subtitle, W / 2, 50, { color: PAL.cloud, align: 'center' });
     return;
   }
   drawTextOutlined(ctx, title, W / 2, 16, { color: PAL.white, scale: 2, align: 'center', big: true });

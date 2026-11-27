@@ -14,7 +14,7 @@ import { Audio } from './engine/audio.js';
 import { TitleScene } from './scenes/title.js';
 
 // the game's fonts must be ready before the first text is measured
-await Promise.all(['700 10px Fredoka', '600 10px Fredoka', '10px "Luckiest Guy"'].map((f) => document.fonts?.load(f).catch(() => null)));
+await Promise.all(['700 10px "Pixelify Sans"', '600 10px "Pixelify Sans"'].map((f) => document.fonts?.load(f).catch(() => null)));
 const canvas = document.getElementById('screen');
 canvas.focus({ preventScroll: true }); // works when allowed; otherwise the first click focuses it
 const display = new Display(canvas, settings);
