@@ -197,22 +197,29 @@ async function main() {
     };
     list.append(label);
   }
-  if (!google.available) {
-    // The token can be pasted right here. It stays on this device (same place the intro keeps it)
-    // and is only ever sent to Cesium ion when the Google layer is switched on.
-    const box = document.createElement('div');
-    box.innerHTML = '<input type="password" autocomplete="off" placeholder="Cesium-Token hier einfügen" style="width:100%;box-sizing:border-box;margin:4px 0;font:inherit"><button>Token speichern</button>';
-    list.append(box);
-    box.querySelector('button').onclick = () => {
-      const value = box.querySelector('input').value.trim();
+  // The token: always visible whether one is stored. It can be pasted right here, stays on this device
+  // (same place the intro keeps it) and is only ever sent to Cesium ion when the Google layer is switched on.
+  const tokenBox = document.createElement('div');
+  list.append(tokenBox);
+  const googleCheck = list.querySelectorAll('input[type=checkbox]')[LAYERS.indexOf(google)];
+  function tokenUi(edit) {
+    if (token && !edit) {
+      tokenBox.innerHTML = '<small>Cesium-Token: auf diesem Gerät gespeichert ✓</small> <button>ändern</button>';
+      tokenBox.querySelector('button').onclick = () => tokenUi(true);
+      return;
+    }
+    tokenBox.innerHTML = '<small>Cesium-Token: keiner gespeichert</small><input type="password" autocomplete="off" placeholder="Cesium-Token hier einfügen" style="width:100%;box-sizing:border-box;margin:4px 0;font:inherit"><button>Token speichern</button>';
+    tokenBox.querySelector('button').onclick = () => {
+      const value = tokenBox.querySelector('input').value.trim();
       if (!value) return;
       try { localStorage.setItem(TOKEN_KEY, value); } catch { /* private window: kept until the page closes */ }
       token = value; google.available = true;
-      const check = list.querySelector('input[type=checkbox][disabled]');
-      check.disabled = false; check.parentElement.querySelector('small')?.remove(); box.remove();
+      googleCheck.disabled = false; googleCheck.parentElement.querySelector('small')?.remove();
+      tokenUi(false);
       status('Token gespeichert. Jetzt „Google-3D-Kacheln“ anhaken.');
     };
   }
+  tokenUi(false);
   for (const b of document.querySelectorAll('[data-sicht]')) b.onclick = () => view(b.dataset.sicht);
 
   // ---- pointer: position in the grid and in court metres; click shows what is there
