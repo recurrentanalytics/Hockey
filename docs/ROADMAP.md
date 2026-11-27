@@ -13,9 +13,16 @@ Vereinbart, aber zurückgestellt. Reihenfolge laut Absprache: zuerst „Die echt
 - Abenteuer-Modus: Spiel für Spiel reisen die Borstentiere vom Boni hinaus. Erst weitere Plätze in Hannover, etwa bei befreundeten Vereinen, dann Turnierorte, später berühmte Plätze der Welt. Jeder Sieg schaltet einen neuen Ort frei, Thorsten erzählt zwischen den Stationen.
 - Pro Ort nötig: der Platz-Grundriss (Ecken wie in `docs/BONI_ORT.md`), Kamerawinkel, ein Platzmodell (`tools/intro/court_glb.py`), die Spielfeldmaße (`src/config.js`).
 
+## 3. Zeitreise am Boni
+- Mit dem Regler „Damals“ (Wetter seit 1940) auch die Bebauung und die Bäume der jeweiligen Zeit zeigen: Häuser, die noch nicht standen oder im Krieg zerstört waren, kleinere Bäume, eventuell noch kein Bolzplatz.
+- Vorher prüfen, welche alten Luftbilder und Karten es für Hannover-List gibt. Höhen müssten geschätzt werden.
+- Das passt nicht zur Google-Kulisse, die immer die heutigen Häuser zeigt. Für frühere Zeiten braucht es deshalb eine eigene Darstellung.
+
+## 4. Eigene 3D-Bäume am Platz (Weg B)
+- Im Umkreis von etwa 50 m die Google-Bäume ausblenden und echte 3D-Baummodelle (Fotoscans, z. B. Poly Haven, CC0) an die Stellen setzen, die das Höhenmodell zeigt. Dann verlieren die Bäume wirklich ihre Blätter, und Schatten und sichtbare Kronen passen exakt zusammen.
+- Als Versuch mit Vorher-nachher-Vergleich bauen. Prüfen, wie flüssig es auf dem Tablet läuft.
+
 ## Kleinere Ideen
-- Tor-Kamerafahrt: Die echte 3D-Kamera schwenkt bei einem Tor einmal um den Platz.
-- Wetter und Tageszeit auf dem echten Boni: Abendlicht, Regen, Schnee.
 - Online gegeneinander auf zwei Geräten.
 
 ## Offen aus dem Feinschliff

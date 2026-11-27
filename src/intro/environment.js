@@ -31,11 +31,30 @@ export function lookOf(code) {
   if (code >= 51) return 'rain';
   return 'clouds';
 }
+/** Seasons to pick by hand: a typical day of each. */
+export const SEASONS = {
+  fruehling: { name: 'Frühling', day: [4, 8] }, sommer: { name: 'Sommer', day: [5, 21] },
+  herbst: { name: 'Herbst', day: [9, 26] }, winter: { name: 'Winter', day: [0, 20] },
+};
 export const LOOKS = { sun: '☀️ Sonne', partly: '🌤️ Heiter', clouds: '☁️ Wolken', rain: '🌧️ Regen', snow: '❄️ Schnee', fog: '🌫️ Nebel' };
+
+/** The trees through the year: leaf cover (0 bare … 1 full), autumn colour, bare branches. */
+export function season(date) {
+  const doy = (date - new Date(date.getFullYear(), 0, 1)) / 86400000;
+  const out = smooth(100, 140, doy), fall = 1 - smooth(288, 322, doy);      // leaves out mid April–May, down mid Oct–mid Nov
+  const foliage = out * fall;
+  return {
+    foliage,
+    autumn: smooth(255, 292, doy) * (1 - smooth(318, 334, doy)),          // yellow, orange, brown
+    bare: 1 - foliage,
+    fresh: out * (1 - smooth(140, 175, doy)),                               // light May green
+  };
+}
 
 /** All visual parameters for a look at a moment. */
 export function visuals(look, date, amount = 1) {
   const s = sunPosition(date);
+  const yr = season(date);
   const day = smooth(-9, 5, s.alt);                         // 0 night … 1 day
   const golden = day * (1 - smooth(3, 20, s.alt));          // low sun: warm light
   const through = { sun: 1, partly: 0.6, clouds: 0.1, rain: 0.03, snow: 0.08, fog: 0.08 }[look];
@@ -48,12 +67,58 @@ export function visuals(look, date, amount = 1) {
   const fog = { fog: 0.42, rain: 0.12, snow: 0.18 }[look] ?? 0;
   const fogColor = [0, 1, 2].map((i) => mix([0.2, 0.24, 0.32][i], [0.78, 0.8, 0.83][i], day));
   return {
-    sun: s, day, golden, sunlit, exposure, tint, sat, fog, fogColor,
+    sun: s, day, golden, sunlit, exposure, season: yr,
+    // share of the sun the crowns hold back: dense leaves in summer, only branches in winter
+    leaf: 0.2 + 0.68 * yr.foliage, tint, sat, fog, fogColor,
     vignette: mix(0.5, 0.12, day),
     wet: look === 'rain' ? 1 : look === 'snow' ? 0.3 : 0,
     snow: look === 'snow' ? 0.85 : 0,
     precip: look === 'rain' || look === 'snow' ? clamp01(0.35 + amount * 0.4) : 0,
     falling: look === 'snow' ? 'snow' : look === 'rain' ? 'rain' : null,
+  };
+}
+
+
+/** GLSL: how much sun reaches a point of the court (court metres a, b, z). The ray towards the sun is
+ * traced through the crown height map from the LGLN surface model (tools/intro/shadow_casters.py):
+ * roofs block it, crowns let light through their gaps (sun flecks), more at thin crown edges and more
+ * as the leaves fall. Needs the uniforms of treeUniforms(). */
+export const TREE_LIGHT = `
+      float treeLight(vec3 p) {
+        if (u_sunDir.z < 0.03) return 1.0;
+        vec2 d = u_sunDir.xy / u_sunDir.z;                  // horizontal metres per metre of height
+        float dh = clamp(0.7 / max(length(d), 0.01), 0.3, 1.0);
+        float thick = 0.0, roof = 0.0;
+        for (int i = 0; i < 48; i++) {
+          float h = 0.6 + float(i) * dh;
+          if (h > 30.0) break;
+          vec2 q = p.xy + d * (h - p.z);
+          vec2 t = vec2(((q.x + 46.0) * 2.0 + 0.5) / 185.0, ((q.y + 41.4) * 2.0 + 0.5) / 167.0);
+          if (t.x < 0.0 || t.y < 0.0 || t.x > 1.0 || t.y > 1.0) break;
+          vec4 s = texture(u_crowns, t);
+          float top = s.r * 51.0;
+          if (h > p.z && h < top && h > top * 0.35) { thick += dh; roof = max(roof, s.g); }
+        }
+        if (roof > 0.5) return 0.0;
+        if (thick <= 0.0) return 1.0;
+        // gaps between leaf clusters (~0.4 m) inside branch clumps, looked up where the ray passes
+        // through the crowns (a fixed height keeps it smooth); evenly spread noise, so the threshold
+        // is the share of sun held back, less at thin crown edges
+        vec2 m = p.xy + d * (8.0 - p.z);
+        float n = texture(u_noise, m * 0.09 + (texture(u_noise, m * 0.014).r - 0.5) * 0.6).r;
+        float hold = u_leaf * (0.72 + 0.28 * smoothstep(0.0, 8.0, thick));
+        return smoothstep(hold, hold + 0.06, n);
+      }`;
+/** The uniforms TREE_LIGHT needs (each shader gets its own set; update them with setTreeUniforms). */
+export function treeUniforms(Cesium) {
+  const tex = (name) => ({ type: Cesium.UniformType.SAMPLER_2D, value: new Cesium.TextureUniform({ url: new URL(`../../assets/intro/${name}`, import.meta.url).href, repeat: name === 'laub.png' }) });
+  return {
+    u_ecToCourt: { type: Cesium.UniformType.MAT4, value: new Cesium.Matrix4() },
+    u_crowns: tex('boni_schatten_hoehen.png'),
+    u_noise: tex('laub.png'),
+    u_sunDir: { type: Cesium.UniformType.VEC3, value: new Cesium.Cartesian3(0, 0, 1) },
+    u_leaf: { type: Cesium.UniformType.FLOAT, value: 0.85 },
+    u_shade: { type: Cesium.UniformType.FLOAT, value: 1 },
   };
 }
 
@@ -97,22 +162,32 @@ export function createEnvironment({ Cesium, viewer, ground, onChange }) {
   // the court floor: dappled light by sun and clouds, wet or snowy
   const floor = new Cesium.CustomShader({
     uniforms: {
-      u_flecks: { type: Cesium.UniformType.SAMPLER_2D, value: new Cesium.TextureUniform({ url: new URL('../../assets/intro/flecken.png', import.meta.url).href, repeat: true }) },
       u_sun: { type: Cesium.UniformType.FLOAT, value: 1 },
-      u_shift: { type: Cesium.UniformType.VEC2, value: new Cesium.Cartesian2(0, 0) },
+      u_leaves: { type: Cesium.UniformType.FLOAT, value: 0 },
       u_warm: { type: Cesium.UniformType.FLOAT, value: 0 },
       u_wet: { type: Cesium.UniformType.FLOAT, value: 0 },
       u_snow: { type: Cesium.UniformType.FLOAT, value: 0 },
       u_night: { type: Cesium.UniformType.FLOAT, value: 0 },
+      ...treeUniforms(Cesium),
     },
-    fragmentShaderText: `
+    fragmentShaderText: `${TREE_LIGHT}
       void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
         vec2 uv = fsInput.attributes.texCoord_0;
-        float f = texture(u_flecks, fract(uv + u_shift)).r;
         vec3 c = material.diffuse;
-        vec3 light = mix(vec3(0.66, 0.6, 0.46), vec3(0.85, 0.55, 0.25), u_warm);
-        // real tree shadows come from the shadow map; the mask only adds the light that falls between the leaves
-        c *= mix(1.0, 0.8, u_sun) * (1.0 + f * u_sun * light * 0.45);
+        // sun and shade: trees and houses (traced), sun flecks between the leaves, warm low sun
+        vec3 pc = (u_ecToCourt * vec4(fsInput.attributes.positionEC, 1.0)).xyz;
+        float lit = treeLight(vec3(pc.xy, 0.0));
+        c *= mix(1.0, 0.86, u_sun) * mix(u_shade, 1.0, lit) * mix(vec3(1.0), vec3(1.1, 0.98, 0.85), u_warm * u_sun * lit);
+        // autumn: fallen leaves on the asphalt, single leaves in loose drifts, piled up along the fence
+        float edge = min(12.6 - abs(pc.x), 9.0 - abs(pc.y));
+        float drift = smoothstep(0.35, 0.85, texture(u_noise, pc.xy * 0.045).r);
+        float lay = u_leaves * (0.04 + 0.3 * drift + 0.55 * (1.0 - smoothstep(0.0, 1.8, edge)));
+        float leafN = texture(u_noise, pc.xy * 0.85 + 0.13).r;
+        if (leafN < lay * 0.45) {
+          float k = texture(u_noise, pc.xy * 0.31 + 0.71).r;
+          vec3 leafC = k < 0.4 ? vec3(0.42, 0.2, 0.05) : k < 0.75 ? vec3(0.5, 0.33, 0.06) : vec3(0.3, 0.17, 0.07);
+          c = mix(c, leafC * mix(0.6, 1.0, lit), smoothstep(0.0, 0.08, lay * 0.45 - leafN) * 0.9);
+        }
         // at night two street lamps by the fence light the court in warm pools
         vec2 q = vec2(uv.x * 1.4, uv.y);
         vec2 l1 = q - vec2(0.38, 0.95), l2 = q - vec2(1.02, 0.95);
@@ -162,16 +237,19 @@ export function createEnvironment({ Cesium, viewer, ground, onChange }) {
     const u = grade.uniforms;
     u.u_exposure = v.exposure; u.u_tint = new Cesium.Cartesian3(...v.tint); u.u_sat = v.sat;
     u.u_fog = v.fog; u.u_fogColor = new Cesium.Cartesian3(...v.fogColor); u.u_vignette = v.vignette;
-    const az = (v.sun.az * Math.PI) / 180;
     floor.setUniform('u_sun', v.sunlit);
-    floor.setUniform('u_shift', new Cesium.Cartesian2(Math.sin(az) * 0.03, Math.cos(az) * 0.03));
+    floor.setUniform('u_leaves', v.snow ? 0 : Math.min(1, v.season.autumn * 0.7 + v.season.bare * v.season.autumn * 2));
     floor.setUniform('u_warm', v.golden);
     floor.setUniform('u_wet', v.wet);
     floor.setUniform('u_snow', v.snow);
     floor.setUniform('u_night', 1 - v.day);
     // shadows: crisp and deep in sunshine, gone under clouds and at night
+    // shade depth: deep in sunshine, none under clouds and at night (fence and goals: shadow map)
+    // (the shaders work in linear light: 0.3 there looks like about half as bright on screen)
+    const shade = 1 - 0.45 * Math.min(1, v.sunlit * 1.2);
+    floor.setUniform('u_shade', 1 - 0.7 * Math.min(1, v.sunlit * 1.2));
     viewer.shadows = v.sunlit > 0.04;
-    viewer.scene.shadowMap.darkness = 1 - 0.4 * Math.min(1, v.sunlit * 1.2);
+    viewer.scene.shadowMap.darkness = shade;
     falling = v.falling; amount = v.precip;
     // the pixel figures get the same light
     const screen = document.getElementById('screen');
@@ -184,8 +262,9 @@ export function createEnvironment({ Cesium, viewer, ground, onChange }) {
     try {
       if (state.mode === 'pick') {
         // picked by hand: a midsummer day, so noon has high sun and the evening golden light
-        const d = new Date(new Date().getFullYear(), 5, 21, Math.floor(state.hour), Math.round((state.hour % 1) * 60));
-        state.info = `${LOOKS[state.look]} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} Uhr`;
+        const [mo, dd] = SEASONS[state.season ?? 'sommer'].day;
+        const d = new Date(new Date().getFullYear(), mo, dd, Math.floor(state.hour), Math.round((state.hour % 1) * 60));
+        state.info = `${SEASONS[state.season ?? 'sommer'].name} · ${LOOKS[state.look]} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} Uhr`;
         apply(state.look, d);
       } else {
         const when = state.mode === 'hist' && state.date ? new Date(`${state.date}T${String(Math.floor(state.hour)).padStart(2, '0')}:00`) : null;
@@ -199,11 +278,11 @@ export function createEnvironment({ Cesium, viewer, ground, onChange }) {
       state.info = 'Wetterdaten nicht erreichbar – Sonne';
       apply('sun', new Date(new Date().setHours(15, 0, 0, 0)));
     }
-    try { localStorage.setItem(KEY, JSON.stringify({ mode: state.mode, look: state.look, hour: state.hour, date: state.date })); } catch { /* ignore */ }
+    try { localStorage.setItem(KEY, JSON.stringify({ mode: state.mode, look: state.look, hour: state.hour, date: state.date, season: state.season })); } catch { /* ignore */ }
   }
   setInterval(() => { if (state.mode === 'live') refresh(); }, 10 * 60 * 1000);
   refresh();
-  return { get state() { return state; }, set(p) { Object.assign(state, p); return refresh(); } };
+  return { floor, get state() { return state; }, set(p) { Object.assign(state, p); return refresh(); } };
 }
 
 /** The little weather panel (button ⛅ top left). */
@@ -214,6 +293,7 @@ export function weatherPanel(env) {
     const s = env.state;
     for (const b of box.querySelectorAll('[data-mode]')) b.classList.toggle('on', b.dataset.mode === s.mode);
     for (const b of box.querySelectorAll('[data-look]')) b.classList.toggle('on', b.dataset.look === s.look);
+    for (const b of box.querySelectorAll('[data-season]')) b.classList.toggle('on', b.dataset.season === (s.season ?? 'sommer'));
     $('wxPick').hidden = s.mode !== 'pick'; $('wxHist').hidden = s.mode !== 'hist';
     $('wxHour').value = s.hour; $('wxHour2').value = s.hour;
     $('wxHourLbl').textContent = $('wxHourLbl2').textContent = `${String(Math.floor(s.hour)).padStart(2, '0')}:${String(Math.round((s.hour % 1) * 60)).padStart(2, '0')}`;
@@ -222,7 +302,8 @@ export function weatherPanel(env) {
   };
   btn.addEventListener('click', () => { box.hidden = !box.hidden; render(); });
   box.addEventListener('click', async (e) => {
-    const m = e.target.closest('[data-mode]')?.dataset.mode, l = e.target.closest('[data-look]')?.dataset.look;
+    const m = e.target.closest('[data-mode]')?.dataset.mode, l = e.target.closest('[data-look]')?.dataset.look, y = e.target.closest('[data-season]')?.dataset.season;
+    if (y) await env.set({ season: y });
     if (m) { if (m === 'hist' && !env.state.date) env.state.date = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10); await env.set({ mode: m }); }
     if (l) await env.set({ look: l });
     render();

@@ -3,7 +3,7 @@
 // Germany, Hannover, the List and onto the Boni court, told in short spoken lines, then turning so
 // the court lies sideways and tilting into the game's camera angle (60° from vertical).
 
-import { createEnvironment, weatherPanel } from './environment.js';
+import { createEnvironment, weatherPanel, TREE_LIGHT, treeUniforms } from './environment.js';
 
 const CESIUM_VERSION = '1.147.0';
 const GOOGLE_3D_TILES = 2275207; // Cesium ion asset: Google Photorealistic 3D Tiles
@@ -40,6 +40,39 @@ const phase = (t, [a, b]) => ease((t - a) / (b - a));
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 /** Fade in, hold, fade out over [a, b]. */
 const window01 = (t, [a, b], f = 0.8) => clamp01(Math.min((t - a) / f, (b - t) / f));
+// GLSL shared by the season shaders
+const NOISE = `
+      float hash3(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }`;
+// leaf noise: a small tileable texture (cheap on tablets), values evenly spread over 0…1
+const leafNoise = (C) => ({ type: C.UniformType.SAMPLER_2D, value: new C.TextureUniform({ url: new URL('../../assets/intro/laub.png', import.meta.url).href, repeat: true }) });
+// Seasons on the Google mesh: green (vegetation) above ~2 m is a crown. Autumn turns it yellow,
+// orange and brown tree by tree; in winter crowns go grey-brown and thin out (world-fixed holes, so
+// nothing shimmers) to show the ground below; lawns fade a little. Returns true where to cut a hole.
+const SEASON = `
+      bool seasonal(inout vec3 c, vec3 p, bool holes) {
+        float l = dot(c, vec3(0.3, 0.59, 0.11));
+        float ex = c.g - 0.5 * (c.r + c.b);
+        float veg = smoothstep(0.005, 0.05, ex) * (1.0 - smoothstep(0.55, 0.8, l));
+        if (veg <= 0.0) return false;
+        float dist = length(p.xy);
+        float tree = smoothstep(1.8, 4.5, p.z) * (1.0 - smoothstep(600.0, 900.0, dist));
+        float who = hash3(floor(p * 0.16));                     // one hue per tree (~6 m)
+        float leafy = texture(u_noise, p.xy * 0.06).r;
+        // spring: light fresh green
+        c = mix(c, c * vec3(1.08, 1.18, 0.86) + vec3(0.03, 0.05, 0.0), veg * u_fresh * 0.7);
+        // autumn: colours arrive tree by tree
+        float turn = clamp(u_autumn * 1.6 - who * 0.6, 0.0, 1.0) * veg * tree;
+        // colours keep the photo's brightness (linear light), only the hue changes
+        vec3 hue = who < 0.35 ? vec3(1.0, 0.75, 0.25) : who < 0.7 ? vec3(1.0, 0.5, 0.2) : vec3(0.75, 0.42, 0.22);
+        hue /= dot(hue, vec3(0.3, 0.59, 0.11));
+        c = mix(c, hue * l * (0.85 + 0.3 * leafy), turn * 0.8);
+        // winter: bare grey-brown branches, thinned out near the court
+        float bare = u_bare * veg * tree;
+        c = mix(c, vec3(1.08, 0.98, 0.88) * l * (0.8 + 0.4 * leafy), bare);
+        c = mix(c, mix(vec3(l), c, 0.55) * vec3(1.02, 1.0, 0.92), u_bare * veg * (1.0 - tree) * 0.6);
+        // fine lacework of twigs rather than big blotches
+        return holes && dist < 165.0 && texture(u_noise, p.xy * 0.35 + p.z * 0.11).r < bare * (0.12 + 0.3 * leafy);
+      }`;
 const FOV = (20 * Math.PI) / 180; // fixed: changing it mid-flight makes the camera lurch
 
 /** Monotone cubic (Fritsch–Carlson) through points [[x, y]], evaluated at x. */
@@ -196,28 +229,45 @@ export async function run({ token, cesiumBase }) {
   // the floor (asphalt, mulch) is a model of its own: environment.js lights it by sun and weather
   const floorModel = await Cesium.Model.fromGltfAsync({ url: new URL('../../assets/intro/boni_boden.glb', import.meta.url).href, modelMatrix: courtMatrix(), show: false, forwardAxis: Cesium.Axis.X });
   scene.primitives.add(floorModel);
-  // real shadows on the court: invisible casters for every tree and house around it (LGLN surface
-  // model, tools/intro/shadow_casters.py), the fence and goals cast and receive, the floor receives;
-  // the Google mesh keeps its baked light and takes no part
-  const casters = await Cesium.Model.fromGltfAsync({ url: new URL('../../assets/intro/boni_schatten.glb', import.meta.url).href, modelMatrix: courtMatrix(), forwardAxis: Cesium.Axis.X, shadows: Cesium.ShadowMode.CAST_ONLY });
-  // never drawn, only rendered into the shadow map (Cesium compiles that pass with SHADOW_MAP defined)
-  casters.customShader = new Cesium.CustomShader({ fragmentShaderText: `
-    void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
-      #ifndef SHADOW_MAP
-      discard;
-      #endif
-    }` });
-  scene.primitives.add(casters);
+  // real shadows on the court. Trees and houses: the floor, fence and goals trace the ray towards the
+  // sun through the crown height map from the LGLN surface model themselves (TREE_LIGHT in
+  // environment.js), with sun flecks through the leaves. Fence and goals also throw their own
+  // shadows through Cesium's shadow map. The Google mesh keeps its baked light.
+  const courtShader = new Cesium.CustomShader({
+    uniforms: treeUniforms(Cesium),
+    fragmentShaderText: `${TREE_LIGHT}
+      void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+        #ifdef SHADOW_MAP
+        // nets and chain-link fence (translucent) throw no striped shadows; posts and frames do
+        material.alpha = 0.0;
+        #else
+        vec3 pc = (u_ecToCourt * vec4(fsInput.attributes.positionEC, 1.0)).xyz;
+        material.diffuse *= mix(u_shade, 1.0, treeLight(pc));
+        #endif
+      }`,
+  });
+  court.customShader = courtShader;
   court.shadows = Cesium.ShadowMode.ENABLED;
   floorModel.shadows = Cesium.ShadowMode.RECEIVE_ONLY;
   tileset.shadows = Cesium.ShadowMode.DISABLED;
   viewer.shadows = true;
   scene.shadowMap.softShadows = true;
   scene.shadowMap.size = MOBILE ? 2048 : 4096;
-  // the shadow map only has to cover the court: keep its range tight for crisp, unstepped edges
-  scene.preRender.addEventListener(() => { scene.shadowMap.maximumDistance = Cesium.Cartesian3.distance(camera.positionWC, frame.at(0, 0)) + 30; });
+  // every frame: the shadow map only has to cover the court (tight range, crisp edges), and the
+  // shaders need eye → court coordinates
+  const ecToCourt = new Cesium.Matrix4(), ecToEnu = new Cesium.Matrix4();
+  let env = null, seeThrough = null;
+  scene.preRender.addEventListener(() => {
+    scene.shadowMap.maximumDistance = Cesium.Cartesian3.distance(camera.positionWC, frame.at(0, 0)) + 30;
+    const { u, v, C } = frame;
+    const courtFromEnu = new Cesium.Matrix4(u.x, u.y, 0, -(C.x * u.x + C.y * u.y), v.x, v.y, 0, -(C.x * v.x + C.y * v.y), 0, 0, 1, 0, 0, 0, 0, 1);
+    Cesium.Matrix4.multiply(frame.inv, camera.inverseViewMatrix, ecToEnu);
+    Cesium.Matrix4.multiply(courtFromEnu, ecToEnu, ecToCourt);
+    seeThrough?.setUniform('u_ecToEnu', ecToEnu);
+    for (const sh of [env?.floor, courtShader]) sh?.setUniform('u_ecToCourt', ecToCourt);
+  });
   // the pixel figures' shadows follow the sun too (direction in game metres per metre of height)
-  // and only where the sun reaches them: the canopy's height map (same source as the casters) is
+  // and only where the sun reaches them: the canopy's height map (same as for the floor's shadows) is
   // traced towards the sun from each figure
   let crowns = null;
   {
@@ -251,26 +301,54 @@ export async function run({ token, cesiumBase }) {
           let hit = 0;
           for (let t = 0.5, n = 0; t < 45; t += 0.5, n++) {
             const z = crownAt(x - a * t, -y - b * t);
-            if (z > 0.9 + t * rise) { hit += 1; if (hit > 1) return 0; }
+            if (z > 0.9 + t * rise) { hit += 1; if (hit > 1) break; }
           }
-          return hit ? 0.5 : 1;
+          // under a crown only the light through the leaves is left
+          const leaf = this.leaf ?? 0.85;
+          return hit > 1 ? Math.max(0, 1 - leaf * 1.1) : hit ? 1 - leaf * 0.5 : 1;
         },
       };
     }
     if (globalThis.BONI_3D) globalThis.BONI_3D.shadow = sunShadow;
   };
-  const env = createEnvironment({ Cesium, viewer, ground: floorModel, onChange: (st) => setSunShadow(st.visuals) });
+  // ground under the trees for winter, when the Google crowns are thinned out (LGLN aerial photo)
+  const underground = await Cesium.Model.fromGltfAsync({ url: new URL('../../assets/intro/boni_schatten_luftboden.glb', import.meta.url).href, modelMatrix: courtMatrix(), forwardAxis: Cesium.Axis.X, shadows: Cesium.ShadowMode.DISABLED, show: false });
+  scene.primitives.add(underground);
+  let seasonNow = null;
+  let lastVisuals = null;
+  const onEnv = (v) => {
+    lastVisuals = v;
+    setSunShadow(v);
+    seasonNow = v.season;
+    // sun direction in court coordinates for the traced tree shadows
+    const az = (v.sun.az * Math.PI) / 180, al = (v.sun.alt * Math.PI) / 180;
+    const dE = Math.sin(az) * Math.cos(al), dN = Math.cos(az) * Math.cos(al);
+    const dir = new Cesium.Cartesian3(dE * frame.u.x + dN * frame.u.y, dE * frame.v.x + dN * frame.v.y, Math.sin(al));
+    for (const sh of [env?.floor, courtShader]) if (sh) { sh.setUniform('u_sunDir', dir); sh.setUniform('u_leaf', v.leaf); }
+    courtShader.setUniform('u_shade', 1 - 0.7 * Math.min(1, v.sunlit * 1.2));
+    if (globalThis.BONI_3D?.shadow) globalThis.BONI_3D.shadow.leaf = v.leaf;
+    applySeason?.();
+  };
+  let applySeason = null;
+  env = createEnvironment({ Cesium, viewer, ground: floorModel, onChange: (st) => onEnv(st.visuals) });
+  if (lastVisuals) onEnv(lastVisuals);                          // first call came before env existed
   let rinkAlpha = 0;
 
   // ---------------------------------------------------------------- see-through trees
   // Every fragment of the Google mesh that hides part of the rink from the camera (it sits above
   // the ground and the ray through it lands on the court) becomes see-through at the end.
-  const seeThrough = new Cesium.CustomShader({
+  seeThrough = new Cesium.CustomShader({
     uniforms: {
       u_ecToEnu: { type: Cesium.UniformType.MAT4, value: new Cesium.Matrix4() },
       u_rect: { type: Cesium.UniformType.VEC4, value: new Cesium.Cartesian4() },
       u_axis: { type: Cesium.UniformType.VEC2, value: new Cesium.Cartesian2(1, 0) },
       u_fade: { type: Cesium.UniformType.FLOAT, value: 0 },
+      u_autumn: { type: Cesium.UniformType.FLOAT, value: 0 },
+      u_bare: { type: Cesium.UniformType.FLOAT, value: 0 },
+      u_fresh: { type: Cesium.UniformType.FLOAT, value: 0 },
+      u_near: { type: Cesium.UniformType.FLOAT, value: 0 },
+      u_holes: { type: Cesium.UniformType.FLOAT, value: 0 },
+      u_noise: leafNoise(Cesium),
     },
     // screen-door transparency: a growing share of the occluding pixels is left out in an ordered
     // dither, the rest stays opaque (true alpha blending would turn the whole mesh see-through)
@@ -279,10 +357,12 @@ export async function run({ token, cesiumBase }) {
       // 8x8 ordered (Bayer) dither: 64 steps, so the trees thin out smoothly
       float bayer2(vec2 a) { a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
       float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
-      float bayer8(vec2 a) { return bayer4(0.5 * a) * 0.25 + bayer2(a); }
+      float bayer8(vec2 a) { return bayer4(0.5 * a) * 0.25 + bayer2(a); }${NOISE}
+      ${SEASON}
       void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
-        if (u_fade <= 0.0) return;
         vec3 p = (u_ecToEnu * vec4(fsInput.attributes.positionEC, 1.0)).xyz;
+        if (u_near > 0.0 && seasonal(material.diffuse, p, u_holes > 0.5)) discard;
+        if (u_fade <= 0.0) return;
         vec3 cam = (u_ecToEnu * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
         vec3 d = p - cam;
         if (p.z < 0.06 || d.z > -0.001) return;
@@ -297,8 +377,35 @@ export async function run({ token, cesiumBase }) {
         if (u_fade * inside > bayer8(gl_FragCoord.xy)) discard;
       }`,
   });
-  const ecToEnu = new Cesium.Matrix4();
   tileset.customShader = seeThrough;
+  // the aerial ground gets the same seasons (its tree tops turn to leaf litter and lawn)
+  const groundSeason = new Cesium.CustomShader({
+    uniforms: { u_ecToEnu: seeThrough.uniforms.u_ecToEnu, u_autumn: seeThrough.uniforms.u_autumn, u_bare: seeThrough.uniforms.u_bare, u_fresh: seeThrough.uniforms.u_fresh, u_noise: leafNoise(Cesium) },
+    fragmentShaderText: `${NOISE}
+      ${SEASON}
+      void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+        vec3 p = (u_ecToEnu * vec4(fsInput.attributes.positionEC, 1.0)).xyz;
+        seasonal(material.diffuse, p, false);
+        // seen from above the photo shows crowns: in winter they become brown leaf litter and grass
+        vec3 c = material.diffuse; float l = dot(c, vec3(0.3, 0.59, 0.11));
+        material.diffuse = mix(c, mix(vec3(0.33, 0.27, 0.2), vec3(0.36, 0.38, 0.27), step(0.5, hash3(floor(p * 0.25)))) * (0.7 + l), u_bare * 0.8);
+      }`,
+  });
+  underground.customShader = groundSeason;
+  applySeason = () => {
+    if (!seasonNow) return;
+    const u = seeThrough.uniforms;
+    seeThrough.setUniform('u_autumn', seasonNow.autumn); seeThrough.setUniform('u_bare', seasonNow.bare); seeThrough.setUniform('u_fresh', seasonNow.fresh);
+    groundSeason.setUniform('u_autumn', seasonNow.autumn); groundSeason.setUniform('u_bare', seasonNow.bare); groundSeason.setUniform('u_fresh', seasonNow.fresh);
+    // the season only matters around the court: thinning needs the aerial ground below
+    const on = seasonNow.autumn > 0.01 || seasonNow.bare > 0.01 || seasonNow.fresh > 0.01;
+    seeThrough.setUniform('u_near', on ? 1 : 0);
+    // holes in winter crowns only once the court (and the ground below it) is shown
+    underground.show = seasonNow.bare > 0.05 && court.show;
+    seeThrough.setUniform('u_holes', underground.show ? 1 : 0);
+    scene.requestRender();
+  };
+  applySeason();
 
   // ---------------------------------------------------------------- map markings
   const glow = (a) => Cesium.Color.fromCssColorString('#ffd23f').withAlpha(a);
@@ -378,13 +485,11 @@ export async function run({ token, cesiumBase }) {
     narrate(t);
     const fade = phase(t, T.fade);
     rinkAlpha = phase(t, T.rink);
-    court.show = floorModel.show = rinkAlpha > 0;
+    if (court.show !== rinkAlpha > 0) { court.show = floorModel.show = rinkAlpha > 0; applySeason?.(); }
     court.color = floorModel.color = Cesium.Color.WHITE.withAlpha(rinkAlpha);
     // the see-through shader stays attached all the time (switching it recompiles every tile and
     // stutters); it does nothing while u_fade is 0
     if (fade > 0) {
-      Cesium.Matrix4.multiply(frame.inv, camera.inverseViewMatrix, ecToEnu);
-      seeThrough.setUniform('u_ecToEnu', ecToEnu);
       seeThrough.setUniform('u_rect', new Cesium.Cartesian4(frame.C.x, frame.C.y, frame.halfLong, frame.halfShort));
       seeThrough.setUniform('u_axis', new Cesium.Cartesian2(frame.u.x, frame.u.y));
       seeThrough.setUniform('u_fade', fade);
@@ -409,7 +514,7 @@ export async function run({ token, cesiumBase }) {
     await loaded();
     try {
       const [p] = await scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(...COURT.center)]);
-      if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = floorModel.modelMatrix = casters.modelMatrix = courtMatrix(); }
+      if (Number.isFinite(p?.height)) { ground = p.height; buildFrame(); court.modelMatrix = floorModel.modelMatrix = underground.modelMatrix = courtMatrix(); }
     } catch { /* keep the measured default */ }
     await loaded();
   }
