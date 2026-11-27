@@ -13,6 +13,7 @@ import { pixelboden } from './pixelboden.js';
 import { baueHindernisse, davor } from './hindernisse.js';
 import { ladeLuftbild, rechteck, ausschnitt } from './luftbild.js';
 import { platzmeter } from './baeume.js';
+import { baueHaeuser } from './haeuser.js';
 
 const CESIUM_VERSION = '1.147.0';    // keep in step with src/intro/photoreal.js
 const GOOGLE_3D_TILES = 2275207;     // Cesium ion asset, as in the intro
@@ -20,6 +21,9 @@ const TOKEN_KEY = 'boniCesiumToken'; // stored by the intro (src/intro/main.js)
 const LGLN = 'https://opendata.lgln.niedersachsen.de/doorman/noauth/';
 const FALLBACK_HEIGHT = 10;          // metres, for footprints without any height information
 const GAME_VIEW = { heading: 118.2, tilt: 60 }; // the game camera: looking A → B, 60° from vertical
+// The drawn houses (haeuser.js) wait for the owner's approval: ?haeuser=probe shows the review row on the
+// square, ?haeuser=neu all of them; without it every footprint stays the plain volume it was.
+const PROBE = /^(Bonifatiusplatz (2|3|4|5|16|17|18|19)|Harnischstraße [12])$/;
 
 const Q = new URLSearchParams(location.search);
 const ort = Q.get('ort') || 'boni';
@@ -78,6 +82,8 @@ async function main() {
   let grove = { baeume: baumListe, zeige() {} };
   const hindernisse = baueHindernisse({ gebaeude, einfriedungen, platz, frame });
   const haeuser = []; // drawn building volumes, so the ones hiding the player can turn see-through
+  const hausArt = Q.get('haeuser') ?? 'alt'; // 'alt' plain volumes, 'probe' the review row drawn, 'neu' every house drawn
+  let viertelHaeuser = null;                 // the drawn houses (haeuser.js)
   let spieler = null;
   status('Lade 3D-Ansicht …');
   const Cesium = await loadCesium(Q.get('cesiumBase') || `https://cdn.jsdelivr.net/npm/cesium@${CESIUM_VERSION}/Build/Cesium/`);
@@ -160,7 +166,12 @@ async function main() {
     }
     const blocks = layer('gebaeude');
     haeuser.length = 0;
+    if (hausArt !== 'alt' && scene.context.webgl2) {           // drawn houses: built once; ground, cover and records follow here
+      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, frame, pos, nur: hausArt === 'probe' ? (h) => PROBE.test(h.adresse ?? '') : null });
+      viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.verzeichne(blocks);
+    }
     for (const f of gebaeude.features) {
+      if (viertelHaeuser?.hat(f.properties.oid)) continue;
       const p = f.properties, part = p.art === 'Bauteil';      // passages and arcades: open at street level
       const h = p.hoehe_m ?? (part ? 4 : FALLBACK_HEIGHT), known = p.hoehe_m != null;
       const colour = part ? '#b9a48f' : p.name ? '#a8452f' : known ? '#c8664d' : '#d9b9a8';
@@ -216,6 +227,7 @@ async function main() {
     .catch((e) => status('Platzmodell nicht geladen: ' + e.message));
 
   function zeigeHaeuser(ids) {
+    viertelHaeuser?.zeige(ids);
     for (const h of haeuser) { const durch = ids.has(h.id); if (durch !== h.durch) { h.durch = durch; h.haus.polygon.material = css(h.colour, durch ? 0.2 : google.on ? 0.45 : 1); } }
   }
 
@@ -275,7 +287,7 @@ async function main() {
       else if (l.id === 'luftbild') { if (lokal) lokal.show = l.on; build(); }
       else if (l.id === 'luftbildlive') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
       else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); scene.globe.show = true; } }
-      else sources[l.id].show = l.on;
+      else { sources[l.id].show = l.on; if (l.id === 'gebaeude') viertelHaeuser?.sichtbar(l.on); }
       scene.requestRender();
     };
     list.append(label);
@@ -411,6 +423,7 @@ async function main() {
     if (umwelt) umwelt.surfaceLabel = belag.label;
     $('surface').textContent = belag.label;
     LICHT.azimut = v.sun.az; LICHT.hoehe = Math.max(v.sun.alt, 8); LICHT.staerke = Math.min(1, v.sunlit * 1.2);
+    viertelHaeuser?.licht(LICHT); // the houses take the light at once: three numbers, nothing is rebuilt
     clearTimeout(neuZeichnen); neuZeichnen = setTimeout(() => { if (sources.baeume) build(); }, 400); // tree shadows turn with the sun
   };
   try {
@@ -432,7 +445,7 @@ async function main() {
   }
   view(Q.get('sicht') in VIEWS ? Q.get('sicht') : 'schraeg');
   status('bereit');
-  window.welt = { get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; } }; // for the console and tests
+  window.welt = { get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; }, get haeuser() { return viertelHaeuser; } }; // for the console and tests
 }
 
 main().catch((e) => { status('Fehler: ' + e.message); console.error(e); });
