@@ -41,6 +41,9 @@ public class MainActivity extends Activity {
     private static final String START = "https://" + HOST + "/www/intro.html";
     private static final String LIVE = "https://recurrentanalytics.github.io/Hockey/intro.html";
     private static final String LIVE_PREFIX = "https://recurrentanalytics.github.io/Hockey/";
+    /** App shortcut "Leistungstest" (long press on the icon): the page starts with ?fps. */
+    private static final String ACTION_FPS = "de.boniborstentiere.hockey.LEISTUNGSTEST";
+    private String query = "";
     private boolean fellBack = false;
     private WebView web;
     private android.speech.tts.TextToSpeech tts;
@@ -124,8 +127,9 @@ public class MainActivity extends Activity {
         });
         setContentView(web);
         hideSystemBars();
+        if (ACTION_FPS.equals(getIntent().getAction())) query = "?fps";
         if (state != null) web.restoreState(state);
-        else web.loadUrl(online() ? LIVE : START);
+        else web.loadUrl((online() ? LIVE : START) + query);
     }
 
     private boolean online() {
@@ -143,7 +147,7 @@ public class MainActivity extends Activity {
     private void fallBack() {
         if (fellBack) return;
         fellBack = true;
-        web.post(() -> web.loadUrl(START));
+        web.post(() -> web.loadUrl(START + query));
     }
 
     private static String mime(String path) {
@@ -164,6 +168,15 @@ public class MainActivity extends Activity {
         if (p.endsWith(".ttf")) return "font/ttf";
         if (p.endsWith(".woff2")) return "font/woff2";
         return "application/octet-stream";
+    }
+
+    /** The shortcut was used while the app was already open: restart the page with the display. */
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        if (!ACTION_FPS.equals(intent.getAction())) return;
+        query = "?fps";
+        web.loadUrl((fellBack || !online() ? START : LIVE) + query);
     }
 
     @Override

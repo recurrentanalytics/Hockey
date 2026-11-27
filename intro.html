@@ -109,6 +109,8 @@
     </div>
     <div id="credit">Geodaten © GeoBasis-DE / LGLN, CC BY 4.0</div>
   </div>
+  <!-- Leistungsanzeige nur mit ?fps in der Adresse (docs/PERFORMANCE_TEST.md) -->
+  <script type="module">if (new URLSearchParams(location.search).has('fps')) import('./src/diag/fps.js');</script>
   <script src="src/native/pads.js"></script>
   <script type="module" src="src/intro/main.js"></script>
   <script>if ('serviceWorker' in navigator && location.host !== 'appassets.androidplatform.net') navigator.serviceWorker.register('sw.js').catch(() => {});</script>

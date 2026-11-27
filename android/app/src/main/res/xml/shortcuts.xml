@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App shortcut: long press on the app icon → "Leistungstest" (docs/PERFORMANCE_TEST.md) -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="leistungstest"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/fps_short"
+        android:shortcutLongLabel="@string/fps_long">
+        <intent
+            android:action="de.boniborstentiere.hockey.LEISTUNGSTEST"
+            android:targetPackage="de.boniborstentiere.hockey"
+            android:targetClass="de.boniborstentiere.hockey.MainActivity" />
+    </shortcut>
+</shortcuts>

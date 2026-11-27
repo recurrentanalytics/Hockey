@@ -18,7 +18,8 @@ const say = (s) => { $('status').textContent = s; };
 function aerial(message = '') {
   $('cover')?.classList.remove('on');
   say(message);
-  setTimeout(() => location.replace('index.html'), message ? 1800 : 0);
+  // the performance display (?fps) stays on in the arena version
+  setTimeout(() => location.replace(`index.html${params.has('fps') ? '?fps' : ''}`), message ? 1800 : 0);
 }
 
 function photoreal(token) {

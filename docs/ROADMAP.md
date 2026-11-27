@@ -51,7 +51,7 @@ Phase 4 (neue Orte, Reise), Phase 5 (neue Sportarten und gleichwertige Lebensweg
 |---|---|---|
 | 0.1 | ✅ Android-Assets korrigieren (Ersatzkopie vollständig, Prüfung im Build-Skript, App 0.8); Flugmodus-Test auf dem Gerät steht noch aus | T1 |
 | 0.2 | ✅ Boni-Daten reproduzierbar: `tools/ort/abrufen.py`, Quellen und Prüfergebnis in `docs/BONI_ORT.md` | T3 |
-| 0.3 | Tablet- und Handytest: Bildraten-Anzeige `?fps`, einmal messen | T4 |
+| 0.3 | 🟡 Tablet- und Handytest: Anzeige `?fps` und App-Kurzbefehl „Leistungstest“ (App 0.9) fertig, Anleitung in `docs/PERFORMANCE_TEST.md`; Messung auf den Geräten steht aus | T4 |
 | 0.4 | Boni-Test automatisieren: Testplatz und 3D-Standbilder ins Repo | T2 |
 | 0.5 | Signaturschlüssel sicher an den Verein übergeben | T17 |
 | 0.6 | Direkt danach oder parallel: **eine Ortsbeschreibung für den Boni** (`locations/boni/`), schlicht, ohne Welt-Engine | T5, WORLD_ARCHITECTURE 2 |

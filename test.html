@@ -15,6 +15,8 @@
   <!-- quick test: real Boni court rules without the 3D view (src/test/flat.js) -->
   <canvas id="flat"></canvas>
   <canvas id="screen" tabindex="0"></canvas>
+  <!-- Leistungsanzeige nur mit ?fps in der Adresse (docs/PERFORMANCE_TEST.md) -->
+  <script type="module">if (new URLSearchParams(location.search).has('fps')) import('./src/diag/fps.js');</script>
   <script src="src/native/pads.js"></script>
   <script type="module" src="src/test/flat.js"></script>
   <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>

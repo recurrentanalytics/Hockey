@@ -1,1 +1,1 @@
-<resources><string name="app_name">Borstenboom!</string></resources>
+<resources><string name="app_name">Borstenboom!</string><string name="fps_short">Leistungstest</string><string name="fps_long">Leistungstest mit FPS-Anzeige</string></resources>
