@@ -10,6 +10,7 @@ import { createEnvironment, weatherPanel } from '../intro/environment.js';
 import { surfaceFor, setSurface } from '../game/surface.js';
 import { starte } from './spieler.js';
 import { pixelboden } from './pixelboden.js';
+import { starteAnflug } from './anflug.js';
 import { baueHindernisse, davor } from './hindernisse.js';
 import { ladeLuftbild, rechteck, ausschnitt } from './luftbild.js';
 import { platzmeter } from './baeume.js';
@@ -76,6 +77,7 @@ async function main() {
   const figurBilder = figur ? { rechts: await frameImages(figur), links: await frameImages(figur, true), seiten: figur.frame.w / figur.frame.h } : null;
   const foto = await ladeLuftbild(ASSETS).catch(() => null); // the place's own aerial photo; the world stands on it
   let grove = { baeume: baumListe, zeige() {} };
+  let flug = null;
   const hindernisse = baueHindernisse({ gebaeude, einfriedungen, platz, frame });
   const haeuser = []; // drawn building volumes, so the ones hiding the player can turn see-through
   let spieler = null;
@@ -98,6 +100,8 @@ async function main() {
     scene3DOnly: true, // renders every frame: with request-render mode the volumes built in the background never appeared until the camera moved
   });
   const { scene, camera } = viewer;
+  // the whole planet for the approach: the Natural Earth picture that ships with CesiumJS (needs no account)
+  Cesium.TileMapServiceImageryProvider.fromUrl(Cesium.buildModuleUrl('Assets/Textures/NaturalEarthII')).then((p) => viewer.imageryLayers.addImageryProvider(p, 0)).catch(() => {});
   // ground: the own copy first, the live service on top while it answers (sharper); it switches itself off when it fails
   let lokal = null;
   if (foto) {
@@ -430,9 +434,38 @@ async function main() {
     spieler = starte({ Cesium, viewer, entities: eigene.entities, frame, pos, bilder: figurBilder, hoehe: figur.worldHeight ?? 1.4, hain: () => grove, bodenpunkt: groundPoint, welt: hindernisse, zeigeHaeuser,
       aufPlatz: (drin) => { $('spielstart').style.display = drin ? 'block' : 'none'; } });
   }
-  view(Q.get('sicht') in VIEWS ? Q.get('sicht') : 'schraeg');
+  // ---- how the world opens: with the approach from space (the default), or straight in with ?sicht=…
+  if (Q.has('sicht') || Q.has('ohneanflug')) view(Q.get('sicht') in VIEWS ? Q.get('sicht') : 'schraeg');
+  else {
+    document.body.classList.add('anflug');
+    scene.skyAtmosphere.show = true;
+    flug = starteAnflug({
+      setze: (k) => {
+        camera.lookAt(pos([E0, N0], 0), new Cesium.HeadingPitchRange(Cesium.Math.toRadians(k.richtung), Cesium.Math.toRadians(k.neigung - 90), k.weite));
+        camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+      },
+      untertitel: $('untertitel'), stimmen: new URL('voice/', ASSETS), renderEreignis: scene.preUpdate,
+      amEnde: () => { document.body.classList.remove('anflug'); document.body.classList.add('gelandet'); scene.skyAtmosphere.show = false; current = 'spiel'; status('bereit'); },
+    });
+    // "a country … a city": Germany's outline and Hannover light up while the story names them (as in the intro)
+    const marken = new Cesium.CustomDataSource('anflug');
+    viewer.dataSources.add(marken);
+    const hoch = () => camera.positionCartographic.height;
+    fetch(new URL('intro/deutschland.json', ASSETS)).then((r) => r.json()).then((de) => {
+      for (const ring of de.rings) marken.entities.add({ polyline: { positions: Cesium.Cartesian3.fromDegreesArray(ring.flat()), width: 3, material: css('#ffd23f'), clampToGround: false,
+        show: new Cesium.CallbackProperty(() => hoch() > 2.5e5 && hoch() < 1.2e7, false) } });
+    }).catch(() => {});
+    const stadt = new Cesium.CallbackProperty(() => hoch() > 6000 && hoch() < 3.5e6, false);
+    marken.entities.add({ position: Cesium.Cartesian3.fromDegrees(centre[0], centre[1], 0), point: { pixelSize: 9, color: css('#e8243c'), outlineColor: css('#ffffff'), outlineWidth: 2, show: stadt },
+      label: { text: 'Hannover', font: "700 20px 'Pixelify Sans', sans-serif", fillColor: css('#ffffff'), outlineColor: css('#000000'), outlineWidth: 4, style: Cesium.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new Cesium.Cartesian2(0, -22), show: stadt } });
+    $('ueberspringen').onclick = () => flug.ueberspringe();
+    addEventListener('keydown', () => { if (flug && !flug.fertig) flug.ueberspringe(); });
+    const los = (spiel) => { document.body.classList.remove('gelandet'); view('fahren'); if (spiel) betrete().catch((err) => { status('Spiel nicht geladen: ' + err.message); verlasse(); }); };
+    $('los').onclick = () => los(false);
+    $('losSpiel').onclick = () => los(true);
+  }
   status('bereit');
-  window.welt = { get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; } }; // for the console and tests
+  window.welt = { get flug() { return flug; }, get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; } }; // for the console and tests
 }
 
 main().catch((e) => { status('Fehler: ' + e.message); console.error(e); });
