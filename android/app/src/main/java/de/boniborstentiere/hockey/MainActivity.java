@@ -291,7 +291,7 @@ public class MainActivity extends Activity {
 
     /** Lets the page know it runs inside the Android app; keeps the Cesium token for both origins. */
     private final class Bridge {
-        @JavascriptInterface public String version() { return "0.5"; }
+        @JavascriptInterface public String version() { return "0.6"; }
         @JavascriptInterface public String token() { return getPreferences(MODE_PRIVATE).getString("cesiumToken", ""); }
         @JavascriptInterface public void speak(String text) { if (ttsReady) tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "boni"); }
         @JavascriptInterface public void stopSpeaking() { if (tts != null) tts.stop(); }

@@ -36,10 +36,10 @@ export class TitleScene {
         x += adv;
       });
     };
-    word('DIE ROTE', 30, PAL.white, PAL.slate);
-    word('KUGEL', 70, PAL.red, PAL.redDark);
+    word('BORSTEN', 30, PAL.white, PAL.slate);
+    word('BOOM!', 70, PAL.red, PAL.redDark);
     // Taglines, including the Boni Borstentiere's own
-    const lines = ['DAS GRÖSSTE KLEINE SPIEL DER WELT', 'WAS SIND WIR? EIN BORSTENTIER!', 'HAARE OPTIONAL', 'ZUSAMMEN SIND WIR STARK!', 'MIT BONNY AUS DER EILENRIEDE'];
+    const lines = ['EIN INLINEHOCKEY-ABENTEUER', 'DER BONI BORSTENTIERE', 'WAS SIND WIR? EIN BORSTENTIER!', 'HAARE OPTIONAL', 'ZUSAMMEN SIND WIR STARK!', 'MIT BONNY AUS DER EILENRIEDE'];
     drawTextOutlined(ctx, lines[Math.floor(this.t / 3) % lines.length], W / 2, 112, { color: PAL.pink, align: 'center' });
     if (Math.floor(this.t * 2) % 2 === 0) {
       const prompt = input.lastKind === 'touch' || input.pointers.touchSeen ? 'TIPPEN ZUM STARTEN' : 'DRÜCK START';

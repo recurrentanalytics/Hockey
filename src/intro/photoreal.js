@@ -23,11 +23,11 @@ const STORY = [
   { at: 0.8, until: 6.6, text: 'Ganz weit draußen, im großen, dunklen Weltall … schwebt eine kleine blaue Kugel.' },
   { at: 7.0, until: 10.2, text: 'Auf dieser Kugel gibt es ein Land.' },
   { at: 10.6, until: 14.6, text: 'In diesem Land eine Stadt.' },
-  { at: 15.4, until: 20.0, text: 'Und in dieser Stadt … ein kleiner Platz unter großen Bäumen.' },
+  { at: 15.4, until: 20.0, text: 'Und in dieser Stadt … einen kleinen Platz unter großen Bäumen.' },
   { at: 20.4, until: 25.9, text: 'Hier rollt eine noch viel kleinere Kugel. Ein roter Ball. Klein wie eine Kinderfaust …' },
   { at: 26.2, until: 30.2, text: '… und für uns das Größte auf der ganzen Welt.' },
 ];
-export const GAME_TITLE = { name: 'DIE ROTE KUGEL', sub: 'Das größte kleine Spiel der Welt' };
+export const GAME_TITLE = { name: 'BORSTENBOOM!', sub: 'Ein Inlinehockey-Abenteuer der Boni Borstentiere' };
 const ZOOM = [[0, 'planet'], [6.6, 'drift'], [10.2, 1.25e6], [13.8, 1.4e5], [19.2, 3.6e3], [23.2, 230], [26.2, 'end']];
 const T = { turn: [13.8, 23.4], tilt: [20.0, 26.2], germany: [6.6, 11.2], city: [10.6, 14.8], fade: [22.2, 26.6], rink: [23.2, 26.6], title: 26.2, button: 30.4 };
 const END = T.button + 0.4;
