@@ -45,17 +45,25 @@ export const RINK = BONI_3D ? BONI_RINK : ARENA_RINK;
 
 export const GOAL = BONI_3D ? { width: 1.37, height: 1.12, depth: 0.6 } : { width: 1.83, height: 1.22, depth: 1.0 };
 
-export const SKATE = {
+// Skating feel. grip: how fast sideways drift dies when steering (no "soap"); brakeDrag: how fast
+// a skater stops without input. On the small real court everything runs ~25 % slower so the
+// game stays wild but readable.
+const ARENA_SKATE = {
   radius: 0.4,
   accel: 15,
   maxSpeed: 7.5,
   sprintSpeed: 9.5,
   glideDrag: 0.5,
-  brakeDrag: 2.6,
+  brakeDrag: 3.2,
+  grip: 4.5,
   boardBounce: 0.25,
 };
+const BONI_SKATE = { ...ARENA_SKATE, accel: 13, maxSpeed: 5.7, sprintSpeed: 7.2, glideDrag: 0.7, brakeDrag: 4.4, grip: 7.5, boardBounce: 0.2 };
+export const SKATE = BONI_3D ? BONI_SKATE : ARENA_SKATE;
 
-export const SHOT = { minSpeed: 13, maxSpeed: 32, chargeTime: 0.9, minLift: 1.5, maxLift: 3.8 };
+const ARENA_SHOT = { minSpeed: 13, maxSpeed: 32, chargeTime: 0.9, minLift: 1.5, maxLift: 3.8 };
+// shots are a little slower on the small real court
+export const SHOT = BONI_3D ? { ...ARENA_SHOT, minSpeed: ARENA_SHOT.minSpeed * 0.82, maxSpeed: ARENA_SHOT.maxSpeed * 0.8 } : ARENA_SHOT;
 
 export const TIMING = { step: 1 / 60, maxFrame: 0.25 };
 

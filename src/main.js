@@ -41,6 +41,8 @@ const app = {
   },
 };
 app.backdrop = new Backdrop(app);
+// test hook for automated play-throughs (tools/test): only with ?debug in the address
+if (new URLSearchParams(location.search).has('debug')) window.__app = app;
 
 // Fullscreen has to be requested inside the input event itself, so these run in the listeners.
 let autoTried = false;

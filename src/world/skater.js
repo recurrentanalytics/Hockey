@@ -138,6 +138,12 @@ export class Skater {
       const accel = SKATE.accel * (this.sprinting ? 1.15 : 1);
       this.vel.x += move.x * accel * dt;
       this.vel.y += move.y * accel * dt;
+      // grip: sideways drift (relative to where the player steers) dies away quickly, so turns bite
+      const ux = move.x / mlen, uy = move.y / mlen;
+      const along = this.vel.x * ux + this.vel.y * uy;
+      const g = Math.exp(-SKATE.grip * dt);
+      this.vel.x = along * ux + (this.vel.x - along * ux) * g;
+      this.vel.y = along * uy + (this.vel.y - along * uy) * g;
       const rate = (this.hasPuck ? CARRY_TURN_RATE : TURN_RATE) * dt;
       this.dir = turnToward(this.dir, Math.atan2(move.y, move.x), rate);
     }
