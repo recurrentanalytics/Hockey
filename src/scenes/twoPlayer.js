@@ -7,21 +7,23 @@ import { settings } from '../settings.js';
 import { PLAYER_COLORS } from '../config.js';
 import { MenuScene } from './menuScene.js';
 import { RinkScene } from './rink.js';
+import { FIXED } from '../world/projection.js';
 
 export class TwoPlayerScene extends MenuScene {
   constructor(app) {
     super(app, {
-      title: '2 PLAYERS',
-      subtitle: 'EACH PLAYER JOINS WITH THEIR OWN DEVICE',
+      title: '2 SPIELER',
+      subtitle: 'JEDER SPIELT MIT SEINEM EIGENEN GERÄT',
       top: 104,
       width: 210,
       items: [
-        choice('MODE', 'twoPlayerMode'),
-        choice('HOME TEAM', 'homeTeam', () => avoidSameTeam('awayTeam')),
-        choice('AWAY TEAM', 'awayTeam', () => avoidSameTeam('homeTeam')),
-        choice('CAMERA', 'twoPlayerCamera'),
-        { label: 'START', color: PAL.yellow, disabled: () => this.slots.some((s) => !s), onSelect: () => this.start() },
-        { label: 'BACK', onSelect: () => app.pop() },
+        choice('MODUS', 'twoPlayerMode'),
+        choice('HEIMTEAM', 'homeTeam', () => avoidSameTeam('awayTeam')),
+        choice('GASTTEAM', 'awayTeam', () => avoidSameTeam('homeTeam')),
+        choice('KAMERA', 'twoPlayerCamera'),
+        ...(FIXED ? [] : [choice('SPIELORT', 'venue')]),
+        { label: 'LOS GEHTS', color: PAL.yellow, disabled: () => this.slots.some((s) => !s), onSelect: () => this.start() },
+        { label: 'ZURÜCK', onSelect: () => app.pop() },
       ],
     });
     this.slots = [null, null];
@@ -93,10 +95,10 @@ export class TwoPlayerScene extends MenuScene {
       if (id) {
         const c = input.controller(id);
         drawText(ctx, fitText(c.name, r.w - 12), r.x + 6, r.y + 22, { color: PAL.white });
-        drawText(ctx, 'READY', r.x + 6, r.y + 32, { color: PAL.green });
+        drawText(ctx, 'BEREIT', r.x + 6, r.y + 32, { color: PAL.green });
       } else {
-        drawText(ctx, 'PRESS SHOOT', r.x + 6, r.y + 22, { color: PAL.cloud });
-        drawText(ctx, 'TO JOIN', r.x + 6, r.y + 30, { color: PAL.cloud });
+        drawText(ctx, 'DRÜCK SCHUSS', r.x + 6, r.y + 22, { color: PAL.cloud });
+        drawText(ctx, 'ZUM MITMACHEN', r.x + 6, r.y + 30, { color: PAL.cloud });
       }
     });
     const pad = input.padControllers()[0];
@@ -104,7 +106,7 @@ export class TwoPlayerScene extends MenuScene {
     const kb1 = input.bindingLabel('kb1', input.profile('kb1').shoot[0]);
     const kb2 = input.bindingLabel('kb2', input.profile('kb2').shoot[0]);
     const W = this.app.display.width;
-    drawText(ctx, `SHOOT: ${kb1} / ${kb2} / PAD ${padShoot}  -  CHECK TO LEAVE`, W / 2, 98 - 0, { color: PAL.mist, align: 'center', shadow: PAL.ink });
-    if (input.pointers.touchSeen) drawText(ctx, 'TOUCH: TAP A SLOT', W / 2, 174, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+    drawText(ctx, `SCHUSS: ${kb1} / ${kb2} / PAD ${padShoot}  -  CHECK ZUM AUSSTEIGEN`, W / 2, 98 - 0, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+    if (input.pointers.touchSeen) drawText(ctx, 'TOUCH: PLATZ ANTIPPEN', W / 2, 186, { color: PAL.mist, align: 'center', shadow: PAL.ink });
   }
 }

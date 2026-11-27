@@ -1,13 +1,13 @@
 // Goalie: holds an arc in front of the net, tracks the puck, reacts to shots.
-import { RINK, GOAL, TEAMS } from '../config.js';
+import { RINK, GOAL, TEAMS, RES } from '../config.js';
 import { project } from '../world/projection.js';
-import { goalieSprites, shadowSprite, GOALIE_W, GOALIE_ANCHOR_X, GOALIE_ANCHOR_Y } from '../world/sprites.js';
+import { goalieFigures, shadowSprite, GK_W, GK_AX, GK_AY } from '../world/sprites.js';
 
 // react: seconds before moving on a shot · err: how far off the read can be (m)
 const SKILL = {
-  easy:   { react: 0.28, speed: 3.0, dive: 2.6, err: 0.4 },
-  normal: { react: 0.22, speed: 3.8, dive: 3.0, err: 0.28 },
-  hard:   { react: 0.17, speed: 4.4, dive: 3.6, err: 0.2 },
+  easy:   { react: 0.26, speed: 3.1, dive: 2.7, err: 0.36 },
+  normal: { react: 0.2, speed: 3.9, dive: 3.2, err: 0.22 },
+  hard:   { react: 0.16, speed: 4.5, dive: 3.7, err: 0.17 },
 };
 const HW = GOAL.width / 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -19,7 +19,7 @@ export class Goalie {
     this.setSide(side);
     this.radius = 0.5;                   // body vs skaters
     this.skill = SKILL[difficulty] ?? SKILL.normal;
-    this.sprites = goalieSprites(this.team);
+    this.sprites = goalieFigures(this.team);
     this.pos = { x: 0, y: 0 };
     this.vel = { x: 0, y: 0 };
     this.reset();
@@ -78,12 +78,18 @@ export class Goalie {
           ty = clamp(yHit + this.guess, -HW - 0.15, HW + 0.15);
           speed = this.skill.dive;
           this.diving = true;
+          // Low shots: drop into the butterfly. High ones: glove or blocker, by side.
+          const zHit = puck.z + puck.vz * t - 4.9 * t * t;
+          if (!this.diveKind) this.diveKind = zHit < 0.45 ? 'butterfly' : (ty - this.pos.y) * this.out >= 0 ? 'glove' : 'blocker';
         }
       }
     } else {
       this.reactT = 0;
       this.guess = null;
+      this.diveKind = null;
     }
+    this.saveT = Math.max(0, (this.saveT ?? 0) - dt);
+    this.t = (this.t ?? Math.random() * 5) + dt;
 
     const dx = tx - this.pos.x, dy = ty - this.pos.y, d = Math.hypot(dx, dy);
     const step = Math.min(d, speed * dt);
@@ -105,12 +111,25 @@ export class Goalie {
     ctx.drawImage(shadowSprite(), Math.round(p.x + ox - 7), Math.round(p.y + oy - 2));
   }
 
+  /** Current frame: covering, saving, reading a shot, shuffling across or set in the stance. */
+  frame() {
+    const S = this.sprites;
+    if (this.holdT > 0) return S.cover;
+    if (this.saveT > 0) return S[this.saveKind] ?? S.butterfly;
+    if (this.diving) return S[this.diveKind ?? 'butterfly'];
+    if (Math.hypot(this.vel.x, this.vel.y) > 0.6) return Math.floor(this.t * 8) % 2 ? S.shuffleA : S.shuffleB;
+    return Math.floor(this.t / 0.9) % 2 ? S.breathe : S.stance;
+  }
+
   draw(ctx, ox, oy) {
     const p = project(this.pos.x, this.pos.y);
     const right = this.out > 0;
-    const down = this.diving || this.holdT > 0;
-    const img = down ? (right ? this.sprites.downRight : this.sprites.downLeft) : (right ? this.sprites.right : this.sprites.left);
-    const ax = right ? GOALIE_ANCHOR_X : GOALIE_W - 1 - GOALIE_ANCHOR_X;
-    ctx.drawImage(img, Math.round(p.x + ox - ax), Math.round(p.y + oy - GOALIE_ANCHOR_Y));
+    const f = this.frame();
+    const img = right ? f.right : f.left;
+    const ax = right ? GK_AX : GK_W - 1 - GK_AX;
+    ctx.save();
+    ctx.scale(1 / RES, 1 / RES);
+    ctx.drawImage(img, Math.round((p.x + ox) * RES) - ax, Math.round((p.y + oy) * RES) - GK_AY);
+    ctx.restore();
   }
 }

@@ -1,3 +1,17 @@
 node_modules/
 .DS_Store
 art/candidates/
+
+# Android build (web files are copied in by tools/android/build.sh)
+android/app/src/main/assets/
+android/.cesium/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.keystore
+*.jks
+
+# raw geodata fetched by tools/ort/abrufen.py (re-downloadable)
+daten/
+__pycache__/

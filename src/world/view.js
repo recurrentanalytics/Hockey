@@ -1,38 +1,72 @@
 // Draws the arena + entities into a viewport of the world layer.
 import { PAL } from '../engine/palette.js';
-import { bakeRink, bakeGoal } from './rink.js';
-import { project } from './projection.js';
-import { asset } from '../engine/assets.js';
-
-// World objects from the art library, standing on the concourse outside the boards (metres).
-const SCENERY = [
-  { id: 'world.bonifatiusplatz.plane-tree', x: -28.9, y: -13.3 },
-  { id: 'world.bonifatiusplatz.plane-tree', x: 28.9, y: -13.3 },
-];
+import { bakeRink, bakeGoal, BAKE } from './rink.js';
+import { FIXED } from './projection.js';
 
 export class WorldView {
   constructor() {
+    this.key = 'arena|puck';
     this.rink = bakeRink();
-    this.goals = [bakeGoal(-1), bakeGoal(1)].map((g) => ({
-      sortY: g.sortY,
-      draw: (ctx, ox, oy) => ctx.drawImage(g.canvas, g.x + ox, g.y + oy),
-    }));
-    this.props = null;
+    this.shake = { '-1': 0, '1': 0 };
+    this.goals = [-1, 1].map((side) => {
+      const g = bakeGoal(side);
+      return {
+        sortY: g.sortY,
+        draw: (ctx, ox, oy) => {
+          // A puck in the twine (or off the iron) sets the whole cage wobbling.
+          const a = this.shake[side];
+          const t = performance.now() / 1000;
+          const dx = a > 0 ? Math.round(Math.sin(t * 38) * a * 2.2) : 0;
+          const dy = a > 0.4 ? Math.round(Math.sin(t * 29) * a) : 0;
+          ctx.drawImage(g.canvas, g.x + ox + dx / 2, g.y + oy + dy / 2, g.w, g.h);
+        },
+      };
+    });
+    this.wave = null;
+    this.lastT = performance.now() / 1000;
   }
 
-  /** Scenery entities; empty until the art library has loaded. */
-  scenery() {
-    if (this.props) return this.props;
-    const props = [];
-    for (const s of SCENERY) {
-      const a = asset(s.id);
-      if (!a) return []; // not loaded yet: try again next frame
-      const p = project(s.x, s.y);
-      const d = a.density ?? 1; // an asset at density 2 covers half its pixel size in world pixels
-      props.push({ sortY: s.y, draw: (ctx, ox, oy) => ctx.drawImage(a.img, p.x - a.anchor.x / d + ox, p.y - a.anchor.y / d + oy, a.img.width / d, a.img.height / d) });
+  /** Net wobble: side -1 / +1, strength 0..1 (fades on its own). */
+  jiggle(side, strength = 1) {
+    const k = String(Math.sign(side) || 1);
+    this.shake[k] = Math.max(this.shake[k], strength);
+  }
+
+  /** Start a La-Ola wave running round the stands. */
+  startWave(laps = 2) {
+    if (!this.wave) this.wave = { t: 0, laps };
+  }
+
+  /** The crowd, drawn in narrow columns so a wave can roll through it. */
+  drawCrowd(ctx, vp, ox, oy, f, cheerFrame) {
+    const cr = this.rink.crowd;
+    const img = cr.frames[f];
+    const x0 = cr.x0 + ox, y0 = cr.y0 + oy;
+    const W = cr.w, H = cr.h, S = img.width / W;  // frames are baked at full resolution
+    if (!this.wave) { ctx.drawImage(img, x0, y0, W, H); return; }
+    const COL = 6, span = 46;
+    const lap = 4.2;
+    const u = (this.wave.t % lap) / lap;
+    // The crest runs across everything the camera can see, then a bit beyond.
+    const from = vp.x - x0 - span, to = vp.x + vp.w - x0 + span;
+    const crest = from + u * (to - from);
+    const a = Math.max(0, Math.floor((vp.x - x0) / COL) * COL), b = Math.min(W, vp.x + vp.w - x0 + COL);
+    for (let sx = a; sx < b; sx += COL) {
+      const d = Math.abs(sx + COL / 2 - crest);
+      const k = d < span ? 1 - d / span : 0;
+      const src = k > 0.35 ? cr.frames[cheerFrame] : img;
+      const lift = Math.round(Math.sin(k * Math.PI / 2) * 6) / 2;
+      const w = Math.min(COL, W - sx);
+      ctx.drawImage(src, sx * S, 0, w * S, H * S, x0 + sx, y0 - lift, w, H);
     }
-    this.props = props;
-    return props;
+  }
+
+  /** Switch venue ('arena' | 'boni') and centre logo ('puck' | 'boar'); re-bakes only on change. */
+  configure({ venue = 'arena', logo = 'puck' } = {}) {
+    const key = `${venue}|${logo}`;
+    if (key === this.key) return;
+    this.key = key;
+    this.rink = bakeRink({ venue, logo });
   }
 
   /**
@@ -50,15 +84,31 @@ export class WorldView {
     ctx.beginPath();
     ctx.rect(vp.x, vp.y, vp.w, vp.h);
     ctx.clip();
+    if (FIXED) {
+      // real court behind a transparent layer: only the moving things are drawn
+      ctx.clearRect(vp.x, vp.y, vp.w, vp.h);
+      for (const e of entities) e.drawShadow?.(ctx, ox, oy);
+      for (const e of [...entities].sort((a, b) => a.sortY - b.sortY)) e.draw(ctx, ox, oy);
+      ctx.restore();
+      return;
+    }
     ctx.fillStyle = PAL.night;
     ctx.fillRect(vp.x, vp.y, vp.w, vp.h);
-    ctx.drawImage(this.rink.background, this.rink.x0 + ox, this.rink.y0 + oy);
+    ctx.drawImage(this.rink.background, this.rink.x0 + ox, this.rink.y0 + oy, BAKE.w, BAKE.h);
+    // Crowd: gentle bobbing, or jumping and waving while `cheer` is set.
+    const t = performance.now() / 1000;
+    const dt = Math.min(0.1, Math.max(0, t - this.lastT));
+    this.lastT = t;
+    for (const k in this.shake) this.shake[k] = Math.max(0, this.shake[k] - dt * 1.3);
+    if (this.wave && (this.wave.t += dt) > 4.2 * this.wave.laps) this.wave = null;
+    const f = this.cheer ? 2 + (Math.floor(t * 7) % 2) : Math.floor(t * 1.4) % 2;
+    this.drawCrowd(ctx, vp, ox, oy, f, 2 + (Math.floor(t * 7) % 2));
 
     for (const e of entities) e.drawShadow?.(ctx, ox, oy);
-    const sorted = [...entities, ...this.goals, ...this.scenery()].sort((a, b) => a.sortY - b.sortY);
+    const sorted = [...entities, ...this.goals].sort((a, b) => a.sortY - b.sortY);
     for (const e of sorted) e.draw(ctx, ox, oy);
 
-    ctx.drawImage(this.rink.foreground, this.rink.x0 + ox, this.rink.y0 + oy);
+    ctx.drawImage(this.rink.foreground, this.rink.x0 + ox, this.rink.y0 + oy, BAKE.w, BAKE.h);
     ctx.restore();
   }
 }

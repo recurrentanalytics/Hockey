@@ -75,6 +75,26 @@ Needs Node 20 or newer and no packages. The tests run the game logic headless: A
 - Animations: goalie butterfly, knockdowns from checks, the scorer raising the stick
 - A stats table on the final screen
 
+**More:**
+- **Line changes:** each team has two lines of 4 skaters (8 in all). A tired line swaps for the rested one at stoppages, and the bench recovers.
+- **Detailed graphics:** the world layer renders at twice the resolution. Players are clearly kids in a cute chibi style: a big round head with large shiny eyes and rosy cheeks, a round little body and short chubby limbs. They are posed on a skeleton (hips, knees, ankles, shoulders, elbows, hands). Their gear includes helmets with visors, jerseys with hem stripes and the team animal, numbers on the back, short hockey pants, striped socks over the knee, gloves, and inline skates with four wheels. Goalies are kids too, with big pads, a blocker, a catch glove and a big round caged mask (the Borstentiere one has boar ears). The floor, lines, glass, nets and a crowd with faces, caps, raised arms and scarves are drawn at full resolution, and the camera sits closer to the play.
+- **Realistic animations:** an 8-phase stride with arm swing, crossovers in turns, hockey stops, shot wind-ups and follow-throughs, poke-check lunges, stickhandling, falls (stumble, sprawl, kneel, get up), face-off crouches, breathing and tired poses. Goalies breathe, shuffle, and make glove, blocker and butterfly saves. After goals there is a group hug and the beaten team hangs their heads. The net wobbles and the crowd does the wave.
+- **Goal replays:** a slow-motion replay with TV letterbox after every goal; skip with confirm/shoot. You can turn replays off in Settings → Goal replays.
+- **Ball or puck:** a red low-bounce inline hockey ball by default, or a red roller puck with white glide pegs (Settings → Ball or puck). The ball rolls further and pings off the boards a little more.
+- **Player stats:** goals, assists (from the passing chain) and shots on goal for every skater, saves for goalies. A scorer line shows after each goal, and the final screen names the three stars of the game.
+- **Tournament:** 4 teams play a round robin, then the top two meet in the final. Scoring is 3 points for a regulation win, 2 for a win in OT or the shootout, and 1 for a loss in OT or the shootout. Games without you are simulated, and progress is saved in the browser.
+
+**Boni Borstentiere:** the club from Hannover-List is in the game ([website](https://recurrentanalytics.github.io/boni-borstentiere-website/)).
+- **BORSTENTIERE** play in green with orange and cream stripes. Their #61 is **Bonny**, the little wild boar from the Eilenriede, and their goalies have boar ears on the mask.
+- **BALDING BORSTIS** are the adults' section: bald heads, glasses, and a Keiler goalie mask ("Haare optional"). When the two meet, the away side wears a cream kit.
+- **Venue:** a second venue, **Bonifatiusplatz**, an outdoor asphalt pitch with wooden boards, Eilenriede trees, parents watching and the playground hippo. Bonny's face replaces the centre logo in club games.
+- **Hymn and chants:** the club hymn (`audio/hymne.mp3`, from the club website) is the club's goal song. Chants from the site and the Bonny comic: TOOORRR!!!, BONNY! BONNY! BONNY!, WAS SIND WIR? EIN BORSTENTIER!, ZUSAMMEN SIND WIR STARK!
+
+**Extras:**
+- Hair under the helmets, and team animals on the jerseys.
+- Players hop for joy after a goal.
+- A video wall at stoppages: kiss cam, Bonny cam, dance cam and a goal card.
+
 ## Default controls
 
 | Action | Keyboard 1 | Keyboard 2 | Gamepad (position) |
@@ -95,6 +115,7 @@ Needs Node 20 or newer and no packages. The tests run the game logic headless: A
   - START+A: macOS
   - START+Y: Switch. Detected as a Pro Controller, with Nintendo letters.
 - **Default buttons** (SN30 letters): **A pass**, B or ZR shoot, Y poke check, X or L switch, R or ZL sprint, START pause. Move with the d-pad or the left stick. A confirms in menus and B goes back; Settings → Controls → Menu confirm changes this. Xbox and PlayStation pads are laid out by position instead: bottom pass, left shoot, right poke check.
+- **A not passing?** If the browser reports the pad as an Xbox or PlayStation pad, set Settings → Controls → **Button labels: NINTENDO (A PASS)**. That switches labels and layout for every pad.
 - **Guided setup:** Settings → Controls → *Pad 1* → **Guided setup**. A drawing of the pad lights up each button to press, so the mapping and the letters on screen match your pad in any mode and browser. It's recommended for X-input mode, where the browser reports an Xbox pad.
 - **Rumble:** hits, goals, shots and posts, where the browser and mode support it (Chrome, X-input). Turn it off under Controls → Rumble.
 

@@ -6,6 +6,8 @@
 //   offence – the carrier drives, shoots or passes; the others find open ice to receive
 //   defence – the closest skater pressures the carrier and pokes, the rest mark men goal-side
 import { RINK, GOAL, SHOT } from '../config.js';
+// positions below were tuned for the 60 m arena; they scale with the rink in use
+const K = RINK.length / 60, KY = RINK.width / 30;
 import { RINK_CORE } from '../world/rink.js';
 
 const HW = GOAL.width / 2;
@@ -14,6 +16,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // speed: share of top speed · react: seconds between decisions
 // poke: chance to poke when in range · shotErr: aim error (m) · pass: chance to pass under pressure
 const LEVELS = {
+  kids:   { speed: 0.7,  react: 0.5,  poke: 0.08, shotErr: 0.6, pass: 0.3, read: 0.85 }, // slow, forgiving, rarely steals the ball
   easy:   { speed: 0.82, react: 0.38, poke: 0.18, shotErr: 0.4, pass: 0.45, read: 0.6 },
   normal: { speed: 0.92, react: 0.24, poke: 0.3, shotErr: 0.26, pass: 0.65, read: 0.35 },
   hard:   { speed: 1.0,  react: 0.14, poke: 0.45, shotErr: 0.15, pass: 0.85, read: 0.2 },
@@ -32,10 +35,12 @@ function segDist(p, a, b) {
 
 /** Keep a target on the rink and out of both creases. `m` is the distance kept from the boards. */
 function legal(x, y, m = 1.0) {
-  const hx = RINK_CORE.halfX, hy = RINK_CORE.halfY, r = RINK_CORE.radius - m;
+  // the rink shrunk by m: works for big rounded corners (arena) and near-square ones (Boni court)
+  const shrink = Math.max(0, m - RINK_CORE.radius);
+  const hx = RINK_CORE.halfX - shrink, hy = RINK_CORE.halfY - shrink, r = Math.max(0, RINK_CORE.radius - m);
   const cx = clamp(x, -hx, hx), cy = clamp(y, -hy, hy);
   const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
-  if (d > r) { x = cx + (dx / d) * r; y = cy + (dy / d) * r; }
+  if (d > r) { x = cx + (d ? (dx / d) * r : 0); y = cy + (d ? (dy / d) * r : 0); }
   for (const side of [-1, 1]) {
     const gx = side * RINK.goalLineX;
     const ddx = x - gx, dd = Math.hypot(ddx, y);
@@ -78,11 +83,41 @@ export class AI {
   think(dt) {
     const m = this.m;
     this.controls.clear();
-    if (m.state !== 'play') return; // face-off and goal celebration: everyone glides
+    if (m.state === 'goal') {
+      for (const s of m.skaters) if (!s.human) this.controls.set(s, this.celebrate(s));
+      return;
+    }
+    if (m.state !== 'play') return; // face-off and stoppages: everyone glides
     for (const key of ['home', 'away']) {
       if (!this.sides.has(key)) continue;
       this.thinkTeam(key, dt);
     }
+  }
+
+  /**
+   * After a goal: the scorer peels away with a fist pump, teammates skate over for the
+   * group hug, and the beaten team coasts off with their heads down.
+   */
+  celebrate(s) {
+    const g = this.m.lastGoal;
+    if (!g) return {};
+    if (s.sideKey !== g.side) return {};
+    const scorer = g.by && g.by.sideKey === g.side ? g.by : null;
+    if (!scorer) return {};
+    if (s === scorer) {
+      // Keep gliding the way they were going, curling away a little.
+      const v = s.speed;
+      if (v < 1) return {};
+      const a = Math.atan2(s.vel.y, s.vel.x) + 0.6;
+      return { move: { x: Math.cos(a) * 0.5, y: Math.sin(a) * 0.5 }, limit: 0.55 };
+    }
+    const dx = scorer.pos.x - s.pos.x, dy = scorer.pos.y - s.pos.y, d = Math.hypot(dx, dy);
+    if (d < 1.15) {
+      s.celebrateT = Math.max(s.celebrateT ?? 0, 0.4); // arrived: arms up together
+      return {};
+    }
+    const k = Math.min(1, (d - 1.1) / 1.5);
+    return { move: { x: (dx / d) * k, y: (dy / d) * k }, limit: 0.8 };
   }
 
   possession() {
@@ -194,8 +229,8 @@ export class AI {
       const pX = A * p.pos.x;
       others.forEach((s) => {
         const fwd = s.slot < 2;
-        const X = fwd ? clamp(pX + 4, -12, 18) : clamp(pX - 9, -20, 6);
-        const y = (s.slot % 2 ? 1 : -1) * (fwd ? 6 : 4);
+        const X = fwd ? clamp(pX + 4 * K, -12 * K, 18 * K) : clamp(pX - 9 * K, -20 * K, 6 * K);
+        const y = (s.slot % 2 ? 1 : -1) * (fwd ? 6 : 4) * KY;
         targets.set(s, legal(A * X, y));
       });
     }
@@ -230,7 +265,9 @@ export class AI {
       if (o === s) continue;
       const mate = o.sideKey === s.sideKey;
       if (!mate && chase) continue;
-      const range = mate ? 2.2 : 1.6, w = mate ? 0.25 : 0.5;
+      // Opponents closing fast get a wider berth (marking means shadowing, not ramming).
+      const rel = mate ? 0 : Math.max(0, Math.hypot(s.vel.x - o.vel.x, s.vel.y - o.vel.y) - 3);
+      const range = mate ? 2.2 : 1.6 + rel * 0.2, w = mate ? 0.25 : 0.6;
       const ox = s.pos.x - o.pos.x, oy = s.pos.y - o.pos.y, od = Math.hypot(ox, oy);
       if (od > 0 && od < range) { mx += (ox / od) * (range - od) * w; my += (oy / od) * (range - od) * w; }
     }
@@ -243,7 +280,16 @@ export class AI {
       const dn = dist(s.pos, t.near);
       if (dn < 3) limit *= clamp(dn / 3, 0.45, 1);
     }
-    return { move: { x: mx, y: my }, sprint: d > 7 && s.stamina > 0.35 && !t.near, limit };
+    // Racing an opponent to the same spot: real players ease up rather than crash head-on.
+    let brace = false;
+    for (const o of this.m.skaters) {
+      if (o.sideKey === s.sideKey || o.downT > 0) continue;
+      const ox = o.pos.x - s.pos.x, oy = o.pos.y - s.pos.y, od = Math.hypot(ox, oy);
+      if (od > 3 || od < 1e-6) continue;
+      const closing = ((s.vel.x - o.vel.x) * ox + (s.vel.y - o.vel.y) * oy) / od;
+      if (closing > (chase ? 5.5 : 3.5)) { limit *= clamp(0.35 + (od / 3) * 0.4, 0.35, 0.75); brace = true; }
+    }
+    return { move: { x: mx, y: my }, sprint: d > 7 && s.stamina > 0.35 && !t.near && !brace, limit };
   }
 
   tryPoke(s, carrier, lv, dt) {
@@ -292,7 +338,7 @@ export class AI {
     if (s.ai.decideT <= 0) {
       s.ai.decideT = lv.react + Math.random() * 0.15;
       const inFront = Math.abs(s.pos.y) < (A * (gx - s.pos.x)) * 0.9 + 1.5;
-      if (X > 8 && X < RINK.goalLineX - 0.5 && goalDist < 16 && inFront) {
+      if (X > 8 * K && X < RINK.goalLineX - 0.5 && goalDist < 16 * Math.max(K, 0.55) && inFront) {
         let chance = goalDist < 8 ? 0.3 : goalDist < 12 ? 0.18 : 0.08;
         // A defender in the shooting lane: look for a pass or a better angle instead.
         const goal = { x: gx, y: 0 };
@@ -358,8 +404,11 @@ export class AI {
       if (mte === s || mte.sideKey !== key) continue;
       const d = dist(mte.pos, s.pos);
       if (d < 3 || d > 22) continue;
-      const lane = opps.reduce((v, o) => Math.min(v, segDist(o.pos, s.pos, mte.pos)), Infinity);
-      if (lane < 1.2) continue;
+      // Where the pass will meet the receiver, and how much room defenders have to step into it.
+      const lead = d / 14;
+      const meet = { x: mte.pos.x + mte.vel.x * lead, y: mte.pos.y + mte.vel.y * lead };
+      const lane = opps.reduce((v, o) => Math.min(v, segDist(o.pos, s.pos, meet) - Math.hypot(o.vel.x, o.vel.y) * 0.08), Infinity);
+      if (lane < 0.95 + d * 0.035) continue;
       const open = opps.reduce((v, o) => Math.min(v, dist(o.pos, mte.pos)), Infinity);
       const score = A * mte.pos.x * 0.3 + Math.min(open, 5) - d * 0.05;
       if (score > bestScore) { bestScore = score; best = { mate: mte, open }; }

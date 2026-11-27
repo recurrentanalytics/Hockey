@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#0e0f1a" />
+  <title>Borstenboom!</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="assets/fonts/fonts.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/app/icon-192.png" />
+  <link rel="apple-touch-icon" href="assets/app/icon-192.png" />
+  <style>
+    html, body { margin: 0; height: 100%; background: #0e0f1a; overflow: hidden; }
+    #gl { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; }
+    #cesium { position: fixed; inset: 0; }
+    #cesium .cesium-viewer-bottom { left: auto; right: 6px; bottom: 22px; }
+    #status { position: absolute; left: 0; right: 0; top: 46%; text-align: center; font-size: clamp(16px, 3vw, 26px); transition: opacity .5s; text-shadow: 0 2px 0 #16110d; }
+    #cover { position: fixed; inset: 0; background: #0e0f1a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+             opacity: 0; pointer-events: none; transition: opacity .9s; font-family: Arial, sans-serif; color: #fff; z-index: 5; }
+    #cover.on { opacity: 1; transition: none; }
+    #coverText { font-size: clamp(15px, 2.6vw, 22px); }
+    #coverTrack { width: min(60vw, 360px); height: 8px; border-radius: 8px; background: #2a2b3d; overflow: hidden; }
+    #coverBar { width: 0; height: 100%; background: #ffd23f; transition: width .4s; }
+    #cover.ready #coverTrack { display: none; }
+    #cover.ready #coverText { font: clamp(18px, 3vw, 28px) "Arial Black", Arial, sans-serif; color: #ffd23f; animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .45; } }
+    #caption { position: absolute; left: 50%; bottom: 11%; transform: translate(-50%, 8px); width: min(86vw, 900px); text-align: center; opacity: 0;
+               transition: opacity .9s, transform .9s; font: 600 clamp(17px, 2.7vw, 30px)/1.35 "Pixelify Sans", Arial, sans-serif; color: #fff;
+               text-shadow: 0 2px 4px rgba(0,0,0,.85), 0 0 22px rgba(0,0,0,.6); letter-spacing: .01em; }
+    #caption.on { opacity: 1; transform: translate(-50%, 0); }
+    #skip { position: absolute; right: 14px; top: 12px; pointer-events: auto; opacity: 0; transition: opacity .6s; font: 14px Arial, sans-serif;
+            color: #fff; background: rgba(14,15,26,.55); border: 1px solid rgba(255,255,255,.45); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+    #skip.on { opacity: 1; }
+    #voiceHint { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); max-width: 80vw; font: 13px Arial, sans-serif; color: #fff; background: rgba(14,15,26,.75);
+                 border-radius: 8px; padding: 6px 10px; opacity: 0; transition: opacity .6s; text-align: center; }
+    #voiceHint.on { opacity: 1; }
+    #weatherFx { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+    #surface { position: absolute; left: 62px; top: 40px; pointer-events: none; font: 600 13px 'Pixelify Sans', sans-serif; color: #fff; background: rgba(20, 18, 30, 0.72); border-radius: 8px; padding: 4px 8px; text-shadow: 0 1px 0 #000; }
+    #wxSurf { margin-top: 4px; color: #ffd23f; }
+    #wxBtn { position: absolute; left: 10px; top: 34px; pointer-events: auto; font-size: 20px; line-height: 1; padding: 6px 8px; border-radius: 10px;
+             background: rgba(14,15,26,.6); border: 2px solid rgba(255,210,63,.8); cursor: pointer; }
+    #wx { position: absolute; left: 10px; top: 76px; pointer-events: auto; width: min(300px, 80vw); padding: 10px; border-radius: 12px; background: rgba(14,15,26,.9);
+          border: 2px solid #ffd23f; font: 600 14px 'Pixelify Sans', Arial, sans-serif; color: #fff; }
+    #wx .row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+    #wx button { font: inherit; font-size: 15px; color: #fff; background: #2a2b3d; border: 2px solid #4a4b60; border-radius: 8px; padding: 4px 9px; cursor: pointer; }
+    #wx .season button { font-size: 13px; padding: 4px 7px; }
+    #wx button.on { border-color: #ffd23f; background: #4a3d14; }
+    #wx label { display: block; margin: 4px 0 8px; } #wx input[type=range] { width: 100%; } #wx input[type=date] { font: inherit; }
+    #wxInfo { color: #ffd23f; font-size: 13px; }
+    #ui { position: fixed; inset: 0; pointer-events: none; font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif; color: #fff; }
+    #title { position: absolute; left: 0; right: 0; top: 7%; text-align: center; opacity: 0; transition: opacity .8s, transform .8s; transform: translateY(-12px);
+             text-shadow: 0 3px 0 #16110d, 0 0 18px rgba(0,0,0,.55); }
+    #title.on { opacity: 1; transform: none; }
+    /* BORSTENBOOM! logo and Bonny: SpriteCook pixel art, shown with hard pixels */
+    img.logo, img.bonny { image-rendering: pixelated; display: inline-block; vertical-align: middle; }
+    #title img.logo { height: clamp(120px, 30vh, 260px); }
+    #title img.bonny { height: clamp(70px, 17vh, 150px); margin-left: -1vw; }
+    #cover img.logo { height: clamp(110px, 26vh, 230px); margin-bottom: 6px; }
+    #title .sub { font: 700 clamp(15px, 2.6vw, 28px) 'Pixelify Sans', Arial, sans-serif; margin-top: .3em; color: #fff; text-shadow: 0 2px 0 #16110d, 0 0 12px rgba(0,0,0,.6); }
+    #coverText, #go, #token button { font-family: 'Pixelify Sans', Arial, sans-serif !important; font-weight: 700; }
+    #go { position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); pointer-events: auto; opacity: 0; transition: opacity .6s;
+          font: inherit; font-size: clamp(16px, 2.6vw, 24px); color: #16110d; background: #ffd23f; border: 3px solid #16110d; border-radius: 999px;
+          padding: .55em 1.4em; box-shadow: 0 4px 0 #16110d; cursor: pointer; }
+    #go.on { opacity: 1; }
+    #credit { position: absolute; right: 8px; bottom: 6px; font: 11px/1.2 Arial, sans-serif; color: rgba(255,255,255,.85); text-shadow: 0 1px 2px #000; }
+    #token { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92vw, 520px); display: none; pointer-events: auto;
+             background: rgba(14,15,26,.92); border: 3px solid #ffd23f; border-radius: 14px; padding: 18px 20px; font: 15px/1.4 Arial, sans-serif; color: #fff; }
+    #token h2 { margin: 0 0 8px; font: 20px "Arial Black", Arial, sans-serif; color: #ffd23f; }
+    #token input { width: 100%; box-sizing: border-box; margin: 10px 0; padding: 10px; font: 14px monospace; border-radius: 8px; border: 2px solid #ffd23f; background: #1b1c2b; color: #fff; }
+    #token button { font: 16px "Arial Black", Arial, sans-serif; padding: 9px 16px; border-radius: 999px; border: 3px solid #16110d; background: #ffd23f; color: #16110d; margin-right: 8px; cursor: pointer; }
+    #token button.alt { background: #3a3b4f; color: #fff; }
+    #hint { position: absolute; left: 8px; bottom: 6px; font: 11px/1.2 Arial, sans-serif; color: rgba(255,255,255,.7); text-shadow: 0 1px 2px #000; }
+  </style>
+</head>
+<body>
+  <div id="cesium"></div>
+  <canvas id="gl"></canvas>
+  <canvas id="screen" tabindex="0" style="display:none"></canvas>
+  <canvas id="weatherFx"></canvas>
+  <div id="cover"><img class="logo" src="assets/pixel/logo.png" alt="BORSTENBOOM!" /><div id="coverText"></div><div id="coverTrack"><div id="coverBar"></div></div></div>
+  <div id="ui">
+    <div id="title"><div class="club" id="titleName"></div><div class="sub" id="titleSub"></div></div>
+    <div id="caption"></div>
+    <button id="wxBtn" type="button" hidden title="Wetter und Uhrzeit">⛅</button>
+    <div id="surface" hidden></div>
+    <div id="wx" hidden>
+      <div class="row"><button data-mode="live">Live</button><button data-mode="pick">Wählen</button><button data-mode="hist">Damals</button></div>
+      <div id="wxPick"><div class="row"><button data-look="sun">☀️</button><button data-look="partly">🌤️</button><button data-look="clouds">☁️</button><button data-look="rain">🌧️</button><button data-look="snow">❄️</button><button data-look="fog">🌫️</button></div>
+        <div class="row season"><button data-season="fruehling">Frühling</button><button data-season="sommer">Sommer</button><button data-season="herbst">Herbst</button><button data-season="winter">Winter</button></div>
+        <label>Uhrzeit <span id="wxHourLbl"></span><input id="wxHour" type="range" min="0" max="24" step="0.25" /></label>
+        <label>Temperatur <span id="wxTempLbl"></span><input id="wxTemp" type="range" min="-10" max="36" step="1" /></label>
+        <label>Wind <span id="wxWindLbl"></span><input id="wxWind" type="range" min="0" max="20" step="1" /></label></div>
+      <div id="wxHist"><label>Datum <input id="wxDate" type="date" min="1940-01-01" /></label>
+        <label>Uhrzeit <span id="wxHourLbl2"></span><input id="wxHour2" type="range" min="0" max="23" step="1" /></label></div>
+      <div id="wxInfo"></div>
+      <div id="wxSurf"></div>
+    </div>
+    <div id="voiceHint"></div>
+    <button id="skip" type="button">Überspringen ›</button>
+    <button id="go" type="button">Spiel starten</button>
+    <div id="hint"></div>
+    <div id="status"></div>
+    <div id="token">
+      <h2>3D-Ansicht freischalten</h2>
+      <div>Für den echten Boni in 3D einmal den Cesium-ion-Token des Vereins einfügen. Er wird nur auf diesem Gerät gespeichert.</div>
+      <input id="tokenInput" type="password" autocomplete="off" placeholder="Token einfügen" />
+      <button id="tokenOk" type="button">Los</button><button id="tokenSkip" class="alt" type="button">Ohne 3D spielen</button>
+    </div>
+    <div id="credit">Geodaten © GeoBasis-DE / LGLN, CC BY 4.0</div>
+  </div>
+  <!-- Leistungsanzeige nur mit ?fps in der Adresse (docs/PERFORMANCE_TEST.md) -->
+  <script type="module">if (new URLSearchParams(location.search).has('fps')) import('./src/diag/fps.js');</script>
+  <script src="src/native/pads.js"></script>
+  <script type="module" src="src/intro/main.js"></script>
+  <script>if ('serviceWorker' in navigator && location.host !== 'appassets.androidplatform.net') navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+</body>
+</html>

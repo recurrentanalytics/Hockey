@@ -1,14 +1,19 @@
 // Shared UI bits: title header, button hint bar, toasts.
 import { PAL } from '../engine/palette.js';
-import { drawText, textWidth } from '../engine/font.js';
+import { drawText, textWidth, drawTextOutlined, drawLogo } from '../engine/font.js';
 import { panel } from '../engine/draw.js';
 
 export function header(ctx, W, title, subtitle) {
-  drawText(ctx, title, W / 2, 22, { color: PAL.white, scale: 2, align: 'center', shadow: PAL.ink });
+  if (title === 'BORSTENBOOM!') {
+    drawLogo(ctx, W / 2, 1, 50);
+    if (subtitle) drawTextOutlined(ctx, subtitle, W / 2, 50, { color: PAL.cloud, align: 'center' });
+    return;
+  }
+  drawTextOutlined(ctx, title, W / 2, 16, { color: PAL.white, scale: 2, align: 'center', big: true });
   ctx.fillStyle = PAL.yellow;
-  const w = textWidth(title, 2);
-  ctx.fillRect(Math.round(W / 2 - w / 2), 35, w, 1);
-  if (subtitle) drawText(ctx, subtitle, W / 2, 41, { color: PAL.mist, align: 'center' });
+  const w = textWidth(title, 2, true);
+  ctx.fillRect(Math.round(W / 2 - w / 2), 34, w, 1);
+  if (subtitle) drawTextOutlined(ctx, subtitle, W / 2, 41, { color: PAL.cloud, align: 'center' });
 }
 
 /** pairs: [[buttonLabel, actionText], ...]; null labels are skipped. */
@@ -20,6 +25,7 @@ export function hintBar(ctx, W, H, pairs) {
   const total = widths.reduce((a, b) => a + b, 0) + gap * (parts.length - 1);
   let x = Math.round(W / 2 - total / 2);
   const y = H - 11;
+  panel(ctx, x - 5, y - 4, total + 10, 13, { fill: PAL.ink, border: null, alpha: 0.7 });
   parts.forEach(([k, t], i) => {
     const kw = textWidth(k) + 4;
     ctx.fillStyle = PAL.cloud;

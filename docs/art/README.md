@@ -2,7 +2,7 @@
 
 How art gets from an idea into the running game. SpriteCook produces the art; Claude drives it through the SpriteCook plugin; this repository holds the results, their manifest and the checks.
 
-Status (2026-11-27): the plugin is installed and signed in, and the pilot set in section 6 has been generated, fitted, checked and loaded into the running game. The owner has chosen the skater (candidate 6 of the large, cute round); its still is approved and in the manifest; its stride animation (`character.skater.stride`, take 2) was approved the same day. Both are in the game. Plugin version 0.1.15, skills 2026.10.20. Items still marked *proposed* have not been confirmed by the project owner.
+Status (2026-11-27, after merging the GitHub state): this branch now carries the full game from GitHub (skeleton-drawn chibi figures in `src/world/figures.js`, the Borstentiere and Bonny built in, the real Boni court, intro). The art library described here (manifest, loader, checker, fit tools, the owner's approvals) is intact, but **the game does not draw library sprites at the moment**: the hooks written for the older sprite renderer (`skaterArt`, the tree in the arena corner, the `borstentiere` entry and `worldDensity` in `config.js`) went with that renderer. The approved skater still and stride stay in `assets/characters/skater/` as approved art waiting for a place in the figure system. Sections below that mention those hooks describe the state before the merge.
 
 ## 1. What SpriteCook can do
 
@@ -107,7 +107,7 @@ Optional fields: `teamColors`, `idleFrame` and `hand` (stick grip, sprite pixels
 8. **Integrate and look.** Load it in the game and take a screenshot of it in play. An asset is done when it looks right there, not when the file validates.
 9. **Commit** asset, manifest entry and prompt together.
 
-`npm run assets:check` verifies: naming and folders, declared frame size against the real image, removed background, hard pixel edges, colour count, non-empty frames, a steady ground line across animation frames, anchor position, file hash, and that no PNG sits in `assets/` unlisted.
+`npm run assets:check` verifies: naming and folders, declared frame size against the real image, removed background, hard pixel edges, colour count, non-empty frames, a steady ground line across animation frames, anchor position, file hash, and that no PNG sits unlisted in the library's folders (`characters`, `equipment`, `props`, `world`, `ui`, `tiles`). The other folders under `assets/` (app icons, fonts, intro data, pixel art, voice) belong to the game and are not checked.
 
 ## Who chooses
 

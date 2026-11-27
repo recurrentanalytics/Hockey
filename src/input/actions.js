@@ -3,14 +3,14 @@
 // Gamepad bindings: 'b:N' = button N, 'a:N+' / 'a:N-' = axis N in that direction.
 
 export const ACTIONS = [
-  { id: 'up', label: 'MOVE UP' },
-  { id: 'down', label: 'MOVE DOWN' },
-  { id: 'left', label: 'MOVE LEFT' },
-  { id: 'right', label: 'MOVE RIGHT' },
-  { id: 'shoot', label: 'SHOOT' },
-  { id: 'pass', label: 'PASS' },
-  { id: 'check', label: 'CHECK' },
-  { id: 'switch', label: 'SWITCH PLAYER' },
+  { id: 'up', label: 'HOCH' },
+  { id: 'down', label: 'RUNTER' },
+  { id: 'left', label: 'LINKS' },
+  { id: 'right', label: 'RECHTS' },
+  { id: 'shoot', label: 'SCHIESSEN' },
+  { id: 'pass', label: 'PASSEN' },
+  { id: 'check', label: 'CHECKEN' },
+  { id: 'switch', label: 'SPIELER WECHSELN' },
   { id: 'sprint', label: 'SPRINT' },
   { id: 'pause', label: 'PAUSE' },
 ];
@@ -43,6 +43,6 @@ export function defaultProfile(key) {
 }
 
 export const KEYBOARD_PROFILES = [
-  { key: 'kb1', name: 'KEYBOARD 1' },
-  { key: 'kb2', name: 'KEYBOARD 2' },
+  { key: 'kb1', name: 'TASTATUR 1' },
+  { key: 'kb2', name: 'TASTATUR 2' },
 ];

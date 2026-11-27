@@ -1,10 +1,10 @@
 // Human-readable names for keys and gamepad buttons.
 
 const KEY_NAMES = {
-  Space: 'SPACE', Escape: 'ESC', Backspace: 'BKSP', Enter: 'ENTER', NumpadEnter: 'NUM ENT', Tab: 'TAB',
+  Space: 'LEERTASTE', Escape: 'ESC', Backspace: 'RÜCK', Enter: 'ENTER', NumpadEnter: 'NUM ENT', Tab: 'TAB',
   ShiftLeft: 'LSHIFT', ShiftRight: 'RSHIFT', ControlLeft: 'LCTRL', ControlRight: 'RCTRL',
   AltLeft: 'LALT', AltRight: 'RALT', MetaLeft: 'LMETA', MetaRight: 'RMETA', CapsLock: 'CAPS',
-  ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
+  ArrowUp: 'HOCH', ArrowDown: 'RUNTER', ArrowLeft: 'LINKS', ArrowRight: 'RECHTS',
   Comma: ',', Period: '.', Slash: '/', Semicolon: ';', Quote: "'", BracketLeft: '[', BracketRight: ']',
   Minus: '-', Equal: '=', Backquote: 'GRAVE', Backslash: 'BSLASH', IntlBackslash: '<>',
   NumpadAdd: 'NUM+', NumpadSubtract: 'NUM-', NumpadMultiply: 'NUM*', NumpadDivide: 'NUM/', NumpadDecimal: 'NUM.',
@@ -19,9 +19,9 @@ export function keyLabel(code) {
 }
 
 const PAD_NAMES = {
-  xbox: ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'VIEW', 'MENU', 'LS', 'RS', 'D-UP', 'D-DOWN', 'D-LEFT', 'D-RIGHT', 'HOME'],
-  nintendo: ['B', 'A', 'Y', 'X', 'L', 'R', 'ZL', 'ZR', '-', '+', 'LS', 'RS', 'D-UP', 'D-DOWN', 'D-LEFT', 'D-RIGHT', 'HOME'],
-  playstation: ['CROSS', 'CIRCLE', 'SQUARE', 'TRIANGLE', 'L1', 'R1', 'L2', 'R2', 'SHARE', 'OPTIONS', 'L3', 'R3', 'D-UP', 'D-DOWN', 'D-LEFT', 'D-RIGHT', 'PS'],
+  xbox: ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'VIEW', 'MENU', 'LS', 'RS', 'D-HOCH', 'D-RUNTER', 'D-LINKS', 'D-RECHTS', 'HOME'],
+  nintendo: ['B', 'A', 'Y', 'X', 'L', 'R', 'ZL', 'ZR', '-', '+', 'LS', 'RS', 'D-HOCH', 'D-RUNTER', 'D-LINKS', 'D-RECHTS', 'HOME'],
+  playstation: ['CROSS', 'CIRCLE', 'SQUARE', 'TRIANGLE', 'L1', 'R1', 'L2', 'R2', 'SHARE', 'OPTIONS', 'L3', 'R3', 'D-HOCH', 'D-RUNTER', 'D-LINKS', 'D-RECHTS', 'PS'],
 };
 
 /** Guess the face-button labelling from the browser's gamepad id string. */
@@ -43,7 +43,7 @@ export function padBindingLabel(binding, style = 'xbox', standard = true) {
     const i = +a[1], plus = a[2] === '+';
     if (standard && i < 4) {
       const stick = i < 2 ? 'LS' : 'RS';
-      const dir = i % 2 === 0 ? (plus ? 'RIGHT' : 'LEFT') : (plus ? 'DOWN' : 'UP');
+      const dir = i % 2 === 0 ? (plus ? 'RECHTS' : 'LINKS') : (plus ? 'RUNTER' : 'HOCH');
       return `${stick} ${dir}`;
     }
     return `AXIS ${i}${a[2]}`;

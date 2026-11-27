@@ -111,10 +111,10 @@ export class InputManager {
     this.menuPad = new MenuPad();
     this.bindings = load('bindings', {});
     this.controllers = new Map([
-      ['kb1', new Controller('kb1', 'keyboard', 'KEYBOARD 1', 'kb1')],
-      ['kb2', new Controller('kb2', 'keyboard', 'KEYBOARD 2', 'kb2')],
+      ['kb1', new Controller('kb1', 'keyboard', 'TASTATUR 1', 'kb1')],
+      ['kb2', new Controller('kb2', 'keyboard', 'TASTATUR 2', 'kb2')],
       ['touch', new Controller('touch', 'touch', 'TOUCH', 'touch')],
-      ['any', new Controller('any', 'any', 'ANY DEVICE', 'any')],
+      ['any', new Controller('any', 'any', 'JEDES GERÄT', 'any')],
     ]);
     this.lastKind = 'keyboard';
     this.lastId = 'kb1';
@@ -136,7 +136,9 @@ export class InputManager {
       const info = this.padInfo.get(key) ?? { layout: 'standard' };
       // Older saves kept one shared profile for all standard pads.
       if (info.layout === 'standard' && this.bindings.pad) return this.bindings.pad;
-      return actionsFor(LAYOUTS[info.layout] ?? LAYOUTS.standard, info.style);
+      // The BUTTON LABELS setting also picks the layout (NINTENDO = A pass), else what the pad looks like.
+      const style = settings.buttonLabels !== 'auto' ? settings.buttonLabels : info.style;
+      return actionsFor(LAYOUTS[info.layout] ?? LAYOUTS.standard, style);
     }
     return defaultProfile(key);
   }
@@ -235,7 +237,7 @@ export class InputManager {
     const first = DIRS.map((d) => p[d]?.[0]);
     if (c.kind === 'keyboard') {
       if (first.join() === 'KeyW,KeyS,KeyA,KeyD') return 'WASD';
-      if (first.join() === 'ArrowUp,ArrowDown,ArrowLeft,ArrowRight') return 'ARROWS';
+      if (first.join() === 'ArrowUp,ArrowDown,ArrowLeft,ArrowRight') return 'PFEILE';
       return first.map((b) => (b ? keyLabel(b) : '-')).join('/');
     }
     if (p.up?.some((b) => b === 'a:1-')) return 'STICK';
@@ -244,7 +246,7 @@ export class InputManager {
   }
 
   confirmLabel() {
-    if (this.lastKind === 'touch') return 'TAP';
+    if (this.lastKind === 'touch') return 'TIPPEN';
     const c = this.promptController();
     if (c?.kind === 'gamepad') return PRINTED[this.padStyle(c)]?.[this.confirmSide(c)] ?? 'A';
     return 'ENTER';
@@ -429,11 +431,10 @@ export class InputManager {
       const val = (d) => Math.max(0, ...(prof[d] || []).map((b) => bindingValue(c, b)));
       // Menus accept the configured directions, any d-pad (buttons 12-15 or a hat) and the left stick.
       const pad = padDirection(c);
-      const A = c.axes;
-      held.up ||= val('up') > 0.5 || pad.y < 0 || (A[1] ?? 0) < -0.5;
-      held.down ||= val('down') > 0.5 || pad.y > 0 || (A[1] ?? 0) > 0.5;
-      held.left ||= val('left') > 0.5 || pad.x < 0 || (A[0] ?? 0) < -0.5;
-      held.right ||= val('right') > 0.5 || pad.x > 0 || (A[0] ?? 0) > 0.5;
+      held.up ||= val('up') > 0.5 || pad.y < 0;
+      held.down ||= val('down') > 0.5 || pad.y > 0;
+      held.left ||= val('left') > 0.5 || pad.x < 0;
+      held.right ||= val('right') > 0.5 || pad.x > 0;
       const menu = prof.menu ?? { south: L.south, east: L.east, start: L.start };
       const edge = (b) => b?.startsWith('b:') && c.buttonEdge(+b.slice(2));
       confirm ||= edge(menu[confirmKey]) || edge(menu.start);

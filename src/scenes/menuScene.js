@@ -32,6 +32,6 @@ export class MenuScene {
     this.menu.draw(ctx, display.width);
     this.drawExtra?.(ctx, display.width, display.height);
     if (input.pointers.touchSeen) drawBackButton(ctx);
-    hintBar(ctx, display.width, display.height, [[input.confirmLabel(), 'SELECT'], [input.backLabel(), 'BACK']]);
+    hintBar(ctx, display.width, display.height, [[input.confirmLabel(), 'AUSWÄHLEN'], [input.backLabel(), 'ZURÜCK']]);
   }
 }

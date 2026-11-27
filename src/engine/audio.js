@@ -2,7 +2,12 @@
 // Browsers only allow audio after a tap/click/key press, so unlock() is called from input events.
 import { settings } from '../settings.js';
 
-const MIN_GAP = { stick: 0.05, boards: 0.08, hit: 0.1, post: 0.15, menu: 0.03 };
+const MIN_GAP = { stick: 0.05, boards: 0.08, hit: 0.1, post: 0.15, menu: 0.03, ooh: 1.5 };
+
+// Spoken lines (Piper TTS, voice "Thorsten", CC0; tools/voice/make_voice.py): narration and commentary
+let VOICE = null;
+fetch(new URL('../../assets/voice/index.json', import.meta.url)).then((r) => r.json()).then((j) => { VOICE = j; }).catch(() => {});
+export const voiceFile = (name) => new URL(`../../assets/voice/${name}`, import.meta.url).href;
 
 export class Audio {
   constructor() {
@@ -27,6 +32,7 @@ export class Audio {
       for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
     }
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+    if (globalThis.BONI_3D && !this.amb) this.ambience(); // outdoor sound on the real court
   }
 
   get ready() {
@@ -95,7 +101,13 @@ export class Audio {
         this.tone(t, 0.5, { freq: 2630, gain: 0.12 * v });
         this.noise(t, 0.03, { type: 'highpass', freq: 3000, gain: 0.3 * v });
         break;
-      case 'boards':  // dull thud into the boards
+      case 'boards':  // dull thud into the boards (on the real Boni court: the ball rattles the fence)
+        if (globalThis.BONI_3D) {
+          this.noise(t, 0.35, { type: 'highpass', freq: 2400, gain: 0.35 * v });
+          for (const f of [1320, 1710, 2290]) this.tone(t, 0.45, { type: 'square', freq: f, gain: 0.025 * v });
+          this.noise(t, 0.1, { type: 'lowpass', freq: 500, gain: 0.3 * v });
+          break;
+        }
         this.noise(t, 0.16, { type: 'lowpass', freq: 380, gain: 0.8 * v });
         this.tone(t, 0.12, { freq: 95, gain: 0.35 * v, slide: 60 });
         break;
@@ -128,6 +140,12 @@ export class Audio {
       case 'cheer':
         this.cheer(t, 1.6 * v);
         break;
+      case 'ooh':     // the crowd's "oooh!" on a post or a big save: vowel formants that sag
+        for (const [f0, f1, g] of [[520, 430, 0.22], [900, 720, 0.14], [2400, 2200, 0.04]]) {
+          const n = this.noise(t, 1.3, { freq: f0, q: 6, gain: g * v, attack: 0.18 });
+          n.f.frequency.linearRampToValueAtTime(f1, t + 1.2);
+        }
+        break;
       case 'menu':
         this.tone(t, 0.05, { type: 'square', freq: 880, gain: 0.06 });
         break;
@@ -146,6 +164,66 @@ export class Audio {
     f.frequency.linearRampToValueAtTime(1300, t + dur * 0.4);
     g.gain.setValueAtTime(0.35, t + 0.25);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  }
+
+  /**
+   * Play part of a song file (e.g. the Borstentiere hymn as goal song), fading out after `seconds`.
+   */
+  /** A random commentary line of a group (goal, save, post, …); never talks over itself. */
+  say(group, { force = false } = {}) {
+    const list = VOICE?.comments?.[group];
+    if (!list?.length || settings.sound <= 0) return;
+    const now = performance.now();
+    if (!force && this.voiceEl && !this.voiceEl.ended && !this.voiceEl.paused) return;
+    if (!force && now - (this.voiceAt ?? 0) < 1800) return;
+    this.voiceEl?.pause();
+    const a = new window.Audio(voiceFile(list[Math.floor(Math.random() * list.length)]));
+    a.volume = Math.min(1, settings.sound * 1.15);
+    a.play().catch(() => {});
+    this.voiceEl = a; this.voiceAt = now;
+  }
+
+  /** Outdoor sound at the Boni: soft city rumble, leaves, and birds chirping now and then. */
+  ambience() {
+    if (!this.ctx || this.amb) return;
+    const c = this.ctx;
+    const bed = c.createBufferSource(); bed.buffer = this.noiseBuf; bed.loop = true;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+    const g = c.createGain(); g.gain.value = 0.05;
+    bed.connect(lp).connect(g).connect(this.master); bed.start();
+    this.amb = { bed, g };
+    const chirp = () => {
+      if (!this.ctx) return;
+      const t = c.currentTime + 0.02, base = 2600 + Math.random() * 1800, n = 2 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < n; i++) this.tone(t + i * 0.11, 0.08, { freq: base * (1 + 0.08 * Math.sin(i)), gain: 0.03, slide: base * 1.25 });
+      this.amb.timer = setTimeout(chirp, 1400 + Math.random() * 4200);
+    };
+    chirp();
+  }
+
+  song(src, seconds = 14, from = 0) {
+    if (!settings.sound) return;
+    try {
+      this.stopSong();
+      const a = new window.Audio(src);
+      a.volume = Math.min(1, settings.sound * 0.9);
+      a.currentTime = from;
+      a.play().catch(() => {});
+      this.songEl = a;
+      const start = performance.now();
+      this.songTimer = setInterval(() => {
+        const t = (performance.now() - start) / 1000;
+        if (t > seconds) a.volume = Math.max(0, a.volume - 0.05);
+        if (a.volume <= 0.01 || a.ended) this.stopSong();
+      }, 100);
+    } catch {
+      /* no audio element support */
+    }
+  }
+
+  stopSong() {
+    clearInterval(this.songTimer);
+    if (this.songEl) { this.songEl.pause(); this.songEl = null; }
   }
 
   /** Low crowd murmur while a game is on. */

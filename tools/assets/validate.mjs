@@ -116,7 +116,9 @@ export function validate(root) {
     if (!a.source) warn('no "source" recorded (SpriteCook asset_id, model and prompt id, or "hand-drawn")');
   }
 
-  for (const f of listPngs(root)) if (!files.has(f)) errors.push(`${f}: PNG is not listed in manifest.json`);
+  // Only the art library's own folders are policed; assets/ also holds app icons, fonts, intro data and voice.
+  const library = new Set(Object.values(KINDS));
+  for (const f of listPngs(root)) if (library.has(f.split('/')[0]) && !files.has(f)) errors.push(`${f}: PNG is not listed in manifest.json`);
   return { errors, warnings, checked: assets.length };
 }
 

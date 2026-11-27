@@ -1,7 +1,6 @@
 import { PAL } from '../engine/palette.js';
-import { drawText } from '../engine/font.js';
+import { drawText, drawTextOutlined, drawLogo, drawArt } from '../engine/font.js';
 import { MainMenuScene } from './mainMenu.js';
-import { asset } from '../engine/assets.js';
 
 export class TitleScene {
   constructor(app) {
@@ -25,25 +24,27 @@ export class TitleScene {
 
   draw() {
     const { display, input } = this.app;
-    this.app.backdrop.draw(0.45);
+    this.app.backdrop.draw(0.25);
     const ctx = display.uctx, W = display.width, H = display.height;
-    const bob = Math.round(Math.sin(this.t * 2) * 1);
-    drawText(ctx, 'INLINE', W / 2, 46 + bob, { color: PAL.white, scale: 5, align: 'center', shadow: PAL.ink });
-    drawText(ctx, 'HOCKEY', W / 2 + 2, 80 + bob, { color: PAL.redDark, scale: 5, align: 'center' });
-    drawText(ctx, 'HOCKEY', W / 2, 78 + bob, { color: PAL.yellow, scale: 5, align: 'center' });
-    drawText(ctx, '4 ON 4 ROLLER HOCKEY', W / 2, 112, { color: PAL.cloud, align: 'center', shadow: PAL.ink });
-    // Stick and puck from the art library, once loaded.
-    const stick = asset('equipment.stick'), puck = asset('equipment.puck');
-    if (stick && puck) {
-      // UI layer: drawn at their own pixel size.
-      const sx = Math.round(W / 2 - 44);
-      ctx.drawImage(stick.img, sx, 122);
-      ctx.drawImage(puck.img, sx + 68, 122);
-    }
+    // Letters hop one after another.
+    const word = (text, y, color, shadow) => {
+      const scale = 4, adv = 6 * scale, w = text.length * adv - scale;
+      let x = Math.round(W / 2 - w / 2);
+      [...text].forEach((ch, i) => {
+        const hop = Math.round(Math.max(0, Math.sin(this.t * 3 - i * 0.5)) * 3);
+        drawTextOutlined(ctx, ch, x, y - hop, { color, scale, shadow, big: true });
+        x += adv;
+      });
+    };
+    drawLogo(ctx, W / 2, 6 + Math.sin(this.t * 2) * 1.5, 104);
+    drawArt(ctx, 'bonny', W / 2 + 112, 52 + Math.abs(Math.sin(this.t * 3)) * -4, 64);
+    void word;
+    // Taglines, including the Boni Borstentiere's own
+    const lines = ['EIN INLINEHOCKEY-ABENTEUER', 'DER BONI BORSTENTIERE', 'WAS SIND WIR? EIN BORSTENTIER!', 'HAARE OPTIONAL', 'ZUSAMMEN SIND WIR STARK!', 'MIT BONNY AUS DER EILENRIEDE'];
+    drawTextOutlined(ctx, lines[Math.floor(this.t / 3) % lines.length], W / 2, 112, { color: PAL.pink, align: 'center' });
     if (Math.floor(this.t * 2) % 2 === 0) {
-      const prompt = input.lastKind === 'touch' || input.pointers.touchSeen ? 'TAP TO START' : 'PRESS START';
-      drawText(ctx, prompt, W / 2, 150, { color: PAL.white, scale: 2, align: 'center', shadow: PAL.ink });
+      const prompt = input.lastKind === 'touch' || input.pointers.touchSeen ? 'TIPPEN ZUM STARTEN' : 'DRÜCK START';
+      drawTextOutlined(ctx, prompt, W / 2, 146, { color: PAL.white, scale: 2, align: 'center', big: true });
     }
-    drawText(ctx, 'PHASE 1 PREVIEW', 4, H - 9, { color: PAL.steel });
   }
 }

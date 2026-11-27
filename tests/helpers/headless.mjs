@@ -1,7 +1,10 @@
 // Runs the game logic under Node: canvas/DOM stand-ins (sprites are baked in constructors)
 // and a seedable Math.random so every test run is reproducible.
 const noop = () => {};
-const ctx = new Proxy({}, { get: () => noop, set: () => true });
+// The figure renderer reads its canvas back (crisp pixels, outline), so pixel reads return real buffers.
+const pixels = (w, h) => ({ width: w, height: h, data: new Uint8ClampedArray(Math.max(1, w * h) * 4) });
+const calls = { getImageData: (x, y, w, h) => pixels(w, h), createImageData: (w, h) => pixels(w, h), measureText: () => ({ width: 0 }) };
+const ctx = new Proxy({}, { get: (_, k) => calls[k] ?? noop, set: () => true });
 globalThis.document ??= { createElement: () => ({ width: 0, height: 0, style: {}, getContext: () => ctx }) };
 globalThis.window ??= { addEventListener: noop };
 globalThis.ImageData ??= class { constructor(w, h) { this.width = w; this.height = h; this.data = new Uint8ClampedArray(w * h * 4); } };

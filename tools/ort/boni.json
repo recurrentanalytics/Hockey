@@ -1,0 +1,15 @@
+{
+  "id": "boni",
+  "name": "Bonifatiusplatz, Hannover-List",
+  "hinweis": "Wird mit Schritt 0.6 der Roadmap Teil der Ortsbeschreibung locations/boni/.",
+  "ecken_wgs84": { "A": [9.744614, 52.389138], "B": [9.744847, 52.389062], "C": [9.744671, 52.388862], "D": [9.744438, 52.388939] },
+  "referenzraster": {
+    "beschreibung": "Pixelraster der Werkzeuge (0,2 m je Pixel, Nord oben). Ursprung aus den vier Ecken zurückgerechnet, auf etwa 0,2 m genau.",
+    "ursprung_utm32": [550495.79, 5804699.91],
+    "pixel_m": 0.2,
+    "ecken_pixel": { "A": [888.6, 591.5], "B": [967.9, 634.1], "C": [908.2, 745.3], "D": [828.9, 702.7] },
+    "ausschnitt": { "x0": -2176, "y0": -2395.7, "w": 6120, "h": 6128.6 }
+  },
+  "raster": { "hoehe_px": 1224, "alkis_px": 2448, "luftbild_px": 2448 },
+  "asphalt": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/clean_asphalt/clean_asphalt_diff_2k.jpg"
+}

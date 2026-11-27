@@ -28,14 +28,14 @@ export class BindingsScene {
     }));
     if (profileKey.startsWith('pad')) {
       items.unshift({
-        label: 'GUIDED SETUP',
-        value: () => 'RECOMMENDED',
+        label: 'GEFÜHRTE EINRICHTUNG',
+        value: () => 'EMPFOHLEN',
         color: PAL.yellow,
-        onSelect: () => { const pad = this.device(); if (pad?.connected) app.push(new PadSetupScene(app, pad)); else app.toasts.push('CONNECT THE PAD FIRST'); },
+        onSelect: () => { const pad = this.device(); if (pad?.connected) app.push(new PadSetupScene(app, pad)); else app.toasts.push('ERST DAS PAD VERBINDEN'); },
       });
     }
-    items.push({ label: 'RESET TO DEFAULTS', onSelect: () => { input.resetProfile(profileKey); app.toasts.push('DEFAULTS RESTORED'); } });
-    items.push({ label: 'BACK', onSelect: () => app.pop() });
+    items.push({ label: 'STANDARD WIEDERHERSTELLEN', onSelect: () => { input.resetProfile(profileKey); app.toasts.push('STANDARD WIEDERHERGESTELLT'); } });
+    items.push({ label: 'ZURÜCK', onSelect: () => app.pop() });
     this.menu = new Menu(items, { width: 250, top: profileKey.startsWith('pad') ? 44 : 46 });
   }
 
@@ -74,7 +74,7 @@ export class BindingsScene {
     const { display, input } = this.app;
     this.app.backdrop.draw(0.7);
     const ctx = display.uctx, W = display.width, H = display.height;
-    header(ctx, W, this.title, 'SELECT AN ACTION, THEN PRESS THE NEW INPUT');
+    header(ctx, W, this.title, 'AKTION WÄHLEN, DANN NEUE TASTE DRÜCKEN');
     this.menu.draw(ctx, W);
     if (input.pointers.touchSeen) drawBackButton(ctx);
 
@@ -89,9 +89,9 @@ export class BindingsScene {
     if (dev?.kind === 'gamepad') {
       const pressed = dev.buttons.map((v, i) => (v > 0.5 ? `B${i}` : null)).filter(Boolean).join(' ') || '-';
       const axes = dev.axes.map((v, i) => (Math.abs(v) > 0.3 ? `A${i}${v > 0 ? '+' : '-'}` : null)).filter(Boolean).join(' ') || '-';
-      drawText(ctx, fitText(`RAW: ${pressed}  AXES: ${axes}`, W - 8), W / 2, H - 22, { color: PAL.mist, align: 'center', shadow: PAL.ink });
+      drawText(ctx, fitText(`ROH: ${pressed}  ACHSEN: ${axes}`, W - 8), W / 2, H - 22, { color: PAL.mist, align: 'center', shadow: PAL.ink });
     } else if (this.profileKey.startsWith('pad')) {
-      drawText(ctx, 'PAD NOT CONNECTED', W / 2, H - 22, { color: PAL.red, align: 'center', shadow: PAL.ink });
+      drawText(ctx, 'PAD NICHT VERBUNDEN', W / 2, H - 22, { color: PAL.red, align: 'center', shadow: PAL.ink });
     }
 
     if (input.capturing && this.capturing) {
@@ -99,10 +99,10 @@ export class BindingsScene {
       const w = 220, h = 40, x = Math.round(W / 2 - w / 2), y = Math.round(H / 2 - h / 2);
       panel(ctx, x, y, w, h, { fill: PAL.ink, border: PAL.yellow, alpha: 0.95 });
       drawText(ctx, `${this.captureLabel}`, W / 2, y + 8, { color: PAL.yellow, align: 'center' });
-      drawText(ctx, isKb ? 'PRESS A KEY' : 'PRESS A BUTTON OR MOVE A STICK', W / 2, y + 18, { color: PAL.white, align: 'center' });
-      drawText(ctx, 'ESC OR TAP TO CANCEL', W / 2, y + 28, { color: PAL.mist, align: 'center' });
+      drawText(ctx, isKb ? 'DRÜCK EINE TASTE' : 'DRÜCK EINE TASTE ODER BEWEGE EINEN STICK', W / 2, y + 18, { color: PAL.white, align: 'center' });
+      drawText(ctx, 'ESC ODER TIPPEN ZUM ABBRECHEN', W / 2, y + 28, { color: PAL.mist, align: 'center' });
     } else {
-      hintBar(ctx, W, H, [[input.confirmLabel(), 'REMAP'], [input.backLabel(), 'BACK']]);
+      hintBar(ctx, W, H, [[input.confirmLabel(), 'NEU BELEGEN'], [input.backLabel(), 'ZURÜCK']]);
     }
   }
 }

@@ -6,11 +6,19 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0e0f1a" />
-  <title>Inline Hockey</title>
+  <title>Borstenboom!</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="assets/fonts/fonts.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/app/icon-192.png" />
+  <link rel="apple-touch-icon" href="assets/app/icon-192.png" />
 </head>
 <body>
   <canvas id="screen" tabindex="0"></canvas>
+  <!-- Leistungsanzeige nur mit ?fps in der Adresse (docs/PERFORMANCE_TEST.md) -->
+  <script type="module">if (new URLSearchParams(location.search).has('fps')) import('./src/diag/fps.js');</script>
+  <script src="src/native/pads.js"></script>
   <script type="module" src="src/main.js"></script>
+  <script>if ('serviceWorker' in navigator && location.host !== 'appassets.androidplatform.net') navigator.serviceWorker.register('sw.js').catch(() => {});</script>
 </body>
 </html>

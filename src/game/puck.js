@@ -1,6 +1,7 @@
 // The puck: position on the floor plus height (z) so shots can be lifted.
 import { PAL } from '../engine/palette.js';
-import { project } from '../world/projection.js';
+import { RES } from '../config.js';
+import { project, FIXED } from '../world/projection.js';
 
 export const PUCK = {
   radius: 0.1,          // enlarged from the real 3.8 cm for playability
@@ -14,17 +15,21 @@ export const PUCK = {
   groundBounce: 0.3,
 };
 
-// Inline-skaterhockey ball: rolls further and bounces more.
+// Red low-bounce inline hockey ball (hard plastic, ~7 cm): rolls further than a puck,
+// pings off the boards a little more, but is made not to bounce much on the floor.
 export const BALL = {
   ...PUCK,
   drag: 0.14,
   friction: 0.32,
-  boardBounce: 0.72,
-  postBounce: 0.65,
+  boardBounce: 0.68,
+  postBounce: 0.62,
   netBounce: 0.15,
-  bodyBounce: 0.35,
-  groundBounce: 0.5,
+  bodyBounce: 0.32,
+  groundBounce: 0.38,
 };
+
+// Bright "knallrot" like the real thing
+const RED = '#ff2a2a', RED_DARK = '#b3121d', RED_LIGHT = '#ff8a7a', PEG = '#fffaf4';
 
 export class Puck {
   constructor(ball = false) {
@@ -48,6 +53,7 @@ export class Puck {
     this.carrier = null; this.holder = null;
     this.lastTouch = null; this.shot = null;
     this.passTo = null;
+    this.chain = [];       // skaters of one team who handled it in turn (for assists)
   }
 
   get loose() {
@@ -61,30 +67,62 @@ export class Puck {
   get sortY() { return this.pos.y; }
 
   drawShadow(ctx, ox, oy) {
-    if (this.z < 0.03) return;
+    if (this.z < 0.03 && !this.ball) return;
     const p = project(this.pos.x, this.pos.y);
     ctx.save();
     ctx.globalAlpha = 0.35;
     ctx.fillStyle = PAL.ink;
-    ctx.fillRect(Math.round(p.x + ox - 2), Math.round(p.y + oy - 1), 4, 2);
+    ctx.fillRect(Math.round(p.x + ox - 2.5), Math.round(p.y + oy - 1), 5, 1.5);
     ctx.restore();
   }
 
-  draw(ctx, ox, oy) {
+  draw(ctx, ox, oy, ghost = false) {
     const p = project(this.pos.x, this.pos.y, this.z);
-    const x = Math.round(p.x + ox), y = Math.round(p.y + oy);
-    if (this.ball) {
-      ctx.fillStyle = PAL.orange;
-      ctx.fillRect(x - 1, y - 4, 3, 4);
-      ctx.fillRect(x - 2, y - 3, 5, 2);
-      ctx.fillStyle = PAL.yellow;
-      ctx.fillRect(x - 1, y - 3, 1, 1);
-      return;
+    if (!ghost) {
+      // where is the ball? a yellow marker over its carrier, or a pulsing ring round a loose ball
+      const t = performance.now() / 1000;
+      ctx.save();
+      ctx.strokeStyle = '#ffe14d'; ctx.fillStyle = '#ffe14d'; ctx.lineWidth = 1;
+      const owner = this.carrier || this.holder;
+      if (owner?.pos) {
+        const c = project(owner.pos.x, owner.pos.y, 2.35);
+        const bx = c.x + ox, by = c.y + oy - Math.abs(Math.sin(t * 6)) * 2.5;
+        ctx.fillStyle = PAL.ink; ctx.beginPath(); ctx.moveTo(bx - 4.5, by - 4.5); ctx.lineTo(bx + 4.5, by - 4.5); ctx.lineTo(bx, by + 1); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffe14d'; ctx.beginPath(); ctx.moveTo(bx - 3, by - 3.6); ctx.lineTo(bx + 3, by - 3.6); ctx.lineTo(bx, by - 0.6); ctx.closePath(); ctx.fill();
+      } else {
+        const g = project(this.pos.x, this.pos.y, 0), k = 0.5 + 0.5 * Math.sin(t * 8);
+        ctx.globalAlpha = 0.55 + 0.4 * k;
+        ctx.beginPath(); ctx.ellipse(g.x + ox, g.y + oy - 0.5, 5.5 + k * 1.5, 2.6 + k * 0.7, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
     }
-    ctx.fillStyle = PAL.ink;
-    ctx.fillRect(x - 2, y - 2, 5, 2);
-    ctx.fillRect(x - 1, y, 3, 1);
-    ctx.fillStyle = PAL.steel;
-    ctx.fillRect(x - 1, y - 3, 3, 1);
+    // Distance rolled, for the spinning seam and pegs.
+    const sp = this.speed;
+    if (!ghost) this.roll = ((this.roll ?? 0) + sp / 60 / 0.035) % (Math.PI * 2);
+    ctx.save();
+    // on the real court the ball is drawn bigger, so it stays visible on the dappled asphalt
+    const big = FIXED ? 1.6 : 1;
+    ctx.scale(big / RES, big / RES);
+    const x = Math.round(((p.x + ox) * RES) / big), y = Math.round(((p.y + oy) * RES) / big);
+    const px = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, w, h); };
+    if (this.ball) {
+      // 7 px ball: outline, red body, darker lower half, a bright shine; a seam spot rolls round.
+      for (const [dy, x0, w] of [[-8, -2, 5], [-7, -3, 7], [-6, -4, 9], [-5, -4, 9], [-4, -4, 9], [-3, -4, 9], [-2, -4, 9], [-1, -3, 7], [0, -2, 5]]) px(x0, dy, w, 1, PAL.ink);
+      for (const [dy, x0, w] of [[-7, -2, 5], [-6, -3, 7], [-5, -3, 7], [-4, -3, 7], [-3, -3, 7], [-2, -3, 7], [-1, -2, 5]]) px(x0, dy, w, 1, RED);
+      px(-1, -2, 4, 1, RED_DARK); px(1, -3, 2, 1, RED_DARK); px(2, -4, 1, 1, RED_DARK); px(-2, -1, 5, 1, RED_DARK);
+      px(-2, -6, 2, 1, RED_LIGHT); px(-2, -5, 1, 1, PEG);
+      if (sp > 0.3) {
+        const a = this.roll;
+        if (Math.sin(a) > -0.5) px(Math.round(Math.cos(a) * 2.2), -4 + Math.round(Math.sin(a) * 2.2), 1, 1, RED_DARK);
+      }
+    } else {
+      // Roller puck: red disc (top + rim) with white glide pegs along the edge.
+      px(-5, -6, 11, 1, PAL.ink); px(-6, -5, 1, 4, PAL.ink); px(6, -5, 1, 4, PAL.ink); px(-5, -1, 11, 1, PAL.ink);
+      px(-5, -5, 11, 2, RED); px(-3, -5, 5, 1, RED_LIGHT);
+      px(-5, -3, 11, 2, RED_DARK);
+      const shift = Math.floor(this.roll * 2) % 2;
+      for (let i = -5 + shift; i <= 5; i += 2) px(i, -2, 1, 1, PEG);
+    }
+    ctx.restore();
   }
 }

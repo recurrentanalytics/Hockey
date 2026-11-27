@@ -14,9 +14,12 @@ import { Audio } from './engine/audio.js';
 import { TitleScene } from './scenes/title.js';
 import { loadAssets } from './engine/assets.js';
 
+// the game's fonts must be ready before the first text is measured
+await Promise.all(['700 10px "Pixelify Sans"', '600 10px "Pixelify Sans"'].map((f) => document.fonts?.load(f).catch(() => null)));
 const canvas = document.getElementById('screen');
 canvas.focus({ preventScroll: true }); // works when allowed; otherwise the first click focuses it
 const display = new Display(canvas, settings);
+if (globalThis.BONI_3D) { globalThis.BONI_3D.display = display; display.transparent = true; }
 const input = new InputManager(display, canvas);
 
 const app = {
@@ -39,6 +42,8 @@ const app = {
   },
 };
 app.backdrop = new Backdrop(app);
+// test hook for automated play-throughs (tools/test): only with ?debug in the address
+if (new URLSearchParams(location.search).has('debug')) window.__app = app;
 
 // Fullscreen has to be requested inside the input event itself, so these run in the listeners.
 let autoTried = false;
@@ -71,13 +76,33 @@ function drawPortraitHint() {
   if (!(display.portrait && input.pointers.touchSeen)) return;
   const ctx = display.uctx, W = display.width, H = display.height;
   panel(ctx, 20, H / 2 - 16, W - 40, 32, { fill: PAL.ink, border: PAL.yellow, alpha: 0.95 });
-  drawText(ctx, 'ROTATE YOUR DEVICE', W / 2, H / 2 - 9, { color: PAL.yellow, align: 'center', scale: 2 });
-  drawText(ctx, 'THE RINK PLAYS BEST IN LANDSCAPE', W / 2, H / 2 + 6, { color: PAL.white, align: 'center' });
+  drawText(ctx, 'GERÄT DREHEN', W / 2, H / 2 - 9, { color: PAL.yellow, align: 'center', scale: 2 });
+  drawText(ctx, 'IM QUERFORMAT SPIELT ES SICH AM BESTEN', W / 2, H / 2 + 6, { color: PAL.white, align: 'center' });
 }
 
 let last = performance.now();
 let acc = 0;
+let lastError = null;
+window.addEventListener('error', (e) => { lastError = e.message; });
+window.addEventListener('unhandledrejection', (e) => { lastError = String(e.reason?.message ?? e.reason); });
+
 function frame(now) {
+  try {
+    step(now);
+  } catch (e) {
+    lastError = e.message;
+    console.error(e);
+  }
+  if (lastError) {
+    const ctx = display.uctx;
+    panel(ctx, 4, display.height - 22, display.width - 8, 12, { fill: PAL.ink, border: PAL.red, alpha: 0.95 });
+    drawText(ctx, `FEHLER: ${lastError}`.slice(0, 90), 8, display.height - 19, { color: PAL.red });
+    display.present();
+  }
+  requestAnimationFrame(frame);
+}
+
+function step(now) {
   acc += Math.min((now - last) / 1000, TIMING.maxFrame);
   last = now;
   let steps = 0;
@@ -108,7 +133,6 @@ function frame(now) {
   app.toasts.draw(display.uctx, display.width, display.height);
   drawPortraitHint();
   display.present();
-  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
