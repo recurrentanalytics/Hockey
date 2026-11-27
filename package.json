@@ -12,6 +12,7 @@
     "assets:check": "node tools/assets/validate.mjs assets",
     "precache:check": "node tools/app/precache.cjs --check",
     "balance": "node tools/test/balance.mjs",
+    "balance:history": "node tools/test/balance-history.mjs",
     "ci": "npm run assets:check && npm run precache:check && npm test && npm run test:e2e"
   },
   "devDependencies": {
