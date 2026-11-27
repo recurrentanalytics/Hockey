@@ -15,6 +15,12 @@
     #cesium { position: fixed; inset: 0; }
     #cesium .cesium-viewer-bottom { left: auto; right: 6px; bottom: 22px; }
     #status { position: absolute; left: 0; right: 0; top: 46%; text-align: center; font-size: clamp(16px, 3vw, 26px); transition: opacity .5s; text-shadow: 0 2px 0 #16110d; }
+    #cover { position: fixed; inset: 0; background: #0e0f1a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+             opacity: 0; pointer-events: none; transition: opacity .9s; font-family: Arial, sans-serif; color: #fff; z-index: 5; }
+    #cover.on { opacity: 1; transition: none; }
+    #coverText { font-size: clamp(15px, 2.6vw, 22px); }
+    #coverTrack { width: min(60vw, 360px); height: 8px; border-radius: 8px; background: #2a2b3d; overflow: hidden; }
+    #coverBar { width: 0; height: 100%; background: #ffd23f; transition: width .4s; }
     #ui { position: fixed; inset: 0; pointer-events: none; font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif; color: #fff; }
     #title { position: absolute; left: 0; right: 0; top: 7%; text-align: center; opacity: 0; transition: opacity .8s, transform .8s; transform: translateY(-12px);
              text-shadow: 0 3px 0 #16110d, 0 0 18px rgba(0,0,0,.55); }
@@ -39,8 +45,9 @@
   <div id="cesium"></div>
   <canvas id="gl"></canvas>
   <canvas id="screen" tabindex="0" style="display:none"></canvas>
+  <div id="cover"><div id="coverText"></div><div id="coverTrack"><div id="coverBar"></div></div></div>
   <div id="ui">
-    <div id="title"><div class="club">BONI BORSTENTIERE</div><div class="sub">Das große Spiel am Boni</div></div>
+    <div id="title"></div>
     <button id="go" type="button">Spiel starten</button>
     <div id="hint">Tippen: überspringen · R: nochmal</div>
     <div id="status"></div>

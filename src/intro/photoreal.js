@@ -26,7 +26,9 @@ const clamp01 = (x) => Math.max(0, Math.min(1, x));
 /** Flight progress 0..1: gentle start, most of the distance mid-flight, long deceleration. */
 const progress = (t) => { const x = clamp01((t - T.flight[0]) / (T.flight[1] - T.flight[0])); return 1 - Math.pow(1 - ease(x), 1.6); };
 const TURN = (50 * Math.PI) / 180; // the flight starts already turned towards the court; only the last 50° are flown
-const FOV_START = (40 * Math.PI) / 180, FOV_END = (18 * Math.PI) / 180;
+// one fixed field of view for the whole flight: changing it while tilting (a dolly zoom) made the
+// camera lurch backwards near the end
+const FOV_START = (20 * Math.PI) / 180, FOV_END = FOV_START;
 
 // Performance: phones and tablets fly at reduced resolution and coarser tiles; once landed, the
 // view is drawn once at full resolution and then only when something changes (request render
@@ -66,8 +68,10 @@ function cameraAt(t, aspect) {
 }
 
 export async function run({ token, cesiumBase }) {
-  const status = document.getElementById('status');
-  const say = (s) => { status.textContent = s; status.style.opacity = s ? 1 : 0; };
+  const cover = document.getElementById('cover');
+  const coverText = document.getElementById('coverText'), coverBar = document.getElementById('coverBar');
+  const say = (s) => { coverText.textContent = s; };
+  cover.classList.add('on');
   say('Lade den Boni …');
   document.getElementById('gl').style.display = 'none';
 
@@ -222,10 +226,14 @@ export async function run({ token, cesiumBase }) {
   const stops = [9.6, 8.6, 7.6, 6.6, 5.4, 4.0, 2.4, 0];
   for (let i = 0; i < stops.length; i++) {
     say(`Lade den Boni … ${Math.round(((i + 1) / stops.length) * 100)} %`);
+    coverBar.style.width = `${Math.round(((i + 1) / stops.length) * 100)}%`;
     fixedT = stops[i];
     await loaded(i === stops.length - 1 ? 20000 : 8000);
   }
-  say('');
+  // preloading happened behind the cover; the flight starts at its first frame
+  fixedT = 0;
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  cover.classList.remove('on');
 
   window.introDebug = {
     duration: END,

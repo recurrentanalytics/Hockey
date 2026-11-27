@@ -15,6 +15,7 @@ const $ = (id) => document.getElementById(id);
 const say = (s) => { $('status').textContent = s; };
 
 function aerial(message = '') {
+  $('cover')?.classList.remove('on');
   $('cesium').remove();
   $('gl').style.display = '';
   say(message);
