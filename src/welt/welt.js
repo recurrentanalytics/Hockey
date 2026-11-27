@@ -145,7 +145,7 @@ async function main() {
   // ---- Google photorealistic 3D tiles (the intro's 3D context), only with the club's token
   const google = LAYERS.find((l) => l.id === 'google');
   let tiles = null;
-  const token = Q.get('token') || (() => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } })();
+  let token = Q.get('token') || (() => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } })();
   google.available = !!token;
   async function showGoogle(on) {
     if (on && !tiles) {
@@ -187,15 +187,31 @@ async function main() {
   for (const l of LAYERS) {
     const label = document.createElement('label');
     const usable = l.id !== 'google' || google.available;
-    label.innerHTML = `<input type="checkbox" ${l.on ? 'checked' : ''} ${usable ? '' : 'disabled'}> ${l.name}${usable ? '' : ' <small>(braucht den Cesium-Token des Vereins, einmal über intro.html eingeben)</small>'}`;
+    label.innerHTML = `<input type="checkbox" ${l.on ? 'checked' : ''} ${usable ? '' : 'disabled'}> ${l.name}${usable ? '' : ' <small>(braucht den Cesium-Token des Vereins)</small>'}`;
     label.querySelector('input').onchange = async (ev) => {
       l.on = ev.target.checked;
       if (l.id === 'luftbild') luftbild.show = l.on;
-      else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message); scene.globe.show = true; } }
+      else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); scene.globe.show = true; } }
       else sources[l.id].show = l.on;
       scene.requestRender();
     };
     list.append(label);
+  }
+  if (!google.available) {
+    // The token can be pasted right here. It stays on this device (same place the intro keeps it)
+    // and is only ever sent to Cesium ion when the Google layer is switched on.
+    const box = document.createElement('div');
+    box.innerHTML = '<input type="password" autocomplete="off" placeholder="Cesium-Token hier einfügen" style="width:100%;box-sizing:border-box;margin:4px 0;font:inherit"><button>Token speichern</button>';
+    list.append(box);
+    box.querySelector('button').onclick = () => {
+      const value = box.querySelector('input').value.trim();
+      if (!value) return;
+      try { localStorage.setItem(TOKEN_KEY, value); } catch { /* private window: kept until the page closes */ }
+      token = value; google.available = true;
+      const check = list.querySelector('input[type=checkbox][disabled]');
+      check.disabled = false; check.parentElement.querySelector('small')?.remove(); box.remove();
+      status('Token gespeichert. Jetzt „Google-3D-Kacheln“ anhaken.');
+    };
   }
   for (const b of document.querySelectorAll('[data-sicht]')) b.onclick = () => view(b.dataset.sicht);
 
