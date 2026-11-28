@@ -280,7 +280,7 @@ Im ersten Intro hatte der Platz eigene Schattenregeln: Ein eigenes Bodenmodell r
 Jetzt gilt auf dem Platz dieselbe Regel wie im Viertel:
 
 - **Bäume und Häuser** werfen ihre Schlagschatten auch auf den Platz. Die runden Ersatzschatten am Platz sind weg.
-- **Zaun und Tore:** Pfosten und Torrahmen werfen Schatten, Maschengitter und Netze nicht (wie im ersten Intro, `welt.js`, Platzmodell).
+- **Zaun und Tore:** Pfosten und Torrahmen werfen immer Schatten. Maschengitter und Netze werfen ihre, wo die Schattenkarte fein genug ist (im Spiel und nah am Platz), siehe „Das Spiel auf dem Boni“.
 - **Reichweite der Schattenkarte:** das Vierfache der Kamerahöhe, zwischen 120 m und 1500 m. Nah am Boden (Spiel, Fahrt) werden die Schatten damit scharf genug für einen Zaunpfosten.
 - **Luftbild auf dem Platz:** Die Schatten, die die echten Bäume beim Fotografieren warfen, lägen sonst für immer unter den wandernden. Auf dem Asphalt bleibt deshalb nur gut ein Drittel des Fotokontrasts (`PLATZ_FOTO` in `pixelboden.js`), als Abnutzung.
 - **Figuren:** unverändert. Ob eine Figur in der Sonne steht, kommt weiter aus der Kronenhöhenkarte (`BONI_3D.shadow.lit`). Die gezeichneten Bäume stehen an denselben Kronen, es passt deshalb ungefähr, aber nicht pixelgenau.
@@ -291,3 +291,20 @@ Jetzt gilt auf dem Platz dieselbe Regel wie im Viertel:
 - **Kein Baum wächst in ein Haus** (`haltAbstand` in `baeume.js`). Das Bild eines Baums dreht sich zur Kamera, seine Krone reicht also in jede Richtung die halbe Bildbreite weit: Das muss zwischen Stamm und nächste Wand passen. Ein zu breiter Baum wird kleiner gezeichnet (bis 4 m). Passt auch der kleinste nicht, wird ein aus der Kronenkarte abgeleiteter Baum (sein Stamm ist ohnehin geschätzt) bis zu 4 m von der Wand weggerückt; ein kartierter fällt weg. Am Boni: von 114 Bäumen stehen 106, davon 23 kleiner und 14 gerückt (höchstens 3,8 m); 8 fallen weg.
 - **Nichts aus der Art-Bibliothek steht auf der Fahrbahn** (`vomFahrdamm` in `bibliothek.js`). Fahrbahn ist die ALKIS-Nutzung „Straßenverkehr“ ohne nähere Bezeichnung, wie beim gezeichneten Boden. Ein kartierter Punkt auf der Fahrbahn rückt 0,7 m hinter den nächsten Bordstein, sofern dort weder Fahrbahn noch Haus ist. Betroffen: 49 von 56 Laternen (in der List hängen viele an Seilen über der Straßenmitte; unser Sprite ist ein Mast), 18 von 46 Fahrradbügeln, 11 von 26 Mülleimern. Weiteste Verschiebung 6,7 m, keiner fällt weg.
 - **Bäume auf der Fahrbahn** bleiben, wo sie kartiert sind: Straßenbäume stehen dort wirklich im Parkstreifen.
+
+## Das Spiel auf dem Boni: bewegtes Bild (2026-11-28)
+
+Dieselben Regeln gelten überall. Im Spiel wird mehr dafür ausgegeben, weil die Spielkamera nur den Platz und sein Umfeld sieht.
+
+| Was | Überall | Im Spiel |
+|---|---|---|
+| Kronen wiegen sich im Wind, ihre Schlagschatten mit | auf jedem Bild, das ohnehin gezeichnet wird | die 3D-Szene wird eigens 20-mal je Sekunde gezeichnet |
+| Schattenkarte | 2048, harte Kanten, Reichweite das Vierfache der Kamerahöhe | 4096 (Handy 2048), weiche Kanten, nur Platz und Umfeld (Abstand der Kamera plus 35 m) |
+| Maschengitter und Netze | werfen Schatten, wo die Reichweite unter 220 m liegt | werfen Schatten |
+| Lichtflecken im Laub | keine (die Schattenkarte wäre zu grob) | Lücken in den Kronenschatten, die langsam kommen und gehen; mehr davon, wenn das Laub fällt |
+| Fassaden-Relief | nach Ebene | wird nicht gezeichnet (aus der Spielkamera nicht zu erkennen) |
+
+- **Wiegen:** `wiegeWinkel()` in `baeume.js`: ein Winkel um den Stammfuß, je Baum eigener Takt und eigene Phase, stärker bei Wind (Wind aus dem Wettermodul). Das Kronenbild dreht sich um den Stammfuß; der Schattenwerfer rechnet im Shader dieselbe Bewegung.
+- **Gitter:** Die echten Drähte sind zu dünn, um aus der Spielkamera einen Schatten zu zeigen. Im Schattendurchgang wirft das Platzmodell deshalb ein kräftigeres Muster gleicher Art: Rauten für den Zaun (32 cm), Quadrate für die Netze (16 cm). Auf dem Handy sind die Drähte breiter, weil die Schattenkarte dort gröber ist.
+- **Takt:** Kostet ein 3D-Bild mehr als 18 ms, wird die Szene nur noch 10-mal je Sekunde gezeichnet, über 40 ms 5-mal. Das Spiel selbst läuft davon unabhängig.
+- **Gemessen** auf einem Apple M4: 20 Bilder je Sekunde für die 3D-Szene, 3 ms Rechenzeit je Bild. Auf Handy und Tablet nicht gemessen.

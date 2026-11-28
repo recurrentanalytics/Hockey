@@ -131,3 +131,17 @@ test('trees: none grows into a house: drawn smaller where the wall is near, left
   assert.ok(stehen.length >= alle.length - 6 && stehen.filter((b) => !b.gestutzt).length > alle.length * 0.7, `${stehen.length} of ${alle.length} trees stand, most as mapped`);
   assert.ok(stehen.every((b) => b.hoehe >= BAUMGRENZE.kleinste - 0.05), 'none smaller than the smallest tree');
 });
+
+test('trees: crowns sway a little, more in wind, each tree on its own beat, and never wildly', async () => {
+  const { wiegeWinkel, wiegeMass, wiegeTakt, WIEGE } = await import('../src/welt/baeume.js');
+  assert.ok(wiegeMass(0) > 0 && wiegeMass(10) > wiegeMass(2) && wiegeMass(200) === WIEGE.hoechstens, 'calm air still moves a leaf; a storm is capped');
+  const a = wiegeTakt('node/1'), b = wiegeTakt('node/2');
+  assert.ok(a.takt >= 0.7 && a.takt <= 1.3 && a.phase >= 0 && a.phase < 2 * Math.PI);
+  assert.ok(a.takt !== b.takt && a.phase !== b.phase, 'two trees, two beats');
+  assert.deepEqual(wiegeTakt('node/1'), a, 'the same tree always the same');
+  let groesster = 0, wechsel = 0, vorher = 0;
+  for (let t = 0; t < 60; t += 0.05) { const w = wiegeWinkel('node/1', t, 6); groesster = Math.max(groesster, Math.abs(w)); if (w * vorher < 0) wechsel++; vorher = w; }
+  assert.ok(groesster <= wiegeMass(6) * 1.35 + 1e-9 && groesster > wiegeMass(6) * 0.8, `sways up to ${(groesster * 57.3).toFixed(1)}° at 6 m/s`);
+  assert.ok(groesster * 12 < 0.4, 'the top of a 12 m tree moves less than 40 cm');
+  assert.ok(wechsel >= 10 && wechsel <= 40, `to and fro ${wechsel} times a minute`);
+});

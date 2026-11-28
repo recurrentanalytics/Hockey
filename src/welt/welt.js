@@ -7,7 +7,7 @@ import ORT from '../../locations/boni/ort.js';
 import { RELIEF } from '../bau/haus.js';
 import { fromUtm32, toUtm32 } from './utm.js';
 import { placeLibrary, usable, frameImages, fahrbahnen, vomFahrdamm } from './bibliothek.js';
-import { hain, haltAbstand, kronenkarte, baumbilder, pflanze, schattenwerfer, LICHT } from './baeume.js';
+import { hain, haltAbstand, kronenkarte, baumbilder, pflanze, schattenwerfer, wiegeMass, LICHT } from './baeume.js';
 import { createEnvironment, weatherPanel } from '../intro/environment.js';
 import { surfaceFor, setSurface } from '../game/surface.js';
 import { starte } from './spieler.js';
@@ -193,7 +193,42 @@ async function main() {
   // (a match, a ride through the streets) a short range and crisp shadows, down to a fence post's; from high up the
   // whole quarter. Four times the camera's height covers what a camera tilted like the game's sees.
   scene.shadowMap.maximumDistance = 1500;
-  scene.preRender.addEventListener(() => { scene.shadowMap.maximumDistance = Math.min(1500, Math.max(120, 4 * (camera.positionCartographic.height - ground))); });
+  // ---- what moves, and the match's own picture
+  // The crowns sway in the wind and their cast shadows with them, on every frame that is drawn anyway. During a match
+  // the 3D picture is drawn on its own beat (20 times a second, slower where that costs too much) and everything goes
+  // into the court: the shadow map covers just the court and its surroundings, twice as fine and with soft edges, the
+  // chain-link mesh and the nets throw their shadows, and the crowns let sun flecks through that come and go. The
+  // façade relief, which the game camera cannot make out, is not drawn meanwhile. The rules are the same everywhere;
+  // the match only spends more on them.
+  const KLEIN = Math.min(screen.width, screen.height) <= 820 || (navigator.deviceMemory ?? 8) < 4; // a phone: the shadow map stays at 2048
+  const BEWEGT = { seit: performance.now(), luecken: 0.14, takt: 0, abstand: 50, dauer: 0, beginn: 0 };
+  const wind = () => umwelt?.air?.wind ?? 3;
+  let gitter = null; // the court model's shader: lets the mesh and the nets cast where the shadow map is fine enough
+  scene.preRender.addEventListener(() => {
+    BEWEGT.beginn = performance.now();
+    const mitte = pos([E0, N0], 0), hoch = camera.positionCartographic.height - ground;
+    scene.shadowMap.maximumDistance = imSpiel ? Cesium.Cartesian3.distance(camera.positionWC, mitte) + 35 : Math.min(1500, Math.max(120, 4 * hoch));
+    const fein = scene.shadowMap.maximumDistance < 220, zeit = (BEWEGT.beginn - BEWEGT.seit) / 1000;
+    gitter?.setUniform('u_gitter', fein ? 1 : 0);
+    if (document.body.classList.contains('anflug')) return;
+    grove.wiege?.(zeit, wind());
+    for (const p of baumwerfer) { const u = p.appearance.uniforms; u.u_zeit = zeit; u.u_mass = wiegeMass(wind()); u.u_luecken = imSpiel ? BEWEGT.luecken : 0; }
+  });
+  scene.postRender.addEventListener(() => {
+    if (!imSpiel) return;
+    BEWEGT.dauer += (performance.now() - BEWEGT.beginn - BEWEGT.dauer) * 0.1; // a running mean of what a 3D frame costs here
+    const soll = BEWEGT.dauer > 40 ? 200 : BEWEGT.dauer > 18 ? 100 : 50;
+    if (soll !== BEWEGT.abstand) { BEWEGT.abstand = soll; clearInterval(BEWEGT.takt); BEWEGT.takt = setInterval(() => scene.requestRender(), soll); }
+  });
+  function spielgrafik(an) {
+    scene.shadowMap.softShadows = an;
+    scene.shadowMap.size = an && !KLEIN ? 4096 : 2048;
+    viertelHaeuser?.relief(an ? false : LAYERS.find((l) => l.id === 'relief').on);
+    clearInterval(BEWEGT.takt);
+    BEWEGT.abstand = 50; BEWEGT.dauer = 0;
+    BEWEGT.takt = an ? setInterval(() => scene.requestRender(), BEWEGT.abstand) : 0;
+    scene.requestRender();
+  }
   // ---- the sky: once landed, CesiumJS's atmosphere stands over the quarter, lit by the clock's sun (blue at noon, warm
   // at dusk, dark at night, then with the stars), greyer and dimmer under clouds. With the Google tiles and their
   // haze the sky stays the haze colour (dunstAn); during the approach from space the sky is the approach's own.
@@ -323,14 +358,27 @@ async function main() {
   Cesium.Model.fromGltfAsync({ url: new URL('intro/boni_platz.glb', ASSETS).href, modelMatrix: modellMatrix(), forwardAxis: Cesium.Axis.X })
     .then((m) => {
       platzModell = scene.primitives.add(m); platzModell.show = LAYERS.find((l) => l.id === 'platz').on;
-      // the court's own shadows, as they were in the first intro: posts and goal frames throw them, the chain-link
-      // mesh and the nets (see-through) do not, or they would lie on the court as dark sheets
+      // The court's own shadows: posts and goal frames always throw them. The chain-link mesh and the nets throw theirs
+      // where the shadow map is fine enough to draw a pattern (a match, a ride close by: u_gitter); from far off they
+      // would only flicker. Their real wires are too thin to show from the game camera, so in the shadow pass they
+      // cast a bolder pattern of the same kind: diamonds for the chain-link fence (found by its place on the fence
+      // rectangle, model metres), squares for the nets. u_draht: the wires' share of a mesh (more on a coarser map).
       platzModell.shadows = Cesium.ShadowMode.ENABLED;
-      platzModell.customShader = new Cesium.CustomShader({ fragmentShaderText: `void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+      gitter = new Cesium.CustomShader({ uniforms: { u_gitter: { type: Cesium.UniformType.FLOAT, value: 0 }, u_draht: { type: Cesium.UniformType.FLOAT, value: KLEIN ? 0.26 : 0.18 } },
+        fragmentShaderText: `void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
         #ifdef SHADOW_MAP
-        material.alpha = 0.0;
+        if (u_gitter < 0.5) { material.alpha = 0.0; return; }
+        vec3 m = fsInput.attributes.positionMC;
+        float anX = abs(abs(m.x) - ${(ORT.zaun.laenge / 2).toFixed(2)}), anZ = abs(abs(m.z) - ${(ORT.zaun.breite / 2).toFixed(2)});
+        bool draht;
+        if (min(anX, anZ) < 0.3) {
+          float u = anX < anZ ? m.z : m.x;
+          draht = fract((u + m.y) / 0.32) < u_draht || fract((u - m.y) / 0.32) < u_draht;
+        } else draht = fract(m.x / 0.16) < u_draht || fract(m.y / 0.16) < u_draht || fract(m.z / 0.16) < u_draht;
+        material.alpha = draht ? 1.0 : 0.0;
         #endif
       }` });
+      platzModell.customShader = gitter;
     })
     .catch((e) => status('Platzmodell nicht geladen: ' + e.message));
 
@@ -561,6 +609,7 @@ async function main() {
     spieler?.spielt(true);
     document.body.classList.add('imspiel');
     spielkamera();
+    spielgrafik(true);
     // trees and houses between this camera and the court step aside for as long as the match runs
     grove.zeigeMehrere?.(platzEcken, [0, 1]);
     zeigeHaeuser(new Set(platzEcken.flatMap((p) => [...davor(p, hindernisse)])));
@@ -595,6 +644,7 @@ async function main() {
     if (globalThis.BONI_3D) globalThis.BONI_3D.pausiert = true; // the match sleeps where it was
     try { window.app?.audio?.setAmbient?.(false); } catch { /* no sound running */ }
     document.body.classList.remove('imspiel');
+    spielgrafik(false);
     camera.frustum.fov = FREIFOV;
     spieler?.spielt(false);
     view('fahren');
@@ -629,6 +679,7 @@ async function main() {
     LICHT.azimut = v.sun.az; LICHT.hoehe = Math.max(v.sun.alt, 8); LICHT.staerke = Math.min(1, v.sunlit * 1.2);
     viertelHaeuser?.licht(LICHT); // the houses take the light at once: three numbers, nothing is rebuilt
     HIMMEL.grau = { clouds: 1, rain: 1, fog: 1, snow: 0.9, partly: 0.3 }[st.look] ?? 0; HIMMEL.tag = v.day; himmel();
+    BEWEGT.luecken = Math.min(0.5, 0.08 + 0.5 * (1 - (v.leaf ?? 0.85))); // fewer leaves, more light through the crown
     clearTimeout(neuZeichnen); neuZeichnen = setTimeout(() => { if (sources.baeume) build(); }, 400); // tree shadows turn with the sun
   };
   try {

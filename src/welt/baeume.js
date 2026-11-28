@@ -183,6 +183,16 @@ export function schattenflaechen(t, { seiten, grenze }, licht = LICHT, konvergen
   ];
 }
 
+/**
+ * How a crown sways: an angle in radians about the foot of the trunk, at `zeit` seconds, for a wind in m/s. Every
+ * tree has its own beat and phase by its id, so a grove never moves as one. The drawn crown and the crown's cast
+ * shadow use the same numbers (WIEGE in the shadow's shader), so the shadow sways with its tree.
+ */
+export const WIEGE = { ruhe: 0.008, jeWind: 0.0022, hoechstens: 0.05 };
+export const wiegeMass = (wind = 3) => Math.min(WIEGE.hoechstens, WIEGE.ruhe + WIEGE.jeWind * Math.max(0, wind));
+export const wiegeTakt = (id) => ({ takt: 0.7 + 0.6 * streuung(id, 'takt'), phase: 2 * Math.PI * streuung(id, 'wiege') });
+export function wiegeWinkel(id, zeit, wind = 3) { const { takt, phase } = wiegeTakt(id); return wiegeMass(wind) * (Math.sin(zeit * takt + phase) + 0.35 * Math.sin(zeit * takt * 2.3 + phase * 1.7)); }
+
 // ------------------------------------------------------------------ drawing (browser, CesiumJS)
 
 /** Canopy heights from the place's survey raster (red = height in 0.2 m steps; 0.5 m cells in court metres). */
@@ -227,7 +237,7 @@ export async function baumbilder(asset, base) {
  */
 export async function pflanze({ Cesium, entities, billboards = null, scene = null, baeume, bilder, frame, pos, fotoBoden, wirft = () => false }) {
   const zuGitter = ([a, b]) => [frame.ursprung_utm32[0] + a * frame.achse_a[0] + b * frame.achse_b[0], frame.ursprung_utm32[1] + a * frame.achse_a[1] + b * frame.achse_b[1]];
-  const kronen = [];
+  const kronen = [], tafeln = [];
   for (const t of baeume) {
     const s = schatten(t, frame, fotoBoden), quer = [-s.richtung[1], s.richtung[0]];
     const rand = Array.from({ length: 20 }, (_, k) => { const w = (k / 20) * 2 * Math.PI, l = Math.cos(w) * s.laengs, q = Math.sin(w) * s.quer; return pos(zuGitter([s.mitte[0] + s.richtung[0] * l + quer[0] * q, s.mitte[1] + s.richtung[1] * l + quer[1] * q]), 0.12); });
@@ -241,6 +251,7 @@ export async function pflanze({ Cesium, entities, billboards = null, scene = nul
         billboards.add({ position: pos(t.en, 0), image: b.stamm[seite], ...mass, id });
         const krone = billboards.add({ position: pos(t.en, 0), image: b.krone[seite], ...mass, color: Cesium.Color.WHITE, id });
         kronen.push([t, (durch) => { krone.color = Cesium.Color.WHITE.withAlpha(durch ? 0.3 : 1); scene?.requestRender(); }]);
+        tafeln.push([t, krone]);
       } else {
         entities.add({ position: pos(t.en, 0), billboard: { image: b.stamm[seite], ...mass }, properties: { text } });
         const krone = entities.add({ position: pos(t.en, 0), billboard: { image: b.krone[seite], ...mass, color: Cesium.Color.WHITE }, properties: { text } });
@@ -255,6 +266,8 @@ export async function pflanze({ Cesium, entities, billboards = null, scene = nul
   const zustand = new Map();
   return {
     baeume,
+    /** The crowns sway in the wind: turn each crown's picture about the foot of its trunk (wiegeWinkel). Cheap: one number per tree. */
+    wiege(zeit, wind) { for (const [t, krone] of tafeln) krone.rotation = wiegeWinkel(t.id, zeit, wind); },
     /** Like zeige, for several points at once (the whole court during a match). */
     zeigeMehrere(punkte, blick) { for (const [t, setze] of kronen) { const durch = punkte.some((p) => verdeckt(p, t, blick)); if (zustand.get(t) !== durch) { zustand.set(t, durch); setze(durch); } } },
     zeige(punkt, blick) { for (const [t, setze] of kronen) { const durch = verdeckt(punkt, t, blick); if (zustand.get(t) !== durch) { zustand.set(t, durch); setze(durch); } } },
@@ -265,21 +278,40 @@ const WERFER_VS = `
 in vec3 position3DHigh;
 in vec3 position3DLow;
 in vec2 st;
+in vec4 wiege;   // xyz: metres a corner moves per radian the crown sways (zero for the trunk), w: the tree's phase
+in float takt;   // the tree's beat
 in float batchId;
+uniform float u_zeit;
+uniform float u_mass;
 out vec2 v_st;
+out float v_krone;
 void main() {
   vec4 p = czm_computePosition();
+  // the same sway as the drawn crown (baeume.js, wiegeWinkel)
+  float winkel = u_mass * (sin(u_zeit * takt + wiege.w) + 0.35 * sin(u_zeit * takt * 2.3 + wiege.w * 1.7));
+  p.xyz += wiege.xyz * winkel;
   v_st = st;
+  v_krone = dot(wiege.xyz, wiege.xyz) > 0.0 ? 1.0 : 0.0;
   gl_Position = czm_modelViewProjectionRelativeToEye * p;
 }`;
 // Drawn into the shadow map only. Its camera looks along the sun's parallel rays, so its projection has no
 // perspective: that is how this shader tells the shadow pass from the view, where nothing of these faces shows.
+// u_luecken opens gaps in the crown (clusters of 2 x 2 sprite pixels, each coming and going slowly): sun flecks
+// on the ground. Only where the shadow map is fine enough to show them (a match); 0 leaves the crown whole.
 const WERFER_FS = `
 in vec2 v_st;
+in float v_krone;
 uniform sampler2D u_bild;
+uniform vec2 u_bildMass;
+uniform float u_zeit;
+uniform float u_luecken;
 void main() {
   if (czm_projection[3][3] < 0.5) discard;
   if (texture(u_bild, v_st).a < 0.5) discard;
+  if (u_luecken > 0.0 && v_krone > 0.5) {
+    float h = fract(sin(dot(floor(v_st * u_bildMass * 0.5), vec2(12.9898, 78.233))) * 43758.5453);
+    if (fract(h + u_zeit * 0.07) < u_luecken) discard;
+  }
   out_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 }`;
 
@@ -294,23 +326,32 @@ export function schattenwerfer({ Cesium, scene, baeume, bilder, frame, pos, lich
   for (const t of baeume) { if (t.art && bilder[t.art]?.bild && welche(t)) (jeArt.get(t.art) ?? jeArt.set(t.art, []).get(t.art)).push(t); }
   const aus = [];
   for (const [art, liste] of jeArt) {
-    const b = bilder[art], P = [], S = [], I = [];
-    for (const t of liste) for (const f of schattenflaechen(t, b, licht, konvergenz)) {
-      const i = P.length / 3;
-      f.ecken.forEach(([e, n, z], m) => { const c = pos([t.en[0] + e, t.en[1] + n], Math.max(0.05, z)); P.push(c.x, c.y, c.z); S.push(f.st[m][0], 1 - f.st[m][1]); });
-      I.push(i, i + 1, i + 2, i, i + 2, i + 3);
+    const b = bilder[art], P = [], S = [], I = [], Wg = [], Tk = [];
+    const az = ((licht.azimut - konvergenz) * Math.PI) / 180, quer = [Math.cos(az), -Math.sin(az)]; // across the light: the way the crown's face sways
+    for (const t of liste) {
+      const { takt, phase } = wiegeTakt(t.id), fuss = pos(t.en, 0), seit = pos([t.en[0] + quer[0], t.en[1] + quer[1]], 0), q = [seit.x - fuss.x, seit.y - fuss.y, seit.z - fuss.z];
+      for (const f of schattenflaechen(t, b, licht, konvergenz)) {
+        const i = P.length / 3;
+        f.ecken.forEach(([e, n, z], m) => {
+          const c = pos([t.en[0] + e, t.en[1] + n], Math.max(0.05, z)), hebel = f.teil === 'krone' ? Math.max(0, z) : 0;
+          P.push(c.x, c.y, c.z); S.push(f.st[m][0], 1 - f.st[m][1]); Wg.push(q[0] * hebel, q[1] * hebel, q[2] * hebel, phase); Tk.push(takt);
+        });
+        I.push(i, i + 1, i + 2, i, i + 2, i + 3);
+      }
     }
     const positionen = new Float64Array(P);
     const geometrie = new Cesium.Geometry({
       attributes: { position: new Cesium.GeometryAttribute({ componentDatatype: Cesium.ComponentDatatype.DOUBLE, componentsPerAttribute: 3, values: positionen }),
-        st: new Cesium.GeometryAttribute({ componentDatatype: Cesium.ComponentDatatype.FLOAT, componentsPerAttribute: 2, values: new Float32Array(S) }) },
+        st: new Cesium.GeometryAttribute({ componentDatatype: Cesium.ComponentDatatype.FLOAT, componentsPerAttribute: 2, values: new Float32Array(S) }),
+        wiege: new Cesium.GeometryAttribute({ componentDatatype: Cesium.ComponentDatatype.FLOAT, componentsPerAttribute: 4, values: new Float32Array(Wg) }),
+        takt: new Cesium.GeometryAttribute({ componentDatatype: Cesium.ComponentDatatype.FLOAT, componentsPerAttribute: 1, values: new Float32Array(Tk) }) },
       indices: P.length / 3 < 65536 ? new Uint16Array(I) : new Uint32Array(I), primitiveType: Cesium.PrimitiveType.TRIANGLES, boundingSphere: Cesium.BoundingSphere.fromVertices(positionen),
     });
     // the species' picture, pixel for pixel; kept on the picture record, so a new sun does not load it again
     b.textur ??= new Cesium.Texture({ context: scene.context, source: b.bild, sampler: new Cesium.Sampler({ minificationFilter: Cesium.TextureMinificationFilter.NEAREST, magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST }) });
     const erscheinung = new Cesium.Appearance({ translucent: true, closed: false, vertexShaderSource: WERFER_VS, fragmentShaderSource: WERFER_FS,
       renderState: { depthTest: { enabled: true }, depthMask: false, cull: { enabled: false } } });
-    erscheinung.uniforms = { u_bild: b.textur };
+    erscheinung.uniforms = { u_bild: b.textur, u_bildMass: new Cesium.Cartesian2(b.bild.width, b.bild.height), u_zeit: 0, u_mass: 0, u_luecken: 0 };
     aus.push(scene.primitives.add(new Cesium.Primitive({ geometryInstances: new Cesium.GeometryInstance({ geometry: geometrie }), appearance: erscheinung, asynchronous: false, compressVertices: false,
       shadows: Cesium.ShadowMode.CAST_ONLY, allowPicking: false })));
   }
