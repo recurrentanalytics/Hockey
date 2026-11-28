@@ -72,7 +72,7 @@ test('grove: crowns the survey shows without a mapped tree become derived trees,
 });
 
 test('trees: the faces that cast the shadow face the sun, keep the tree\'s size, and turn with it', async () => {
-  const { schattenflaechen, trifftPlatz } = await import('../src/welt/baeume.js');
+  const { schattenflaechen } = await import('../src/welt/baeume.js');
   const t = { hoehe: 12, krone: 4, ab: [0, 0], spiegeln: false }, bild = { seiten: 0.8, grenze: 0.6 };
   const sonne = (azimut, hoehe) => { const a = (azimut * Math.PI) / 180, h = (hoehe * Math.PI) / 180; return [Math.sin(a) * Math.cos(h), Math.cos(a) * Math.cos(h), Math.sin(h)]; };
   for (const [azimut, hoehe] of [[73, 45], [180, 60], [250, 20], [300, 85]]) {
@@ -96,12 +96,38 @@ test('trees: the faces that cast the shadow face the sun, keep the tree\'s size,
   // a low sun is taken as 8°, like everywhere the light is used: no face lying flat on its side, no endless shadow
   assert.deepEqual(schattenflaechen(t, bild, { azimut: 90, hoehe: 1 }), schattenflaechen(t, bild, { azimut: 90, hoehe: 8 }));
 
-  // whose shadow reaches the court keeps the drawn one: the court's floor shades itself
-  const frame = JSON.parse(fs.readFileSync('locations/boni/geo/rahmen.json', 'utf8'));
-  const sued = { azimut: 180 + (frame.kompassrichtung_b_grad ?? 0), hoehe: 45 };
-  assert.equal(trifftPlatz({ hoehe: 12, krone: 4, ab: [0, 30] }, frame, { azimut: 0, hoehe: 80 }), false, 'a high sun: a tree 30 m away does not reach');
-  assert.equal(trifftPlatz({ hoehe: 12, krone: 4, ab: [0, 12] }, frame, sued), true, 'a tree at the fence does, whatever the sun');
-  const fern = { hoehe: 12, krone: 4, ab: [60, 60] };
-  assert.equal([0, 90, 180, 270].some((azimut) => trifftPlatz(fern, frame, { azimut, hoehe: 45 })), false, 'a tree far off never does at 45°');
-  assert.equal([0, 45, 90, 135, 180, 225, 270, 315].some((azimut) => trifftPlatz({ hoehe: 14, krone: 5, ab: [0, 40] }, frame, { azimut, hoehe: 10 })), true, 'a low sun behind a tall tree does');
+});
+
+const platzmeterVon = (en) => { const de = en[0] - frame.ursprung_utm32[0], dn = en[1] - frame.ursprung_utm32[1]; return [de * frame.achse_a[0] + dn * frame.achse_a[1], de * frame.achse_b[0] + dn * frame.achse_b[1]].map((x) => Math.round(x * 100) / 100); };
+
+test('trees: none grows into a house: drawn smaller where the wall is near, left out where even a small one does not fit', async () => {
+  const { haltAbstand, BAUMGRENZE } = await import('../src/welt/baeume.js');
+  const haus = [[0, 0], [10, 0], [10, 10], [0, 10]], baum = (id, x, y, hoehe = 12) => ({ id, en: [x, y], ab: [x, y], hoehe, krone: 3.8, stamm: 0.42, art: 'a' });
+  const fern = baum('fern', 30, 5), nah = baum('nah', 13, 5), eng = baum('eng', 11.5, 5), drin = baum('drin', 5, 5), klein = baum('klein', 13, 8, 5);
+  const aus = haltAbstand([fern, nah, eng, drin, klein], [haus], () => 0.8);
+  assert.deepEqual(aus.map((t) => t.id), ['fern', 'nah', 'klein'], 'the one in the house and the one against the wall are left out');
+  assert.equal(aus[0], fern, 'a tree with room stays exactly as it is');
+  assert.equal(aus[2], klein, 'so does a small one that fits');
+  // 3 m from the wall, 0.3 m of air: half the picture's width may be 2.7 m, the picture is 0.8 wide by its height
+  const t = aus[1];
+  assert.ok(Math.abs((t.hoehe * 0.8) / 2 - (3 - BAUMGRENZE.luft)) < 0.05, `drawn ${t.hoehe} m high`);
+  assert.ok(Math.abs(t.gestutzt - 2.7 / 4.8) < 0.01 && Math.abs(t.krone / 3.8 - t.gestutzt) < 0.02 && Math.abs(t.stamm / 0.42 - t.gestutzt) < 0.03, 'height, crown and trunk shrink together');
+  assert.deepEqual(nah.hoehe, 12, 'the grove\'s own record is not changed');
+  // a tree derived from the canopy survey has only an estimated trunk: it is moved away from the wall instead
+  const geschaetzt = { ...baum('dom/1', 11.5, 5), standort: 'abgeleitet' }, imHaus = { ...baum('dom/2', 9.5, 5), standort: 'abgeleitet' }, tief = { ...baum('dom/3', 5, 5), standort: 'abgeleitet' };
+  assert.deepEqual(haltAbstand([geschaetzt, imHaus, tief], [haus], () => 0.8).map((t) => t.id), [], 'without the frame nothing can be moved');
+  const gerueckt = haltAbstand([geschaetzt, imHaus, tief], [haus], () => 0.8, frame);
+  assert.deepEqual(gerueckt.map((t) => t.id), ['dom/1', 'dom/2'], 'the two near the wall are moved, the one deep in the house is left out');
+  for (const t of gerueckt) {
+    assert.ok(Math.abs(t.en[0] - (10 + 1.6 + BAUMGRENZE.luft + 0.1)) < 0.02 && t.en[1] === 5, `${t.id}: straight out from the wall to where the smallest tree fits (${t.en})`);
+    assert.ok(t.gerueckt > 0 && t.gerueckt <= BAUMGRENZE.ruecken && Math.abs(t.hoehe - BAUMGRENZE.kleinste) < 0.3, `${t.id}: moved ${t.gerueckt} m, now ${t.hoehe} m high`);
+    assert.deepEqual(t.ab, platzmeterVon(t.en), 'its court metres follow');
+  }
+  // the real quarter: after the rule no crown reaches a footprint, and most trees are untouched
+  const geb = json('locations/boni/geo/gebaeude.geojson'), ringe = geb.features.flatMap((f) => (f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates).map((p) => p[0]));
+  const alle = hain(features, frame, [{ id: 'a' }]), stehen = haltAbstand(alle, ringe, () => 0.8);
+  const abstand = ([x, y], ring) => Math.min(...ring.map((a, i) => { const b = ring[(i + 1) % ring.length], dx = b[0] - a[0], dy = b[1] - a[1], k = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(x - a[0] - dx * k, y - a[1] - dy * k); }));
+  for (const b of stehen) assert.ok((b.hoehe * 0.8) / 2 <= Math.min(...ringe.map((r) => abstand(b.en, r))) - BAUMGRENZE.luft + 0.06, `${b.id}: its crown clears the nearest wall`);
+  assert.ok(stehen.length >= alle.length - 6 && stehen.filter((b) => !b.gestutzt).length > alle.length * 0.7, `${stehen.length} of ${alle.length} trees stand, most as mapped`);
+  assert.ok(stehen.every((b) => b.hoehe >= BAUMGRENZE.kleinste - 0.05), 'none smaller than the smallest tree');
 });

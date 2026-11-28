@@ -28,6 +28,8 @@ export function maske(abstand, aufDemPlatz) {
 }
 
 /** Asphalt tones for the court floor: the photo's light and dark survive, its colour noise does not. */
+/** How much of the aerial photo's light and shade stays on the court's asphalt (0: one flat tone, 1: as photographed). */
+export const PLATZ_FOTO = 0.35;
 export const ASPHALT = ['#b9b3a4', '#9a958c', '#8f8b86', '#7d7868', '#5d5a57'].map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)));
 const LINIE = { weiss: [247, 239, 220] };
 /**
@@ -83,6 +85,12 @@ export async function pixelboden({ frame, foto, linien = [], platzRing = null, b
     }
     return n ? { a: t.ab[0], b: t.ab[1], r, c: c.map((v) => v / n) } : null;
   }).filter(Boolean);
+  // On the court the photo's own light is taken back: the shadows the real trees threw when it was taken would lie
+  // there for good, under the cast shadows that move with the sun. PLATZ_FOTO of the photo's contrast stays, as the
+  // asphalt's wear; the rest is the court's mean tone.
+  const mittel = [0, 0, 0]; let anzahl = 0;
+  for (let y = 0; y < px; y += 2) for (let x = 0; x < px; x += 2) { const [a, b] = ort(x, y); if (Math.abs(a) <= 12.6 && Math.abs(b) <= 9) { const i = (y * px + x) * 4; mittel[0] += d[i]; mittel[1] += d[i + 1]; mittel[2] += d[i + 2]; anzahl++; } }
+  if (anzahl) for (let k = 0; k < 3; k++) mittel[k] /= anzahl;
   const umriss = PALETTE[0];
   for (let y = 0; y < px; y++) for (let x = 0; x < px; x++) {
     const i = (y * px + x) * 4, [a, b] = ort(x, y);
@@ -96,6 +104,7 @@ export async function pixelboden({ frame, foto, linien = [], platzRing = null, b
     }
     const t = (schwelle(x, y) - 0.5) * 26;      // ordered dither between neighbouring palette colours
     const aufPlatz = Math.abs(a) <= 12.6 && Math.abs(b) <= 9;
+    if (aufPlatz && anzahl) for (let k = 0; k < 3; k++) d[i + k] = mittel[k] + (d[i + k] - mittel[k]) * PLATZ_FOTO;
     const strich = aufPlatz ? markierung(a, b, (2 * halb) / px) : null;
     // inside the fence: asphalt tones only, and the court's real markings on top
     const [r, gr, bl] = strich ?? (aufPlatz ? naechste(d[i] + t, d[i + 1] + t, d[i + 2] + t, ASPHALT) : naechste(d[i] + t, d[i + 1] + t, d[i + 2] + t));

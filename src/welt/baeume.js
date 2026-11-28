@@ -73,6 +73,67 @@ export function hain(features, frame, arten = [], kronenhoehe = () => null, able
   return baeume.sort((x, y) => (x.id < y.id ? -1 : 1));
 }
 
+/** Distance of a point from a ring's outline (metres), the nearest point of the outline, and whether the point lies inside. */
+function zumRing([x, y], ring) {
+  let d = Infinity, q = null, innen = false;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i], b = ring[(i + 1) % ring.length], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / l2)) : 0;
+    const p = [a[0] + dx * t, a[1] + dy * t], weg = Math.hypot(x - p[0], y - p[1]);
+    if (weg < d) { d = weg; q = p; }
+    if ((a[1] > y) !== (b[1] > y) && x < a[0] + ((y - a[1]) * dx) / dy) innen = !innen;
+  }
+  return { d, q, innen };
+}
+
+/** The smallest tree that is still a tree, the air between a crown and a wall, and how far a tree with an estimated trunk may be moved (metres). */
+export const BAUMGRENZE = { kleinste: 4, luft: 0.3, ruecken: 4 };
+
+/**
+ * No tree grows into a house. A tree's picture stands upright and turns to the camera, so its crown reaches half
+ * the picture's width in every direction: that must fit between the trunk and the nearest wall.
+ * - A tree too wide for its place is drawn smaller (height, crown and trunk together; `gestutzt` says by how much),
+ *   down to BAUMGRENZE.kleinste metres.
+ * - One that does not fit even then, or whose trunk lies inside a footprint: a tree derived from the canopy survey
+ *   (its trunk is only an estimate under the crown's top) is moved straight away from the wall until the smallest
+ *   tree fits, at most BAUMGRENZE.ruecken metres (`gerueckt`, needs `frame` for its court metres). A mapped tree
+ *   is left out: mapped trunks and footprints come from different surveys, and a tree in a wall is wrong in any case.
+ * `haeuser`: the footprints' outer rings in grid metres; `seiten(art)`: width by height of a species' picture.
+ */
+export function haltAbstand(baeume, haeuser, seiten = () => 0.8, frame = null) {
+  const kasten = haeuser.map((r) => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const [x, y] of r) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } return [x0, y0, x1, y1]; });
+  const wand = (en, weit) => { // the nearest wall within reach
+    let frei = Infinity, q = null, innen = false;
+    haeuser.forEach((r, i) => {
+      const [x0, y0, x1, y1] = kasten[i];
+      if (en[0] < x0 - weit || en[0] > x1 + weit || en[1] < y0 - weit || en[1] > y1 + weit) return;
+      const z = zumRing(en, r);
+      if (z.d < frei) { frei = z.d; q = z.q; }
+      innen ||= z.innen;
+    });
+    return { frei, q, innen };
+  };
+  const rund = (v, n) => Math.round(v * n) / n, aus = [];
+  for (let t of baeume) {
+    const s = t.art ? seiten(t.art) : (2 * t.krone) / t.hoehe, kleinste = (BAUMGRENZE.kleinste * s) / 2, weit = (t.hoehe * s) / 2 + BAUMGRENZE.ruecken + 1;
+    let w = wand(t.en, weit);
+    if (w.innen || w.frei - BAUMGRENZE.luft < kleinste) {
+      if (t.standort !== 'abgeleitet' || !frame || !w.q) continue;
+      // straight away from the wall (out of the house, if the estimate lies inside it), to where the smallest tree has room
+      const ziel = kleinste + BAUMGRENZE.luft + 0.1, l = w.frei || 1e-6, v = [((t.en[0] - w.q[0]) / l) * (w.innen ? -1 : 1), ((t.en[1] - w.q[1]) / l) * (w.innen ? -1 : 1)];
+      const en = [rund(w.q[0] + v[0] * ziel, 100), rund(w.q[1] + v[1] * ziel, 100)], weg = Math.hypot(en[0] - t.en[0], en[1] - t.en[1]);
+      if (weg > BAUMGRENZE.ruecken) continue;
+      t = { ...t, en, ab: platzmeter(frame, en).map((x) => rund(x, 100)), gerueckt: rund(weg, 10) };
+      w = wand(en, weit);
+      if (w.innen || w.frei - BAUMGRENZE.luft < kleinste - 0.02) continue; // another wall is in the way there
+    }
+    const halb = (t.hoehe * s) / 2, platz = w.frei - BAUMGRENZE.luft;
+    if (halb <= platz) { aus.push(t); continue; }
+    const k = platz / halb;
+    aus.push({ ...t, hoehe: rund(t.hoehe * k, 10), krone: rund(t.krone * k, 10), stamm: rund(t.stamm * k, 100), gestutzt: rund(k, 100) });
+  }
+  return aus;
+}
+
 /** Collision: trunk plus root flare. Returns the position pushed out of every trunk it touches. */
 export function ausweichen([a, b], baeume, koerper = 0.3) {
   for (const t of baeume) {
@@ -120,17 +181,6 @@ export function schattenflaechen(t, { seiten, grenze }, licht = LICHT, konvergen
     { teil: 'stamm', ecken: [ecke([0, 0, 0], -halb, 0, [0, 0, 1]), ecke([0, 0, 0], halb, 0, [0, 0, 1]), ecke([0, 0, 0], halb, fuss, [0, 0, 1]), ecke([0, 0, 0], -halb, fuss, [0, 0, 1])], st: [[u0, 1], [u1, 1], [u1, grenze], [u0, grenze]] },
     { teil: 'krone', ecken: [ecke(mitte, -halb, -hk, r), ecke(mitte, halb, -hk, r), ecke(mitte, halb, hk, r), ecke(mitte, -halb, hk, r)], st: [[u0, grenze], [u1, grenze], [u1, 0], [u0, 0]] },
   ];
-}
-
-/**
- * Does this tree's cast shadow reach the court? The court's floor draws the shade of the trees itself, from the
- * canopy survey (environment.js); a second shadow on top would make it too dark. Such a tree keeps its drawn
- * ground shadow and throws no cast shadow.
- */
-export function trifftPlatz(t, frame, licht = LICHT, halb = [13.4, 9.8]) {
-  const s = schatten(t, frame, false, licht), weit = t.hoehe / Math.tan((Math.max(licht.hoehe, 8) * Math.PI) / 180);
-  for (let k = 0; k <= 10; k++) { const a = t.ab[0] + (s.richtung[0] * weit * k) / 10, b = t.ab[1] + (s.richtung[1] * weit * k) / 10; if (Math.abs(a) < halb[0] + t.krone && Math.abs(b) < halb[1] + t.krone) return true; }
-  return false;
 }
 
 // ------------------------------------------------------------------ drawing (browser, CesiumJS)

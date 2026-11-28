@@ -6,8 +6,8 @@
 import ORT from '../../locations/boni/ort.js';
 import { RELIEF } from '../bau/haus.js';
 import { fromUtm32, toUtm32 } from './utm.js';
-import { placeLibrary, usable, frameImages } from './bibliothek.js';
-import { hain, kronenkarte, baumbilder, pflanze, schattenwerfer, trifftPlatz, LICHT } from './baeume.js';
+import { placeLibrary, usable, frameImages, fahrbahnen, vomFahrdamm } from './bibliothek.js';
+import { hain, haltAbstand, kronenkarte, baumbilder, pflanze, schattenwerfer, LICHT } from './baeume.js';
 import { createEnvironment, weatherPanel } from '../intro/environment.js';
 import { surfaceFor, setSurface } from '../game/surface.js';
 import { starte } from './spieler.js';
@@ -102,8 +102,12 @@ async function main() {
   const baumArten = usable(manifest, preview).filter((a) => a.place.layer === 'baeume');
   // mapped trees, plus the crowns the canopy survey shows where OSM has no tree (not on the court itself)
   const krKarte = await kronenkarte(new URL('intro/boni_schatten_hoehen.png', ASSETS).href);
-  const baumListe = hain(baeume.features, frame, baumArten, krKarte,
-    { sperre: (a, b) => Math.abs(a) < 13.4 && Math.abs(b) < 9.8 });
+  // … and no tree grows into a house: too wide for its place it is drawn smaller, or left out (baeume.js, haltAbstand)
+  const hausRinge = gebaeude.features.flatMap((f) => (f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []).map((v) => v[0]));
+  const baumListe = haltAbstand(hain(baeume.features, frame, baumArten, krKarte,
+    { sperre: (a, b) => Math.abs(a) < 13.4 && Math.abs(b) < 9.8 }), hausRinge, (art) => { const a = baumArten.find((x) => x.id === art); return a ? a.frame.w / a.frame.h : 0.8; }, frame);
+  // nothing of the art library stands on a carriageway: such a mapped point moves behind the kerb (bibliothek.js, vomFahrdamm)
+  const fahrdamm = fahrbahnen(nutzung);
   const baumBilder = Object.fromEntries(await Promise.all(baumArten.map(async (a) => [a.id, await baumbilder(a, ASSETS)])));
   const figur = manifest.assets.find((a) => a.id === 'character.skater.stride' && (a.approved || preview));
   // The roaming figure is the art library's skater (the 32 px chibi in the club's jersey), at stage scale.
@@ -185,8 +189,11 @@ async function main() {
   scene.globe.baseColor = Cesium.Color.fromCssColorString('#3a4038');
   scene.globe.depthTestAgainstTerrain = false;
   scene.skyAtmosphere.show = false; scene.fog.enabled = false;
-  // cast shadows only as far as the quarter is looked at: the shadow map's pixels go where they are seen
+  // Cast shadows only as far as is looked at, so the shadow map's pixels go where they are seen: close to the ground
+  // (a match, a ride through the streets) a short range and crisp shadows, down to a fence post's; from high up the
+  // whole quarter. Four times the camera's height covers what a camera tilted like the game's sees.
   scene.shadowMap.maximumDistance = 1500;
+  scene.preRender.addEventListener(() => { scene.shadowMap.maximumDistance = Math.min(1500, Math.max(120, 4 * (camera.positionCartographic.height - ground))); });
   // ---- the sky: once landed, CesiumJS's atmosphere stands over the quarter, lit by the clock's sun (blue at noon, warm
   // at dusk, dark at night, then with the stars), greyer and dimmer under clouds. With the Google tiles and their
   // haze the sky stays the haze colour (dunstAn); during the approach from space the sky is the approach's own.
@@ -276,10 +283,10 @@ async function main() {
     for (const f of baeume.features) if (f.geometry.type !== 'Point') trees.add({ polyline: { positions: f.geometry.coordinates.map((p) => pos(p, 0.3)), width: 4, material: css('#2f7d32') }, properties: { text: describe('Baumreihe (OSM)', f.properties) } });
     // on the aerial photo the real cast shadows are already in the picture: contact shadows only (see schatten())
     // With cast shadows on and a drawn ground, the trees throw their own outline (baeume.js, schattenwerfer) instead of
-    // the drawn ellipse; those whose shadow reaches the court keep the ellipse, because the court's floor shades itself.
+    // the drawn ellipse: on the sand, the streets, the houses and the court alike.
     const fotoBoden = (lokal?.show || luftbild.show) && (!google.on || rundum) && !bodenAn();
     const baumWurf = LAYERS.find((l) => l.id === 'wurf').on && sources.baeume.show && !fotoBoden && Q.get('baumschatten') !== '0';
-    const wirft = (t) => baumWurf && !!t.art && !!baumBilder[t.art]?.bild && !trifftPlatz(t, frame, LICHT);
+    const wirft = (t) => baumWurf && !!t.art && !!baumBilder[t.art]?.bild;
     for (const p of baumwerfer) scene.primitives.remove(p);
     baumwerfer = baumWurf ? schattenwerfer({ Cesium, scene, baeume: baumListe, bilder: baumBilder, frame, pos, licht: LICHT, welche: wirft }) : [];
     pflanze({ Cesium, entities: trees, billboards: gebuendelt('baeume'), scene, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden, wirft }).then((g) => { grove = g; });
@@ -298,7 +305,7 @@ async function main() {
       if (p.art === 'achse') court.add({ polyline: { positions: f.geometry.coordinates.map((q) => pos(q, 0.4)), width: 3, material: new Cesium.PolylineArrowMaterialProperty(css(p.name === 'a' ? '#ffd23f' : '#3fd2ff')) } });
     }
     const library = layer('bibliothek');
-    placeLibrary({ Cesium, entities: library, billboards: gebuendelt('bibliothek'), manifest, geo, frame, pos, preview, skip: (a) => a.place.layer === 'baeume' || a.id === figur?.id }).then((n) => { $('bibliothek').textContent = `${n} Sprites aus der Art-Bibliothek` + (preview ? ' (mit wartenden)' : ''); });
+    placeLibrary({ Cesium, entities: library, billboards: gebuendelt('bibliothek'), manifest, geo, frame, pos, preview, skip: (a) => a.place.layer === 'baeume' || a.id === figur?.id, stelle: (en) => vomFahrdamm(en, fahrdamm, hausRinge) }).then((n) => { $('bibliothek').textContent = `${n} Sprites aus der Art-Bibliothek` + (preview ? ' (mit wartenden)' : ''); });
     scene.requestRender();
   }
 
@@ -314,7 +321,17 @@ async function main() {
   }
   function stelleModell() { if (platzModell) platzModell.modelMatrix = modellMatrix(); }
   Cesium.Model.fromGltfAsync({ url: new URL('intro/boni_platz.glb', ASSETS).href, modelMatrix: modellMatrix(), forwardAxis: Cesium.Axis.X })
-    .then((m) => { platzModell = scene.primitives.add(m); platzModell.show = LAYERS.find((l) => l.id === 'platz').on; })
+    .then((m) => {
+      platzModell = scene.primitives.add(m); platzModell.show = LAYERS.find((l) => l.id === 'platz').on;
+      // the court's own shadows, as they were in the first intro: posts and goal frames throw them, the chain-link
+      // mesh and the nets (see-through) do not, or they would lie on the court as dark sheets
+      platzModell.shadows = Cesium.ShadowMode.ENABLED;
+      platzModell.customShader = new Cesium.CustomShader({ fragmentShaderText: `void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+        #ifdef SHADOW_MAP
+        material.alpha = 0.0;
+        #endif
+      }` });
+    })
     .catch((e) => status('Platzmodell nicht geladen: ' + e.message));
 
   function zeigeHaeuser(ids) {

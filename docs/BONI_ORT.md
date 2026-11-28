@@ -268,7 +268,26 @@ Der Knopf ☰ klappt das Bedienfeld der Weltansicht auf seinen Knopf zusammen; d
 Bei Sonne werfen die Bäume ihren eigenen Umriss als Schlagschatten auf Boden, Zäune und Häuser. Die Schatten wandern mit der Sonne.
 
 - **Wie:** `schattenwerfer()` in `src/welt/baeume.js` stellt je Baum zwei unsichtbare Flächen mit seinem Sprite auf: den Stamm aufrecht zur Sonne gedreht, die Krone quer zu den Sonnenstrahlen. So ist der Schatten der Krone bei jedem Sonnenstand so lang wie der einer runden Krone. Die Flächen zeichnen sich nur in die Schattenkarte; in der Ansicht sieht man sie nicht. Ein Zeichenobjekt je Baumart.
-- **Wo nicht:** Auf dem Luftbild als Boden bleibt es beim Kontaktschatten, dort sind die echten Schatten schon im Bild. Ein Baum, dessen Schatten den Bolzplatz erreicht, behält die gezeichnete Ellipse (`trifftPlatz`): Der Platzboden schattiert sich selbst aus der Kronenhöhenkarte, ein zweiter Schatten darüber wäre zu dunkel.
+- **Wo nicht:** Auf dem Luftbild als Boden bleibt es beim Kontaktschatten, dort sind die echten Schatten schon im Bild.
 - **Schalter:** die Ebene „Schlagschatten der Häuser“ (sie gilt für beide), `?baumschatten=0` nur für die Bäume.
 - **Kosten:** auf einem Apple M4 nicht messbar (rund 120 Bäume, zwei Flächen je Baum).
-- **Grenzen:** Die Schattenkarte ist gröber als die Blätter: Man sieht die Form der Krone, nicht die Lücken im Laub. Bäume am Platz haben weiter runde Schatten.
+- **Grenzen:** Die Schattenkarte ist gröber als die Blätter: Man sieht die Form der Krone, nicht die Lücken im Laub.
+
+## Schatten auf dem Bolzplatz (2026-11-28)
+
+Im ersten Intro hatte der Platz eigene Schattenregeln: Ein eigenes Bodenmodell rechnete Baum- und Hausschatten aus der Kronenhöhenkarte, Zaunpfosten und Torrahmen warfen Schatten über die Schattenkarte, das Maschengitter nicht. Mit dem alten Intro ist das Bodenmodell entfallen; in der Weltansicht ist der Platzboden der Pixel-Boden. Geprüft am 2026-11-28: Der Bodenshader aus `environment.js` hing an nichts mehr, Zaunschatten waren nicht zu sehen (die Schattenkarte reichte 5 km weit und war dafür zu grob), und der Boden zeigte die Schatten aus dem Luftbild.
+
+Jetzt gilt auf dem Platz dieselbe Regel wie im Viertel:
+
+- **Bäume und Häuser** werfen ihre Schlagschatten auch auf den Platz. Die runden Ersatzschatten am Platz sind weg.
+- **Zaun und Tore:** Pfosten und Torrahmen werfen Schatten, Maschengitter und Netze nicht (wie im ersten Intro, `welt.js`, Platzmodell).
+- **Reichweite der Schattenkarte:** das Vierfache der Kamerahöhe, zwischen 120 m und 1500 m. Nah am Boden (Spiel, Fahrt) werden die Schatten damit scharf genug für einen Zaunpfosten.
+- **Luftbild auf dem Platz:** Die Schatten, die die echten Bäume beim Fotografieren warfen, lägen sonst für immer unter den wandernden. Auf dem Asphalt bleibt deshalb nur gut ein Drittel des Fotokontrasts (`PLATZ_FOTO` in `pixelboden.js`), als Abnutzung.
+- **Figuren:** unverändert. Ob eine Figur in der Sonne steht, kommt weiter aus der Kronenhöhenkarte (`BONI_3D.shadow.lit`). Die gezeichneten Bäume stehen an denselben Kronen, es passt deshalb ungefähr, aber nicht pixelgenau.
+- **Nicht mehr da:** die Lichtflecken unter dem Laub aus dem ersten Intro. Der Bodenshader dafür liegt weiter in `environment.js`, ist in der Welt aber nicht angeschlossen.
+
+## Bäume und Sprites stehen richtig (2026-11-28)
+
+- **Kein Baum wächst in ein Haus** (`haltAbstand` in `baeume.js`). Das Bild eines Baums dreht sich zur Kamera, seine Krone reicht also in jede Richtung die halbe Bildbreite weit: Das muss zwischen Stamm und nächste Wand passen. Ein zu breiter Baum wird kleiner gezeichnet (bis 4 m). Passt auch der kleinste nicht, wird ein aus der Kronenkarte abgeleiteter Baum (sein Stamm ist ohnehin geschätzt) bis zu 4 m von der Wand weggerückt; ein kartierter fällt weg. Am Boni: von 114 Bäumen stehen 106, davon 23 kleiner und 14 gerückt (höchstens 3,8 m); 8 fallen weg.
+- **Nichts aus der Art-Bibliothek steht auf der Fahrbahn** (`vomFahrdamm` in `bibliothek.js`). Fahrbahn ist die ALKIS-Nutzung „Straßenverkehr“ ohne nähere Bezeichnung, wie beim gezeichneten Boden. Ein kartierter Punkt auf der Fahrbahn rückt 0,7 m hinter den nächsten Bordstein, sofern dort weder Fahrbahn noch Haus ist. Betroffen: 49 von 56 Laternen (in der List hängen viele an Seilen über der Straßenmitte; unser Sprite ist ein Mast), 18 von 46 Fahrradbügeln, 11 von 26 Mülleimern. Weiteste Verschiebung 6,7 m, keiner fällt weg.
+- **Bäume auf der Fahrbahn** bleiben, wo sie kartiert sind: Straßenbäume stehen dort wirklich im Parkstreifen.
