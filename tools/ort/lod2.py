@@ -64,8 +64,20 @@ def firstrichtung(flaechen):
     if best[0] < 0 or (best[0] == 0 and best[1] < 0): best = (-best[0], -best[1])  # eine Richtung, kein Vorzeichen
     return [round(best[0], 4), round(best[1], 4)], round(laenge, 2)
 
+def grundriss(el):
+    """Grundriss eines Gebäudeteils aus seiner Bodenfläche (Außenring, Ost/Nord in UTM 32), oder None."""
+    for g in el.iter('{%s}GroundSurface' % NS['bldg']):
+        for ring in g.iter('{%s}exterior' % NS['gml']):
+            pos = ring.find('.//gml:posList', NS)
+            if pos is None: continue
+            v = [float(x) for x in pos.text.split()]
+            punkte = [[round(v[i], 2), round(v[i + 1], 2)] for i in range(0, len(v) - 2, 3)]
+            if len(punkte) >= 4: return punkte
+    return None
+
 def gebaeude(el):
-    """Gemessene Dachdaten eines Gebäudes; bei mehreren Teilen zählt der Teil mit der größten Dachfläche."""
+    """Gemessene Dachdaten eines Gebäudes. Der Teil mit der größten Dachfläche gibt die Werte für das ganze Haus;
+    besteht es aus mehreren Teilen, die alle einen Grundriss haben, stehen sie zusätzlich einzeln unter `teile_einzeln`."""
     teile = el.findall('bldg:consistsOfBuildingPart/bldg:BuildingPart', NS) or [el]
     kandidaten = []
     for t in teile:
@@ -79,10 +91,16 @@ def gebaeude(el):
                    'neigung_grad': zahl(a.get('Dachneigung')), 'dachflaeche_m2': zahl(a.get('Dachflaeche')), 'gelaende_m': round(boden, 2)}
         r = firstrichtung(fl) if form in ('sattel', 'walm') else None
         if r: eintrag['first'], eintrag['firstlaenge_m'] = r
+        if len(teile) > 1: eintrag['grundriss'] = grundriss(t)
         kandidaten.append(eintrag)
     if not kandidaten: return None
-    haupt = max(kandidaten, key=lambda k: k['dachflaeche_m2'] or 0)
+    haupt = dict(max(kandidaten, key=lambda k: k['dachflaeche_m2'] or 0))
+    haupt.pop('grundriss', None)
     haupt['teile'] = len(kandidaten)
+    if len(kandidaten) > 1 and len(kandidaten) == len(teile) and all(k.get('grundriss') for k in kandidaten):
+        haupt['teile_einzeln'] = kandidaten
+    else:
+        for k in kandidaten: k.pop('grundriss', None)
     return haupt
 
 def main(cfg_pfad, aus):
@@ -107,7 +125,7 @@ def main(cfg_pfad, aus):
     aus_pfad = os.path.join(ziel, 'daecher.json')
     json.dump({'quelle': f'© GeoBasis-DE / LGLN ({stand[:4]}), dl-de/by-2-0: 3D-Gebäudemodell LoD2, Kacheln ' + ', '.join(f'{e}/{n}' for e, n in kacheln),
                'stand': stand, 'erklaerung': 'Je ALKIS-Gebäude (oid): gemessene Dachform (AdV-Schlüssel), Trauf- und Firsthöhe über Gelände (m), Dachneigung, '
-               'Firstrichtung als Einheitsvektor (Ost, Nord). Erzeugt von tools/ort/lod2.py.',
+               'Firstrichtung als Einheitsvektor (Ost, Nord); bei Gebäuden aus mehreren Teilen jeder Teil mit seinem Grundriss (UTM 32) unter teile_einzeln. Erzeugt von tools/ort/lod2.py.',
                'haeuser': dict(sorted(daecher.items()))}, open(aus_pfad, 'w'), ensure_ascii=False, indent=0)
     formen = {}
     for d in daecher.values(): formen[d['dachform']] = formen.get(d['dachform'], 0) + 1

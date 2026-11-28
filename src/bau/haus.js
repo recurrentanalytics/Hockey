@@ -139,6 +139,12 @@ export function entlang(e, f, tol = 0.3, mindest = 0.4) {
 const kasten = (ring) => { const xs = ring.map((p) => p[0]), ys = ring.map((p) => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
 const nah = (a, b, rand = 0.5) => a[0] <= b[2] + rand && b[0] <= a[2] + rand && a[1] <= b[3] + rand && b[1] <= a[3] + rand;
 
+/** Who a building touches (all its parts together, without the building itself): its colour and kit differ from these. */
+function umgebung(h, haeuser, nach) {
+  const teile = h.teilVon ? haeuser.filter((o) => o.oid === h.oid) : [h];
+  return [...new Set(teile.flatMap((t) => [...t.nachbarn]))].map((n) => nach.get(n)).filter((o) => o && o.oid !== h.oid);
+}
+
 /** Party walls: marks on every edge where a neighbouring house stands against it, and who the neighbours are. */
 export function nachbarschaft(haeuser) {
   for (let i = 0; i < haeuser.length; i++) for (let j = i + 1; j < haeuser.length; j++) {
@@ -268,7 +274,7 @@ function grundlage(teil, nummer) {
     : (p.hoehe_m == null && !lod2) || (/Wirtschaft|Versorgung/.test(fn) && zahl(p.osm_building_levels) == null) ? 'neben' : 'wohnen';
   const ringe = [teil.ring, ...teil.loecher], kanten = ringe.flatMap(kantenVon);
   return {
-    oid: p.oid, schluessel: nummer ? `${p.oid}#${nummer}` : p.oid, art: dach ? 'ueberdachung' : 'haus', funktion: fn, name: p.name ?? null, adresse: p.adresse ?? null,
+    oid: p.oid, schluessel: nummer ? `${p.oid}#${nummer}` : p.oid, ...(teil.teilVon && { teilVon: teil.teilVon }), art: dach ? 'ueberdachung' : 'haus', funktion: fn, name: p.name ?? null, adresse: p.adresse ?? null,
     ring: teil.ring, loecher: teil.loecher, flaeche: Math.round(m2 * 10) / 10, kasten: kasten(teil.ring), kanten, kantenRinge: ringe.map((r) => r.length), nachbarn: new Set(), durchfahrten: [],
     traufe: hh.traufe, etagen: hh.etagen, dachHoehe: hh.dach, hoeheQuelle: hh.quelle, eg, sockel: dach ? hh.traufe - 0.3 : 0,
     egHoehe: Math.round((hh.etagen === 1 ? hh.traufe : Math.min(ERDGESCHOSS, (hh.traufe / hh.etagen) * 1.15)) * 100) / 100,
@@ -360,7 +366,7 @@ function faerbe(haeuser) {
     } else if (h.eg === 'schule') {
       h.wand = { name: 'Cremeweiß', farbe: PUTZ[0][1], material: 'putz' };
     } else {
-      const belegt = new Set([...h.nachbarn].map((n) => nach.get(n)?.wand?.farbe));
+      const belegt = new Set(umgebung(h, haeuser, nach).map((o) => o.wand?.farbe));
       for (let versuch = 0; versuch < 8; versuch++) {
         const klinker = streuung(h.oid, 'material' + (versuch || '')) < 0.2, [name, farbe] = wahl(klinker ? KLINKER : PUTZ, h.oid, 'wand', versuch);
         h.wand = { name, farbe, material: klinker ? 'klinker' : 'putz' };
@@ -382,13 +388,26 @@ export function viertel(gebaeude, frame, { wege = null, daecher = null } = {}) {
   const [E0, N0] = frame.ursprung_utm32, lokal = (p) => [p[0] - E0, p[1] - N0];
   const teile = [];
   for (const f of gebaeude.features) {
+    const lod2 = daecher?.haeuser?.[f.properties.oid] ?? null;
+    // a building the LoD2 model knows in parts (front house, wing, stair tower): every part its own body with its
+    // own heights and roof, on the part's footprint; colour and kit stay the building's, the door goes to the largest
+    if (lod2?.teile_einzeln?.length > 1 && f.properties.art !== 'Bauteil') {
+      lod2.teile_einzeln.forEach((t, nummer) => {
+        const ring = saeubere(t.grundriss.map(lokal), true);
+        if (ring.length >= 3 && flaeche(ring) > 0.5) teile.push({ p: f.properties, lod2: t, nummer: nummer + 1, ring, loecher: [], teilVon: f.properties.oid });
+      });
+      continue;
+    }
     const g = f.geometry, polys = g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
     polys.forEach((poly, nummer) => {
       const ring = saeubere(poly[0].map(lokal), true);
-      if (ring.length >= 3 && flaeche(ring) > 0.5) teile.push({ p: f.properties, lod2: daecher?.haeuser?.[f.properties.oid] ?? null, nummer, ring, loecher: poly.slice(1).map((r) => saeubere(r.map(lokal), false)).filter((r) => r.length >= 3) });
+      if (ring.length >= 3 && flaeche(ring) > 0.5) teile.push({ p: f.properties, lod2, nummer, ring, loecher: poly.slice(1).map((r) => saeubere(r.map(lokal), false)).filter((r) => r.length >= 3) });
     });
   }
   const haeuser = teile.filter((t) => t.p.art !== 'Bauteil').map((t) => grundlage(t, t.nummer)).sort((a, b) => (a.schluessel < b.schluessel ? -1 : 1));
+  const groesster = new Map(); // the largest part of a building in parts carries its door
+  for (const h of haeuser) if (h.teilVon && (!groesster.get(h.oid) || h.flaeche > groesster.get(h.oid).flaeche)) groesster.set(h.oid, h);
+  for (const h of haeuser) if (h.teilVon && groesster.get(h.oid) !== h) h.tuer = false;
   nachbarschaft(haeuser.filter((h) => h.art === 'haus'));
   durchfahrten(haeuser, teile.filter((t) => t.p.art === 'Bauteil').sort((a, b) => (a.p.oid < b.p.oid ? -1 : 1)));
   const strassen = (wege?.features ?? []).filter((f) => f.geometry.type === 'LineString' && ['residential', 'tertiary', 'secondary', 'unclassified', 'living_street', 'pedestrian'].includes(f.properties.highway)).map((f) => f.geometry.coordinates.map(lokal));
@@ -634,7 +653,7 @@ export function kleide(h, saetze, strasse, hof) {
   for (const l of laeufe) {
     const satz = l.art === 'strasse' ? strasse : hof ?? strasse, wandton = strasse.klinker ? h.wand.hofFarbe : h.wand.farbe; // behind a brick front the yard is rendered
     l.satz = satz;
-    l.bild = fuege(satz, l.laenge, satz.hoehe / saetze.hoehe_m, l === front, h.saat);
+    l.bild = fuege(satz, l.laenge, satz.hoehe / saetze.hoehe_m, l === front && h.tuer !== false, h.saat);
     l.grenzen = l.bild.spalten.reduce((g, sp) => [...g, g.at(-1) + (weite(sp) * l.laenge) / (l.bild.gestreckt ? 1 : l.bild.breite)], [0]);
     l.zeilen = schichte(satz, h.etagen);
     l.ton = satz.faerbbar ? ton(l.art === 'strasse' ? h.wand.farbe : wandton, satz.wand) : [1, 1, 1, h.saat];
@@ -658,7 +677,7 @@ export function kleideViertel(haeuser, saetze) {
       let wahl = fuer(h.eg).filter((f) => !!f.klinker === klinker);
       if (!wahl.length) wahl = fuer(h.eg);
       if (!wahl.length) wahl = fuer('wohnen');
-      const lose = wahl.flatMap((f) => Array(f.gewicht ?? 1).fill(f)), belegt = new Set([...h.nachbarn].map((s) => nach.get(s)?.kleid?.satz?.id));
+      const lose = wahl.flatMap((f) => Array(f.gewicht ?? 1).fill(f)), belegt = new Set(umgebung(h, haeuser, nach).map((o) => o.kleid?.satz?.id));
       for (let versuch = 0; versuch < 6; versuch++) { satz = lose[Math.floor(streuung(h.oid, 'satz' + (versuch || '')) * lose.length)]; if (!belegt.has(satz.id) || new Set(lose).size < 2) break; }
       // the wall's name follows what the house really wears: a brick kit is brick, a rendered kit takes a render colour
       const putz = PUTZ[Math.floor(streuung(h.oid, 'putz') * PUTZ.length)];

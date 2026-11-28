@@ -305,3 +305,23 @@ test('houses: measured roofs (LoD2) set eaves, ridge, form and ridge direction; 
   const ohne = viertel({ features: [haus('L1', ring)] }, frame, { daecher: { haeuser: {} } })[0];
   assert.equal(ohne.hoeheQuelle, lang.hoeheQuelle, 'a house without a measured roof keeps the estimate');
 });
+
+test('houses: a building the LoD2 model knows in parts is built part by part, but stays one building', () => {
+  const saetze = JSON.parse(fs.readFileSync('assets/welt/haeuser/bausaetze.json', 'utf8')), daecher = json('daecher.json');
+  const liste = kleideViertel(viertel(gebaeude, frame, { wege, daecher }), saetze);
+  const nach = new Map();
+  for (const h of liste) (nach.get(h.oid) ?? nach.set(h.oid, []).get(h.oid)).push(h);
+  let geteilt = 0, stufen = 0;
+  for (const [oid, teile] of nach) {
+    if (teile.length < 2 || !teile[0].teilVon) continue;
+    geteilt++;
+    assert.equal(new Set(teile.map((h) => h.wand.farbe)).size, 1, `${oid}: one colour`);
+    assert.equal(new Set(teile.map((h) => h.kleid.satz?.id ?? null)).size, 1, `${oid}: one kit`);
+    const tueren = teile.reduce((n, h) => n + h.kleid.laeufe.filter((l) => l.bild.spalten.includes(l.satz.mitte)).length, 0);
+    assert.ok(tueren <= 1, `${oid}: at most one door (${tueren})`);
+    const traufen = teile.map((h) => h.traufe);
+    if (Math.max(...traufen) - Math.min(...traufen) > 3) stufen++;
+  }
+  assert.ok(geteilt >= 80, `${geteilt} buildings in parts`);
+  assert.ok(stufen >= 10, `${stufen} of them with parts of clearly different height`);
+});
