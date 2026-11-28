@@ -118,6 +118,15 @@ Tipp für schnelle Tore: Im Spielaufbau (vor „Los gehts“) die Schwierigkeit 
 
 E zeigt, was das Spiel ohne Cesium und Google-Kulisse kostet. Der Unterschied zu B1 ist die Last der 3D-Welt.
 
+### F – Weltansicht mit Google-Kulisse rundherum
+
+| Nr. | Adresse | Was tun | Dauer | Notieren |
+|---|---|---|---|---|
+| F1 | `welt.html?haeuser=neu&fps` | Google-3D-Kacheln an, Schrägblick, dann weit herauszoomen und drehen | 60 s | alle Werte |
+| F2 | `welt.html?haeuser=neu&fps&dunst=0` | dasselbe | 60 s | alle Werte |
+
+In F1 ist der Dunst an: Um den Platz bleibt alles klar, mit wachsender Entfernung vom Platz wird es dunstig, und die Google-Kacheln werden ab etwa 500 m Kameraabstand gröber geladen. F2 schaltet beides aus. Der Unterschied zeigt, was der Dunst an Flüssigkeit bringt.
+
 ---
 
 ## 4. Tabelle zum Eintragen

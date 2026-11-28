@@ -27,6 +27,7 @@ const GAME_VIEW = { heading: 118.2, tilt: 60 }; // the game camera: looking A â†
 // SpriteCook faÃ§ade kits (assets/welt/haeuser/bausaetze.json); without it every footprint stays the plain volume it was.
 
 const Q = new URLSearchParams(location.search);
+const DUNST = Q.get('dunst') !== '0'; // distance haze and coarser far tiles round the court (see showGoogle)
 const ort = Q.get('ort') || 'boni';
 const base = new URL(`../../locations/${ort}/geo/`, import.meta.url);
 const load = (name) => fetch(new URL(name, base)).then((r) => { if (!r.ok) throw new Error(`${name}: ${r.status}`); return r.json(); });
@@ -266,6 +267,26 @@ async function main() {
   // aerial photo's level, and the globe (photo, pixel ground) is drawn only inside the cut. Google's city round the
   // quarter, nothing of Google and nothing see-through inside it. Without the drawn houses it is as it was.
   let rundum = false, googleBoden = null, schnitt = null;
+  // Haze round the court ("fog of war"): clear round the playground, misting over with distance from the court
+  // (not from the camera), so the coarse far tiles read as distance, not as missing detail. Measured in eye
+  // space against the court centre, so it stays put while the camera moves. Only with the Google tiles; ?dunst=0 off.
+  const mitteWC = Cesium.Cartesian3.fromDegrees(centre[0], centre[1], 0), mitteEC = new Cesium.Cartesian3();
+  const dunst = scene.postProcessStages.add(new Cesium.PostProcessStage({
+    name: 'dunst',
+    fragmentShader: `uniform sampler2D colorTexture; uniform sampler2D depthTexture; in vec2 v_textureCoordinates;
+      uniform vec3 u_mitte; uniform vec3 u_farbe; uniform vec2 u_weite; uniform float u_staerke;
+      void main() {
+        vec4 c = texture(colorTexture, v_textureCoordinates);
+        float d = czm_readDepth(depthTexture, v_textureCoordinates), r = 1e9;
+        if (d < 1.0) { vec4 ec = czm_windowToEyeCoordinates(gl_FragCoord.xy, d); r = distance(ec.xyz / ec.w, u_mitte); }
+        out_FragColor = vec4(mix(c.rgb, u_farbe, u_staerke * smoothstep(u_weite.x, u_weite.y, r)), c.a);
+      }`,
+    uniforms: {
+      u_mitte: () => Cesium.Matrix4.multiplyByPoint(scene.camera.viewMatrix, mitteWC, mitteEC),
+      u_farbe: new Cesium.Cartesian3(0.80, 0.84, 0.86), u_weite: new Cesium.Cartesian2(300, 2600), u_staerke: 0.7,
+    },
+  }));
+  dunst.enabled = false;
   function viertelSchnitt() {
     // one rectangle round the data's cutout and every house that reaches beyond it: a single cut is the cheapest to draw
     const p = [...gebaeude.features.filter((f) => viertelHaeuser.hat(f.properties.oid)).flatMap((f) => polygons(f.geometry).flatMap((poly) => poly[0])), ...(frame.ausschnitt_utm32 ? [frame.ausschnitt_utm32.slice(0, 2), frame.ausschnitt_utm32.slice(2)] : [])];
@@ -282,16 +303,20 @@ async function main() {
       const ep = await (await fetch(`https://api.cesium.com/v1/assets/${GOOGLE_3D_TILES}/endpoint?access_token=${encodeURIComponent(token)}`)).json();
       if (!ep.options?.url) throw new Error(ep.message || 'Cesium ion: kein Zugriff');
       // the photoreal surroundings stay, but thriftier: a little coarser detail (most of it is far away
-      // round the drawn quarter), even less at the horizon, and a bounded memory cache
+      // round the drawn quarter), even less at the horizon, and a bounded memory cache. The "dynamic" error
+      // is Cesium's own distance fog for detail: full detail near the camera, ever coarser tiles further off.
+      // Its default only bites after kilometres; with DUNST it bites at our scale (from about 500 m on).
       tiles = await Cesium.Cesium3DTileset.fromUrl(ep.options.url, {
         showCreditsOnScreen: true, maximumScreenSpaceError: 20, dynamicScreenSpaceError: true,
+        ...(DUNST ? { dynamicScreenSpaceErrorDensity: 1.5e-3, dynamicScreenSpaceErrorFactor: 24 } : {}),
         foveatedScreenSpaceError: true, cullRequestsWhileMoving: true, cacheBytes: 256 * 1024 * 1024,
       });
       scene.primitives.add(tiles);
       for (const a of ep.attributions ?? []) viewer.creditDisplay.addStaticCredit(new Cesium.Credit(a.html, true));
     }
     if (tiles) tiles.show = on;
-    rundum = on && !!viertelHaeuser && Cesium.ClippingPolygonCollection.isSupported(scene);
+    dunst.enabled = DUNST && on;
+    rundum =on && !!viertelHaeuser && Cesium.ClippingPolygonCollection.isSupported(scene);
     ganzerGlobus();
     scene.globe.show = !on; // the tiles carry their own ground; the flat globe would cut through it
     ground = 0;
