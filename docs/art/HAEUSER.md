@@ -1,6 +1,6 @@
 # Die Häuser des Viertels – Stilblatt (H1)
 
-Stand: Probe an einem Haus (Bonifatiusplatz 3), **wartet auf Freigabe**. Noch nichts ist ausgerollt.
+Stand: Das ganze Viertel ist eingekleidet (236 Häuser), **wartet auf Freigabe**. Zu sehen mit `welt.html?haeuser=neu`; ohne den Schalter bleibt die Welt, wie sie war.
 
 ## Grundsatz
 
@@ -8,49 +8,54 @@ Ein Haus hat zwei Schichten, und sie kommen aus verschiedenen Quellen:
 
 | Schicht | Quelle | Wo |
 |---|---|---|
-| **Form:** Grundriss, Traufe, Dachform, First, Brandwände, Durchfahrten, Straßen- und Hofseite | Geodaten (ALKIS, OSM), feste Regeln | `src/welt/haeuser.js`, oberer Teil |
-| **Zeichnung:** Fassade, Fenster, Türen, Dachziegel, Schornsteine, Putz | **SpriteCook-Sprites** | `assets/welt/haeuser/`, Bausatz `bausatz.json` |
+| **Form:** Grundriss, Traufe, Geschosse, Dachform, First, Brandwände, Durchfahrten, Straßen- und Hofseite | Geodaten (ALKIS, OSM), feste Regeln | `src/welt/haeuser.js`, oberer Teil |
+| **Zeichnung:** Fassaden, Fenster, Türen, Läden, Dachziegel, Schornsteine, Gauben, Putz | **SpriteCook-Sprites** | `assets/welt/haeuser/`, beschrieben in `bausaetze.json` |
 
-Die erste Fassung von H1 zeichnete auch Fenster, Türen und Ziegel im Shader. Das Ergebnis war klotzig und beliebig und ist als Zielstil **verworfen**. Der Code dafür steckt noch in `haeuser.js` und ist nur hinter `?haeuser=neu` zu sehen; er zeigt die Form der Häuser, die noch keinen Bausatz haben. Neue sichtbare Gestaltung entsteht nicht mehr im Shader.
+Die erste Fassung von H1 zeichnete Fenster, Türen und Ziegel im Shader. Das war klotzig und beliebig und ist als Zielstil **verworfen**. Der Code dafür steckt noch in `haeuser.js`, wird in der Welt aber nicht mehr gezeigt. Neue sichtbare Gestaltung entsteht nicht im Shader.
 
-## Der Bausatz
+## Die Bausätze
 
-Eine von SpriteCook gezeichnete Fassade wird in senkrechte Streifen zerlegt und für jede echte Wand neu gesetzt:
+Sieben gezeichnete Fassaden, je vier Geschosse und sieben Fensterachsen:
 
-| Teil | Bedeutung |
-|---|---|
-| `links`, `rechts` | Randachsen mit der Hauskante |
-| `achsen` | schlichte Fensterachsen, die sich abwechseln |
-| `mitte` | das Stück mit Haustür und Balkonen, einmal je Haus, an der längsten Straßenfront |
-| `pfeiler` | die Wandspalte zwischen zwei Fenstern; zu kurze Wände tragen nur sie, so laufen Gesimse und Sockel um jede Ecke |
+| Bausatz | Trägt | Wand |
+|---|---|---|
+| `stuck` | Wohnhäuser | Putz, nimmt die Farbe des Hauses an |
+| `jugendstil` | Wohnhäuser, Schulen | Putz, färbbar |
+| `klinker-a`, `klinker-b` | Wohnhäuser | roter Klinker, bleibt wie gezeichnet |
+| `schlicht` | Wohnhäuser (Nachkriegsbau) und **jede Hofseite** | Putz, färbbar |
+| `laden-a`, `laden-b` | Häuser mit Handel im Erdgeschoss | Putz, färbbar, Ladenfront dunkelgrün |
 
-Regeln:
+Hofgebäude und Überdachungen bekommen getönten Putz ohne Fenster.
 
-- Kein Pixel der Fassade wird skaliert. Die Achsen stehen nebeneinander wie gezeichnet; die fertige Reihe wird höchstens um wenige Prozent auf die Wandlänge gezogen (im Test: unter 6 %).
-- Die Bildhöhe ist die Traufhöhe. Ein Bausatz passt deshalb nur auf Häuser mit seiner Geschosszahl.
-- Brandwände zeigen Putz, Dächer Ziegel, beide als Kachel.
-- Schornsteine sind kleine Körper mit dem Sprite auf jeder Seite, Dachfenster liegen in der Dachfläche.
-- Aus der Ferne übernehmen die kleineren Stufen der Textur, aus der Nähe bleiben die Pixel hart.
+### Wie eine Fassade auf ein Haus kommt
+
+- **Achsen:** Jede Fassade ist in senkrechte Streifen zerlegt: zwei Randachsen, schlichte Fensterachsen und ein Mittelstück mit der Haustür. Für eine Wand werden so viele Achsen nebeneinandergesetzt, wie ihre Länge verlangt. Kein Pixel wird skaliert; die fertige Reihe wird nur um wenige Prozent auf die Wandlänge gezogen. Passt keine ganze Achse (unter etwa 4 m, oder Abweichung über 25 %), trägt die Wand nur den Pfeiler zwischen zwei Fenstern. So laufen Gesimse und Sockel um jede Ecke.
+- **Geschosse:** Jede Fassade ist auch in waagerechte Streifen zerlegt: Erdgeschoss, Obergeschosse, oberstes Geschoss mit Traufgesims. Ein Haus mit fünf Geschossen wiederholt ein mittleres, eines mit drei lässt eines weg.
+- **Die Tür** sitzt einmal je Haus, an der längsten Straßenfront.
+- **Farbe:** Bei färbbaren Bausätzen nimmt nur die Wandfläche die Farbe des Hauses an (neun Putzfarben). Stuck, Fenster, Türen und Läden bleiben, wie sie gezeichnet sind. Welche Pixel Wand sind, findet `wandmaske()` selbst.
+- **Auswahl:** Bausatz und Farbe folgen aus der Kennung des Hauses. Ein Haus trägt, wenn es geht, weder den Bausatz noch die Farbe eines Nachbarn, mit dem es eine Wand teilt.
+- **Brandwände** zeigen Putz, **Dächer** Ziegel (eine Textur, auf die Dachfarbe des Hauses getönt), **flache Dächer und Hofflügel** dunklen Putz.
+- **Auf dem Dach:** Schornsteine nahe dem First, Dachfenster in der Fläche; ab etwa 35° Dachneigung Gauben mit Wangen und kleinem Satteldach.
 
 ## Maßstab
 
-Die Pixeldichte ist eine Eigenschaft des einzelnen Bildes und steht im Bausatz (`px_je_m`). SpriteCook liefert sie nicht auf Bestellung: Derselbe Auftrag kam mit 12,5 und mit 24,7 Pixeln je Meter zurück.
+**12,5 Pixel je Meter** für Fassaden, Dachziegel und Dachteile (160 Pixel für 12,8 m Traufhöhe). Das ist die vom Besitzer gewählte grobe Pixelgröße; sie liegt nah an den Bäumen und am vereinbarten Umgebungsmaß von 16.
 
-| Bild der Probe | Pixel je Meter |
-|---|---|
-| Fassade `gruenderzeit-a.png` | 24,7 (316 px für 12,8 m) |
-| Schornstein, Dachfenster | wie die Fassade |
-| Putz | wie die Fassade |
-| Dachziegel | 56 (ein Ziegel etwa 45 cm breit; bewusst größer als echt, damit man ihn liest) |
-
-**Offene Entscheidung:** Der Weltplan nennt 16 Pixel je Meter für die Umgebung. Die gewählte Fassade hat 24,7. Entweder gilt künftig rund 25 für Häuser, oder Fassaden werden so lange erzeugt, bis eine bei 16 liegt.
+SpriteCook hält die Größe ein, wenn man quadratisch und in der Größe der Stilreferenz bestellt (160 × 160). Kleine Dachteile kommen aus dem Exakt-Größen-Modell.
 
 ## Licht
 
 Die Sprites tragen ihr eigenes Licht von links oben. Dazu kommen drei Stufen je nach Seite zur Sonne (100 / 92 / 82 %, Dächer 100 / 93 / 84 %), damit Vorder- und Rückseite auseinanderzuhalten sind. Die Stärke folgt dem Umweltmodul; ein Wechsel von Uhrzeit oder Wetter ändert drei Zahlen und baut nichts neu.
 
+## Offen
+
+- **Durchfahrten:** Die Tunnelwände sind noch einfarbig (aus der ersten Fassung) und wirken von der Straße wie ein dunkles Rechteck in der Wand.
+- **Leistung:** rund 199 000 Ecken und 98 000 Dreiecke in einem Zeichenobjekt; auf einem Tablet nicht gemessen, nur im Headless-Lauf (SwiftShader) geprüft.
+- **Nähte zwischen Achsen:** Der Shader liest nie über den Rand eines Wandfelds hinaus. An der Stelle, an der zuvor eine gepunktete Linie auffiel, ist das nicht hochaufgelöst nachgeprüft.
+- **Freigabe:** Die Bilder liegen neben der Art-Bibliothek; `tools/assets/validate.mjs` kennt ihr Format nicht.
+
 ## Für weitere Bausätze
 
-- Auftrag wie in `docs/art/prompts/haus.md`: strikte Frontansicht, nur die Wand von Sockel bis Traufgesims, kein Dach, kein Himmel, freigegebene Assets als Stilreferenz.
-- Nach der Erzeugung ausmessen: Pfeilermitten (dort wird geschnitten), sichtbare Ränder, Bildhöhe gegen Traufhöhe. Erst dann den Bausatz schreiben.
-- Ein Bausatz je Geschosszahl und Haustyp, die Wandfarbe später als Tauschfarbe, damit ein Bausatz mehrere Häuser bedient, ohne dass die Straße einfarbig wird.
+- Auftrag wie in `docs/art/prompts/haus.md`: strikte Frontansicht, nur die Wand von Sockel bis Traufe, vier Geschosse, sieben Achsen, 160 × 160, `stuck` als erste Stilreferenz.
+- Wand in Taubenblau bestellen, wenn der Bausatz färbbar sein soll: Die Farbe hebt sich klar von Stuck und Glas ab.
+- Nach der Erzeugung die Schnittlinien am Bild prüfen (Pfeilermitten, Geschossgrenzen), dann den Eintrag in `bausaetze.json` schreiben. Der Test `tests/haeuser.test.mjs` prüft jeden Bausatz.

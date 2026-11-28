@@ -16,7 +16,7 @@ export const PUTZ = [['Cremeweiß', '#efe2c4'], ['Sand', '#e3cf9f'], ['Ocker', '
   ['Taubenblau', '#9fb1c4'], ['Hellgrau', '#d8d4cc'], ['Elfenbein', '#f1e9d6'], ['Lachs', '#dfae8c']];
 export const KLINKER = [['Klinkerrot', '#a84a32'], ['Gelbklinker', '#c9a468']];
 export const NEBENBAU = [['Graubraun', '#b9a48f'], ['Putzgrau', '#c4bdb0'], ['Backstein', '#a8684f']];
-export const ZIEGEL = [['Ziegelrot', '#b9553a'], ['Ziegel dunkel', '#a24a35'], ['Ziegel hell', '#c46544'], ['Braun', '#8f5b45'], ['Schiefer', '#565b68']];
+export const ZIEGEL = [['Ziegelrot', '#b9553a'], ['Ziegel dunkel', '#a24a35'], ['Ziegel hell', '#c46544'], ['Braun', '#8f5b45'], ['Schiefer', '#5a5a60']];
 export const FLACHDACH = [['Bitumen', '#5d5a57'], ['Kies', '#8f8b86']];
 
 // what a surface is; 0 to 6 are drawn by rule, 7 to 11 show sprites: a façade picture, a cut-out part, plaster, roof tiles, a flat roof
@@ -390,7 +390,8 @@ export function steckbrief(h) {
   const dach = { sattel: 'Satteldach', walm: 'Walmdach', flach: 'Flachdach' }[h.dach.form] + (h.dach.rueckfall ? ` (angegeben: ${h.dach.gewuenscht}, Grundriss zu verwinkelt)` : h.dachAngabe ? '' : ' (keine Angabe)');
   const eg = { wohnen: 'Wohnen', laden: 'Laden', schule: 'Schule oder öffentlich', neben: 'Nebengebäude' }[h.eg];
   return [`${h.art === 'ueberdachung' ? 'Überdachung' : 'Gebäude'} (ALKIS)${h.name ? ' – ' + h.name : ''}`, `oid: ${h.oid}`, h.adresse && `adresse: ${h.adresse}`, `funktion: ${h.funktion}`, `flaeche_m2: ${h.flaeche}`,
-    `Traufe ${h.traufe} m, First ${Math.round(h.first * 10) / 10} m (${h.hoeheQuelle})`, `${h.etagen} Geschoss${h.etagen > 1 ? 'e' : ''}, Erdgeschoss: ${eg}`, ...(h.kleid ? [`Dach: ${dach}`, 'Gezeichnet: SpriteCook-Bausatz (Probe, nicht freigegeben)'] : [`Dach: ${dach}, ${h.dach.name}`, `Wand: ${h.wand.name}${h.wand.material === 'klinker' ? ' (Klinker)' : ''}`]),
+    `Traufe ${h.traufe} m, First ${Math.round(h.first * 10) / 10} m (${h.hoeheQuelle})`, `${h.etagen} Geschoss${h.etagen > 1 ? 'e' : ''}, Erdgeschoss: ${eg}`, `Dach: ${dach}, ${h.dach.name}`, `Wand: ${h.wand.name}${h.wand.material === 'klinker' && h.wand.name !== 'Klinker' ? ' (Klinker)' : ''}`,
+    h.kleid && `Gezeichnet: ${h.kleid.satz ? `SpriteCook-Bausatz „${h.kleid.satz.id}“` : 'Putz (SpriteCook)'}, nicht freigegeben`,
     h.durchfahrten.length && `Durchfahrten: ${h.durchfahrten.length}`, h.nachbarn.size && `Brandwände zu ${h.nachbarn.size} Nachbarn`].filter(Boolean).join('\n');
 }
 
@@ -400,12 +401,14 @@ export function steckbrief(h) {
  * Triangles of a house: walls up to the roof, roof planes, gateway tunnels. Per corner: position (east, north, up),
  * normal, `wand` (u, v, w, kind), `bau` (piece length, eaves, storeys + ground floor / 8, ground-floor code), `farbe` (r, g, b, seed).
  * Walls: u along the piece, v above ground, w below the wall's top. Roofs: u along the eaves, v up the slope, w below the ridge.
+ * A dressed house (h.kleid) shows sprites instead: on a façade cell or a roof part `wand` is the place in the picture atlas
+ * in pixels, and `farbe` is the tint, the wanted colour divided by the picture's own.
  */
 export function netz(h) {
   const P = [], N = [], W = [], B = [], F = [], I = [];
   let n = 0;
   const ecke = (x, y, z, nx, ny, nz, wand, bau, farbe) => { P.push(x, y, z); N.push(nx, ny, nz); W.push(...wand); B.push(...bau); F.push(...farbe); return n++; };
-  const T = h.traufe, d = h.dach, linien = dachlinien(d), K = h.kleid ?? null;
+  const T = h.traufe, d = h.dach, linien = dachlinien(d), K = h.kleid ?? null, ohne = [0, T, 0, 0];
   const wandfarbe = [...rgb(h.wand.farbe), h.saat], klinker = h.wand.material === 'klinker' ? KLINKER_BIT : 0, bauZ = h.etagen + h.egHoehe / 8;
   const wand = (a, b, unten, ha, hb, nx, ny, ua, ub, bau, code, farbe) => {
     const i = ecke(a[0], a[1], unten, nx, ny, 0, [ua, unten, ha - unten, code], bau, farbe);
@@ -414,12 +417,19 @@ export function netz(h) {
     ecke(a[0], a[1], ha, nx, ny, 0, [ua, ha, 0, code], bau, farbe);
     I.push(i, i + 1, i + 2, i, i + 2, i + 3);
   };
+  // four corners in space, counter-clockwise seen from outside, each with its place (x, y) in the atlas or on a texture
+  const viereck = (p, nrm, wo, art, ton, w = 0, bau = ohne) => {
+    const i = n;
+    p.forEach((q, m) => ecke(q[0], q[1], q[2], nrm[0], nrm[1], nrm[2], [wo[m][0], wo[m][1], w, art], bau, ton));
+    I.push(i, i + 1, i + 2, i, i + 2, i + 3);
+  };
+  // storey lines of a dressed house, from the ground to the eaves
+  const etagen = h.etagen, stock = [0, ...Array.from({ length: etagen }, (_, e) => (e === etagen - 1 ? T : h.egHoehe + (e * (T - h.egHoehe)) / (etagen - 1)))];
   for (const k of h.kanten) for (const s of k.stuecke) {
     const L = s.t1 - s.t0, p0 = auf(k, s.t0), p1 = auf(k, s.t1), unten = s.muendung ? Math.min(DURCHFAHRT, T - 0.5) : h.sockel;
-    // dressed in sprites: a front shows its run's picture (bau = its place in the atlas, farbe = the run's length and the eaves), a party wall shows plaster
-    const lauf = K && s.lauf != null ? K.laeufe[s.lauf] : null, u0 = lauf ? s.u0 : 0;
-    const code = (lauf ? ARTEN.bild : K ? ARTEN.putz : ARTEN[s.art] + (s.eckeL ? ECKE_L : 0) + (s.eckeR ? ECKE_R : 0) + klinker) + (s.muendung ? OFFEN : 0);
-    const bau = lauf ? lauf.rechteck : [L, T, bauZ, EG[h.eg] + 4 * h.stil + 16 * (s.tuer + 1)], farbe = lauf ? [lauf.laenge, T, 0, h.saat] : wandfarbe;
+    const lauf = K && s.lauf != null ? K.laeufe[s.lauf] : null;
+    const code = (K ? ARTEN.putz : ARTEN[s.art] + (s.eckeL ? ECKE_L : 0) + (s.eckeR ? ECKE_R : 0) + klinker) + (s.muendung ? OFFEN : 0);
+    const bau = K ? ohne : [L, T, bauZ, EG[h.eg] + 4 * h.stil + 16 * (s.tuer + 1)], farbe = K ? (s.art === 'brandwand' ? K.ton.brandwand : K.ton.wand) : wandfarbe;
     const schnitte = [0, 1];
     for (const [a, b, c] of linien) { const g0 = a * p0[0] + b * p0[1] - c, g1 = a * p1[0] + b * p1[1] - c; if (g0 * g1 < 0) schnitte.push(g0 / (g0 - g1)); }
     schnitte.sort((x, y) => x - y);
@@ -428,11 +438,28 @@ export function netz(h) {
       if (tb - ta < 1e-6) continue;
       const a = [p0[0] + (p1[0] - p0[0]) * ta, p0[1] + (p1[1] - p0[1]) * ta], b = [p0[0] + (p1[0] - p0[0]) * tb, p0[1] + (p1[1] - p0[1]) * tb];
       const ha = T + dachhoehe(d, a), hb = T + dachhoehe(d, b);
-      if (Math.max(ha, hb) - unten > 0.02) wand(a, b, unten, ha, hb, k.n[0], k.n[1], u0 + ta * L, u0 + tb * L, bau, code, farbe);
+      if (!lauf) { if (Math.max(ha, hb) - unten > 0.02) wand(a, b, unten, ha, hb, k.n[0], k.n[1], ta * L, tb * L, bau, code, farbe); continue; }
+      // a front in sprites: every window axis of the run's picture in its place, storey by storey up to the eaves; a gable above is plaster
+      const ua = s.u0 + ta * L, ub = s.u0 + tb * L, [ox, oy] = K.lage[lauf.satz.id], g = lauf.grenzen, schmal = lauf.bild.gestreckt;
+      lauf.bild.spalten.forEach(([sx0, sx1], c) => {
+        const ca = Math.max(ua, g[c]), cb = Math.min(ub, g[c + 1]);
+        if (cb - ca < 1e-4) return;
+        const fx = (u) => ox + (schmal ? sx0 + 0.5 : sx0 + ((u - g[c]) / (g[c + 1] - g[c])) * (sx1 - sx0)), rand = schmal ? 0 : 0.02;
+        const pa = auf(k, s.t0 + ca - s.u0), pb = auf(k, s.t0 + cb - s.u0);
+        lauf.zeilen.forEach(([y0, y1], e) => {
+          const zu = Math.max(stock[e], unten), zo = stock[e + 1];
+          if (zo - zu < 1e-3) return;
+          const fy = (z) => oy + y1 - ((z - stock[e]) / (stock[e + 1] - stock[e])) * (y1 - y0);
+          viereck([[pa[0], pa[1], zu], [pb[0], pb[1], zu], [pb[0], pb[1], zo], [pa[0], pa[1], zo]], [k.n[0], k.n[1], 0],
+            [[fx(ca) + rand, fy(zu) - 0.02], [fx(cb) - rand, fy(zu) - 0.02], [fx(cb) - rand, fy(zo) + 0.02], [fx(ca) + rand, fy(zo) + 0.02]], ARTEN.bild, lauf.ton, 0, [ox + sx0, oy + y0, ox + (schmal ? sx0 + 1 : sx1), oy + y1]); // with the cell's box in the atlas
+        });
+      });
+      if (Math.max(ha, hb) > T + 0.02) wand(a, b, T, ha, hb, k.n[0], k.n[1], ta * L, tb * L, ohne, ARTEN.putz, K.ton.brandwand);
     }
   }
   // roof: the footprint's triangles, cut along the fold lines, lifted onto the roof planes
-  const { punkte, dreiecke } = trianguliere(h.ring, h.loecher), dachfarbe = [...rgb(d.farbe), h.saat], flachfarbe = [...rgb(d.form === 'flach' ? d.farbe : d.flachFarbe), h.saat], ohne = [0, T, 0, 0];
+  const { punkte, dreiecke } = trianguliere(h.ring, h.loecher);
+  const dachfarbe = K ? K.ton.dach : [...rgb(d.farbe), h.saat], flachfarbe = K ? K.ton.flach : [...rgb(d.form === 'flach' ? d.farbe : d.flachFarbe), h.saat];
   for (const [i, j, k] of dreiecke) {
     let stuecke = [[punkte[i], punkte[j], punkte[k]]];
     for (const linie of linien) stuecke = stuecke.flatMap((s) => [schneide(s, linie, 1), schneide(s, linie, -1)]).filter((s) => s.length >= 3 && Math.abs(flaeche(s)) > 1e-7);
@@ -449,28 +476,40 @@ export function netz(h) {
       for (let m = 1; m + 1 < q.length; m++) I.push(erste, erste + m, erste + m + 1);
     }
   }
-  // what stands on the roof: chimneys as small boxes, roof windows lying in the slope; every face shows its part of the sprite sheet
-  const flaeche4 = (p, nrm, r) => { // corners counter-clockwise seen from outside, starting lower left; r = [x, y, w, h] in the atlas
-    const i = n, st = [[0, 0], [1, 0], [1, 1], [0, 1]];
-    p.forEach((q, m) => ecke(q[0], q[1], q[2], nrm[0], nrm[1], nrm[2], [st[m][0], st[m][1], 0, ARTEN.teil], r, wandfarbe));
-    I.push(i, i + 1, i + 2, i, i + 2, i + 3);
-  };
+  // what stands on the roof of a dressed house: chimneys as small boxes, roof windows lying in the slope, dormers with cheeks and a little roof
+  const weiss = [1, 1, 1, h.saat];
+  const teil = (p, nrm, [x, y, w, hh]) => viereck(p, nrm, [[x + 0.02, y + hh - 0.02], [x + w - 0.02, y + hh - 0.02], [x + w - 0.02, y + 0.02], [x + 0.02, y + 0.02]], ARTEN.teil, weiss);
   for (const a of K?.aufbauten ?? []) {
-    const [x, y] = a.mitte, z = T + dachhoehe(d, a.mitte), r = K.teile[a.art];
+    const [x, y] = a.mitte, z = T + dachhoehe(d, a.mitte), [ox, oy] = K.lage[a.art], r = [ox, oy, a.px[0], a.px[1]];
     if (a.art === 'schornstein') {
-      const bu = [d.u[0] * a.breite / 2, d.u[1] * a.breite / 2], bv = [d.v[0] * a.tiefe / 2, d.v[1] * a.tiefe / 2], z0 = z - 0.35, z1 = z0 + a.hoehe;
+      const bu = [(d.u[0] * a.breite) / 2, (d.u[1] * a.breite) / 2], bv = [(d.v[0] * a.tiefe) / 2, (d.v[1] * a.tiefe) / 2], z0 = z - 0.35, z1 = z0 + a.hoehe;
       const eck = (su, sv, zz) => [x + su * bu[0] + sv * bv[0], y + su * bu[1] + sv * bv[1], zz];
-      const schmal = [r[0] + r[2] * 0.25, r[1], r[2] * 0.5, r[3]], deckel = [r[0] + r[2] * 0.3, r[1] + r[3] * 0.2, r[2] * 0.4, 1];
-      flaeche4([eck(1, 1, z0), eck(-1, 1, z0), eck(-1, 1, z1), eck(1, 1, z1)], [d.v[0], d.v[1], 0], r);
-      flaeche4([eck(-1, -1, z0), eck(1, -1, z0), eck(1, -1, z1), eck(-1, -1, z1)], [-d.v[0], -d.v[1], 0], r);
-      flaeche4([eck(1, -1, z0), eck(1, 1, z0), eck(1, 1, z1), eck(1, -1, z1)], [d.u[0], d.u[1], 0], schmal);
-      flaeche4([eck(-1, 1, z0), eck(-1, -1, z0), eck(-1, -1, z1), eck(-1, 1, z1)], [-d.u[0], -d.u[1], 0], schmal);
-      const zd = z1 - a.hoehe * 0.18; // the cap closes the stack below the pots
-      flaeche4([eck(-1, -1, zd), eck(1, -1, zd), eck(1, 1, zd), eck(-1, 1, zd)], [0, 0, 1], deckel);
-    } else {
-      const k = d.steigung, c = 1 / Math.hypot(1, k), ax = [-a.seite * d.u[0] * a.breite / 2, -a.seite * d.u[1] * a.breite / 2], g = [-a.seite * d.v[0] * a.hoehe / 2 * c, -a.seite * d.v[1] * a.hoehe / 2 * c];
+      const schmal = [r[0] + r[2] * 0.25, r[1], r[2] * 0.5, r[3]], deckel = [r[0] + r[2] * 0.3, r[1] + r[3] * 0.24, r[2] * 0.4, 1];
+      teil([eck(1, 1, z0), eck(-1, 1, z0), eck(-1, 1, z1), eck(1, 1, z1)], [d.v[0], d.v[1], 0], r);
+      teil([eck(-1, -1, z0), eck(1, -1, z0), eck(1, -1, z1), eck(-1, -1, z1)], [-d.v[0], -d.v[1], 0], r);
+      teil([eck(1, -1, z0), eck(1, 1, z0), eck(1, 1, z1), eck(1, -1, z1)], [d.u[0], d.u[1], 0], schmal);
+      teil([eck(-1, 1, z0), eck(-1, -1, z0), eck(-1, -1, z1), eck(-1, 1, z1)], [-d.u[0], -d.u[1], 0], schmal);
+      const zd = z1 - a.hoehe * 0.2; // the cap closes the stack below the pots
+      teil([eck(-1, -1, zd), eck(1, -1, zd), eck(1, 1, zd), eck(-1, 1, zd)], [0, 0, 1], deckel);
+    } else if (a.art === 'dachfenster') {
+      const k = d.steigung, c = 1 / Math.hypot(1, k), ax = [(-a.seite * d.u[0] * a.breite) / 2, (-a.seite * d.u[1] * a.breite) / 2], g = [((-a.seite * d.v[0] * a.hoehe) / 2) * c, ((-a.seite * d.v[1] * a.hoehe) / 2) * c];
       const eck = (sa, sg) => { const q = [x + sa * ax[0] + sg * g[0], y + sa * ax[1] + sg * g[1]]; return [q[0], q[1], T + dachhoehe(d, q) + 0.06]; };
-      flaeche4([eck(-1, -1), eck(1, -1), eck(1, 1), eck(-1, 1)], [a.seite * d.v[0] * k * c, a.seite * d.v[1] * k * c, c], r);
+      teil([eck(-1, -1), eck(1, -1), eck(1, 1), eck(-1, 1)], [a.seite * d.v[0] * k * c, a.seite * d.v[1] * k * c, c], r);
+    } else { // a dormer: its drawn front stands upright in the slope; behind it two cheeks and a small saddle roof run back into the roof
+      const k = d.steigung, aus = [a.seite * d.v[0], a.seite * d.v[1]], quer = [-aus[1], aus[0]], b = a.breite / 2, schulter = a.hoehe * 0.62;
+      const ort = (sq, zurueck, zz) => [x + quer[0] * sq * b - aus[0] * zurueck, y + quer[1] * sq * b - aus[1] * zurueck, zz];
+      teil([ort(-1, 0, z), ort(1, 0, z), ort(1, 0, z + a.hoehe), ort(-1, 0, z + a.hoehe)], [aus[0], aus[1], 0], r);
+      const tief = schulter / k, first = a.hoehe / k, zs = z + schulter, zf = z + a.hoehe, wange = (sq) => {
+        const p = [ort(sq, 0, z), ort(sq, 0, zs), ort(sq, tief, zs)], erste = n;
+        (sq < 0 ? p : [p[0], p[2], p[1]]).forEach((q, m) => ecke(q[0], q[1], q[2], quer[0] * sq, quer[1] * sq, 0, [m * 0.7, q[2] - z, 0, ARTEN.putz], ohne, K.ton.gaube));
+        I.push(erste, erste + 1, erste + 2);
+      };
+      wange(-1); wange(1);
+      for (const sq of [-1, 1]) { // one side of the little roof: from the front's shoulder and peak back to where they meet the slope
+        const p = [ort(sq, 0, zs), ort(0, 0, zf), ort(0, first, zf), ort(sq, tief, zs)], steil = (a.hoehe - schulter) / b, l = Math.hypot(1, steil);
+        const nrm = [(quer[0] * sq * steil) / l, (quer[1] * sq * steil) / l, 1 / l], wo = [[0, 0], [0, b * l], [first, b * l], [tief, 0]];
+        viereck(sq < 0 ? p : [p[0], p[3], p[2], p[1]], nrm, sq < 0 ? wo : [wo[0], wo[3], wo[2], wo[1]], ARTEN.ziegelbild, dachfarbe, -1); // w = -1: not part of the roof proper
+      }
     }
   }
   // undersides: of a canopy, and of the house above each gateway; and the tunnel walls
@@ -485,11 +524,12 @@ export function netz(h) {
   return { positionen: new Float64Array(P), normalen: new Float32Array(N), wand: new Float32Array(W), bau: new Float32Array(B), farbe: new Float32Array(F), indizes: n < 65536 ? new Uint16Array(I) : new Uint32Array(I) };
 }
 
-// ------------------------------------------------------------------ dressing a house in sprites (a façade kit)
+// ------------------------------------------------------------------ dressing the houses in sprites (façade kits)
 //
-// A kit is one drawn façade (SpriteCook) cut into window axes: a left and a right edge, plain axes, and a middle
-// piece with the door. For a wall of any length the axes are set side by side again, pixel for pixel; the
-// storeys, the footprint and the roof stay what the geodata says. See assets/welt/haeuser/bausatz.json.
+// A kit is one drawn façade (SpriteCook) cut into window axes (a left and a right edge, plain axes, a middle piece
+// with the door) and into storeys. For a wall of any length the axes are set side by side again, pixel for pixel,
+// and for a house of any height the storeys are stacked again; footprint, eaves and roof stay what the geodata says.
+// Kits whose wall is one colour are tinted to the house's colour. See assets/welt/haeuser/bausaetze.json.
 
 const weite = ([a, b]) => b - a;
 
@@ -499,36 +539,69 @@ const weite = ([a, b]) => b - a;
  */
 export function fuege(f, laenge, pxJeM, mitMitte = false, saat = 0) {
   const ziel = laenge * pxJeM, rand = weite(f.links) + weite(f.rechts);
-  if (ziel < rand * 0.9) return { spalten: [[f.pfeiler, f.pfeiler + 1]], breite: 4, gestreckt: true };
+  if (ziel < Math.max(rand, 12) * 0.9) return { spalten: [[f.pfeiler, f.pfeiler + 1]], breite: 4, gestreckt: true };
   const mitte = mitMitte && ziel >= rand + weite(f.mitte) * 0.9 ? [f.mitte] : [];
-  const achse = f.achsen.reduce((s, a) => s + weite(a), 0) / f.achsen.length;
-  const n = Math.max(0, Math.round((ziel - rand - mitte.reduce((s, a) => s + weite(a), 0)) / achse)), start = Math.floor(saat * f.achsen.length);
-  const schlicht = Array.from({ length: n }, (_, i) => f.achsen[(start + i) % f.achsen.length]), halb = Math.ceil(n / 2);
-  const spalten = [f.links, ...schlicht.slice(0, halb), ...mitte, ...schlicht.slice(halb), f.rechts];
-  return { spalten, breite: spalten.reduce((s, a) => s + weite(a), 0), gestreckt: false };
+  const achse = f.achsen.reduce((s, a) => s + weite(a), 0) / f.achsen.length, rechte = f.achsenRechts ?? f.achsen;
+  const n = Math.max(0, Math.round((ziel - rand - mitte.reduce((s, a) => s + weite(a), 0)) / achse)), halb = Math.ceil(n / 2);
+  const reihe = (aus, wieviele, salz) => { const start = Math.floor(saat * aus.length) + salz; return Array.from({ length: wieviele }, (_, i) => aus[(start + i) % aus.length]); };
+  const spalten = [f.links, ...reihe(f.achsen, halb, 0), ...mitte, ...reihe(rechte, n - halb, halb), f.rechts], breite = spalten.reduce((s, a) => s + weite(a), 0);
+  if (Math.abs(breite / ziel - 1) > 0.25) return { spalten: [[f.pfeiler, f.pfeiler + 1]], breite: 4, gestreckt: true }; // rather a plain wall than a squeezed window
+  return { spalten, breite, gestreckt: false };
 }
 
-/** Chimneys and roof windows of a saddle roof, sized by their sprites. */
-function dachaufbauten(h, kit) {
-  const d = h.dach, aus = [];
+/** The rows of a façade picture for a house of `etagen` storeys, from the ground floor up: [[top, bottom], …] in the picture. */
+export function schichte(f, etagen) {
+  const reihen = f.zeilen.slice(0, -1).map((z, i) => [z, f.zeilen[i + 1]]), eg = reihen.at(-1), ober = reihen.slice(0, -1).reverse();
+  if (etagen <= 1 || !ober.length) return [eg];
+  const mitte = ober.slice(1, -1);
+  return [eg, ...Array.from({ length: etagen - 1 }, (_, i) => (i === etagen - 2 ? ober.at(-1) : i === 0 ? ober[0] : mitte.length ? mitte[(i - 1) % mitte.length] : ober[0]))];
+}
+
+/** Which pixels of a façade picture are the wall itself (and so take the house's colour): the wall colour, grown into its shades, small specks left out. */
+export function wandmaske(bild, f) {
+  const { width: w, height: h, data: d } = bild, maske = new Uint8Array(w * h);
+  if (!f.faerbbar) return maske;
+  const [R, G, B] = rgb(f.wand).map((v) => v * 255), nah = (i, tol) => d[i + 3] > 0 && Math.abs(d[i] - R) + Math.abs(d[i + 1] - G) + Math.abs(d[i + 2] - B) < tol;
+  const schatten = (i) => { if (!d[i + 3]) return false; const r = d[i] / R, g = d[i + 1] / G, b = d[i + 2] / B, s = (r + g + b) / 3; return s > 0.5 && s < 1.15 && Math.abs(r - s) < 0.07 && Math.abs(g - s) < 0.07 && Math.abs(b - s) < 0.07; };
+  const nachbarn = (p) => { const x = p % w; return [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, p - w, p + w].filter((q) => q >= 0 && q < w * h); };
+  // patches of the plain wall colour; a patch of only a few pixels is a glint on glass, not wall
+  const gruppe = new Int32Array(w * h).fill(-1);
+  for (let p = 0, nr = 0; p < w * h; p++) {
+    if (gruppe[p] >= 0 || !nah(p * 4, 28)) continue;
+    const stapel = [p], alle = [p]; gruppe[p] = nr;
+    while (stapel.length) for (const q of nachbarn(stapel.pop())) if (gruppe[q] < 0 && nah(q * 4, 28)) { gruppe[q] = nr; stapel.push(q); alle.push(q); }
+    if (alle.length >= 10) for (const q of alle) maske[q] = 1;
+    nr++;
+  }
+  const stapel = []; for (let p = 0; p < w * h; p++) if (maske[p]) stapel.push(p);
+  while (stapel.length) for (const q of nachbarn(stapel.pop())) if (!maske[q] && (nah(q * 4, 28) || schatten(q * 4))) { maske[q] = 1; stapel.push(q); }
+  return maske;
+}
+
+/** Chimneys, roof windows and (on a steep roof) dormers of a saddle roof, sized by their sprites. */
+function dachaufbauten(h, saetze) {
+  const d = h.dach, aus = [], t = saetze.teile;
   if (d.form !== 'sattel') return aus;
-  const m = kit.teile.px_je_m ?? kit.px_je_m, [, , sw, sh] = kit.teile.schornstein, [, , fw, fh] = kit.teile.dachfenster;
   let seite = 0; // which side of the ridge looks at the street
   for (const k of h.kanten) for (const s of k.stuecke) if (s.art === 'strasse') seite += mal(k.n, d.v) * (s.t1 - s.t0);
   const vorn = seite >= 0 ? 1 : -1, lang = d.xb - d.xa, halb = (d.yb - d.ya) / 2;
-  const ort = (t, s) => [d.o[0] + d.u[0] * t + d.v[0] * s, d.o[1] + d.u[1] * t + d.v[1] * s], drin = (p) => imRing(p, h.ring) && !h.loecher.some((l) => imRing(p, l));
-  for (const t of lang > 9 ? [d.xa + 1.8, d.xb - 1.8] : [(d.xa + d.xb) / 2]) { const p = ort(t, d.yr - vorn * 1.1); if (drin(p)) aus.push({ art: 'schornstein', mitte: p, breite: sw / m, tiefe: 0.62, hoehe: sh / m }); }
-  const anzahl = Math.max(1, Math.round(lang / 6));
-  for (let i = 0; i < anzahl; i++) { const p = ort(d.xa + ((i + 0.5) * lang) / anzahl, d.yr + vorn * halb * 0.5); if (drin(p)) aus.push({ art: 'dachfenster', mitte: p, breite: fw / m, hoehe: fh / m, seite: vorn }); }
+  const ort = (u, s) => [d.o[0] + d.u[0] * u + d.v[0] * s, d.o[1] + d.u[1] * u + d.v[1] * s], drin = (p) => imRing(p, h.ring) && !h.loecher.some((l) => imRing(p, l));
+  const mass = (name) => ({ art: name, px: [t[name].breite, t[name].hoehe], breite: t[name].breite / t.px_je_m, hoehe: t[name].hoehe / t.px_je_m });
+  if (halb < 2.5 || lang < 4) return aus;
+  for (const u of lang > 9 ? [d.xa + 1.8, d.xb - 1.8] : [(d.xa + d.xb) / 2]) { const p = ort(u, d.yr - vorn * 1.1); if (drin(p)) aus.push({ ...mass('schornstein'), mitte: p, tiefe: 0.7 }); }
+  const steil = d.steigung >= 0.7, art = steil ? 'gaube' : 'dachfenster', anzahl = Math.max(1, Math.round(lang / (steil ? 4.5 : 6)));
+  // dormers stand near the eaves of the street side, roof windows lie half way up
+  for (let i = 0; i < anzahl; i++) { const p = ort(d.xa + ((i + 0.5) * lang) / anzahl, steil ? d.yr + vorn * (halb - 0.9) : d.yr + vorn * halb * 0.5); if (drin(p)) aus.push({ ...mass(art), mitte: p, seite: vorn }); }
   return aus;
 }
 
 /**
- * Dress a house in a kit: its free walls are grouped into runs (a front that goes on round a slight bend is one
- * run), every run gets its columns, the roof its chimneys and windows. The longest street run carries the door.
+ * Dress one house: its free walls are grouped into runs (a front that goes on round a slight bend is one run), every
+ * run gets its kit, its columns and its storeys; the roof gets its parts. `strasse` is the kit of the street fronts
+ * (null: a yard building, plastered all round), `hof` the plain kit of the yard fronts.
  */
-export function kleide(h, kit) {
-  const laeufe = [];
+export function kleide(h, saetze, strasse, hof) {
+  const laeufe = [], ton = (ziel, von) => { const a = rgb(ziel), b = rgb(von); return [a[0] / b[0], a[1] / b[1], a[2] / b[2], h.saat]; };
   let start = 0;
   for (const anzahl of h.kantenRinge) {
     let lauf = null;
@@ -536,9 +609,9 @@ export function kleide(h, kit) {
       const k = h.kanten[start + i];
       for (const s of k.stuecke) {
         s.lauf = null;
-        if (s.art === 'brandwand' || s.muendung) { lauf = null; continue; }
+        if (s.art === 'brandwand' || !strasse) { lauf = null; continue; }
         const weiter = lauf && lauf.art === s.art && lauf.amEnde && s.t0 === 0 && Math.abs(kreuz(lauf.d, k.d)) < 0.2 && mal(lauf.d, k.d) > 0;
-        if (!weiter) { lauf = { art: s.art, laenge: 0, rechteck: [0, 0, 0, 0] }; laeufe.push(lauf); }
+        if (!weiter) { lauf = { art: s.art, laenge: 0 }; laeufe.push(lauf); }
         s.lauf = laeufe.indexOf(lauf); s.u0 = lauf.laenge;
         lauf.laenge += s.t1 - s.t0; lauf.d = k.d; lauf.amEnde = Math.abs(s.t1 - k.l) < 1e-9;
       }
@@ -546,29 +619,58 @@ export function kleide(h, kit) {
     start += anzahl;
   }
   const front = laeufe.filter((l) => l.art === 'strasse').sort((a, b) => b.laenge - a.laenge)[0];
-  for (const l of laeufe) { l.bild = fuege(kit.fassade, l.laenge, kit.px_je_m, l === front, h.saat); delete l.d; delete l.amEnde; }
-  h.kleid = { laeufe, aufbauten: dachaufbauten(h, kit), teile: {} };
+  for (const l of laeufe) {
+    const satz = l.art === 'strasse' ? strasse : hof ?? strasse, wandton = strasse.klinker ? h.wand.hofFarbe : h.wand.farbe; // behind a brick front the yard is rendered
+    l.satz = satz;
+    l.bild = fuege(satz, l.laenge, satz.hoehe / saetze.hoehe_m, l === front, h.saat);
+    l.grenzen = l.bild.spalten.reduce((g, sp) => [...g, g.at(-1) + (weite(sp) * l.laenge) / (l.bild.gestreckt ? 1 : l.bild.breite)], [0]);
+    l.zeilen = schichte(satz, h.etagen);
+    l.ton = satz.faerbbar ? ton(l.art === 'strasse' ? h.wand.farbe : wandton, satz.wand) : [1, 1, 1, h.saat];
+    delete l.d; delete l.amEnde;
+  }
+  h.kleid = { satz: strasse, laeufe, aufbauten: strasse ? dachaufbauten(h, saetze) : [], lage: null,
+    ton: { wand: ton(h.wand.farbe, saetze.putz.farbe), brandwand: ton('#b3a898', saetze.putz.farbe), dach: ton(h.dach.farbe, saetze.ziegel.farbe), flach: ton(h.dach.form === 'flach' ? h.dach.farbe : h.dach.flachFarbe, saetze.putz.farbe), gaube: ton('#5b5f6a', saetze.putz.farbe) } };
   return h.kleid;
 }
 
 /**
- * Places for all pictures on one sheet (shelves, 2 px apart): every run of every dressed house, and the kit's
- * roof parts once. Sets `rechteck` [x, y, w, h] on each and returns the sheet's size and what to draw where.
+ * Dress the whole quarter. A house takes a kit that fits its ground floor (shop, home, school) and its material,
+ * picked by its id, and not the kit of a neighbour it touches if there is another. Yard buildings and canopies get plaster.
  */
-export function packe(haeuser, kit, breite = 1024) {
-  const H = kit.fassade.hoehe, zeichne = [];
-  let x = 2, y = 2, zeile = 0;
-  const platz = (w, h) => { if (x + w + 2 > breite) { x = 2; y += zeile + 4; zeile = 0; } const r = [x, y, w, h]; x += w + 4; zeile = Math.max(zeile, h); return r; };
-  const teile = {};
-  for (const [name, r] of Object.entries(kit.teile)) if (Array.isArray(r)) { teile[name] = platz(r[2], r[3]); zeichne.push({ teil: name, von: r, nach: teile[name] }); }
+export function kleideViertel(haeuser, saetze) {
+  const nach = new Map(haeuser.map((h) => [h.schluessel, h])), fuer = (was) => saetze.fassaden.filter((f) => f.fuer.includes(was)), hof = saetze.fassaden.find((f) => f.id === saetze.hof) ?? null;
   for (const h of haeuser) {
-    if (!h.kleid) continue;
-    h.kleid.teile = teile;
-    for (const l of h.kleid.laeufe) { l.rechteck = platz(l.bild.breite, H); zeichne.push({ spalten: l.bild.spalten, gestreckt: l.bild.gestreckt, nach: l.rechteck }); }
+    let satz = null;
+    if (h.art === 'haus' && h.eg !== 'neben') {
+      const klinker = h.wand.material === 'klinker';
+      let wahl = fuer(h.eg).filter((f) => !!f.klinker === klinker);
+      if (!wahl.length) wahl = fuer(h.eg);
+      if (!wahl.length) wahl = fuer('wohnen');
+      const lose = wahl.flatMap((f) => Array(f.gewicht ?? 1).fill(f)), belegt = new Set([...h.nachbarn].map((s) => nach.get(s)?.kleid?.satz?.id));
+      for (let versuch = 0; versuch < 6; versuch++) { satz = lose[Math.floor(streuung(h.oid, 'satz' + (versuch || '')) * lose.length)]; if (!belegt.has(satz.id) || new Set(lose).size < 2) break; }
+      // the wall's name follows what the house really wears: a brick kit is brick, a rendered kit takes a render colour
+      const putz = PUTZ[Math.floor(streuung(h.oid, 'putz') * PUTZ.length)];
+      if (satz.klinker) h.wand = { name: 'Klinker', farbe: satz.wand, material: 'klinker', hofFarbe: PUTZ[1][1] };
+      else if (klinker) h.wand = { name: putz[0], farbe: putz[1], material: 'putz' };
+    }
+    kleide(h, saetze, satz, hof);
   }
+  return haeuser;
+}
+
+/**
+ * Places for the kit's pictures on one sheet (shelves, a few pixels apart): every façade and every roof part once.
+ * Returns the sheet's size, where each picture goes, and `lage`: id → [x, y].
+ */
+export function packe(saetze, breite = 1024) {
+  const bilder = [], lage = {};
+  let x = 2, y = 2, zeile = 0;
+  const platz = (id, datei, art, w, h, satz = null) => { if (x + w + 2 > breite) { x = 2; y += zeile + 4; zeile = 0; } lage[id] = [x, y]; bilder.push({ id, datei, art, satz, nach: [x, y, w, h] }); x += w + 4; zeile = Math.max(zeile, h); };
+  for (const f of saetze.fassaden) platz(f.id, f.datei, 'fassade', f.breite, f.hoehe, f);
+  for (const [name, t] of Object.entries(saetze.teile)) if (t?.datei) platz(name, t.datei, 'teil', t.breite, t.hoehe);
   let hoehe = 64;
   while (hoehe < y + zeile + 2) hoehe *= 2;
-  return { breite, hoehe, zeichne };
+  return { breite, hoehe, bilder, lage };
 }
 
 /** Unit vector towards the sun in the grid (east, north, up) from a compass bearing and an elevation in degrees. */
@@ -657,10 +759,10 @@ void main() {
   vec2 breite = fwidth(v_wand.xy) * PX;
   float f = max(breite.x, breite.y);                       // art pixels per screen pixel
   float code = floor(v_wand.w + 0.5), art = mod(code, 16.0);
-  // the sprites, looked up before anything is thrown away: a run's picture (u along the run, v up to the eaves) or a part (0..1 across its face)
-  vec2 lage = art < 7.5 ? vec2(clamp(v_wand.x / max(v_farbe.x, 0.01), 0.0, 1.0), clamp(v_wand.y / max(v_farbe.y, 0.01), 0.0, 1.0)) : clamp(v_wand.xy, 0.0, 1.0);
-  vec2 imAtlas = v_bau.xy + clamp(vec2(lage.x, 1.0 - lage.y) * v_bau.zw, vec2(0.5), max(v_bau.zw - 0.5, vec2(0.5)));
-  vec4 bild = texture(u_atlas, vec2(imAtlas.x, u_atlasMass.y - imAtlas.y) / u_atlasMass);
+  // the sprites, looked up before anything is thrown away: on façade cells and roof parts v_wand.xy is the place in the atlas in pixels
+  // never a pixel of the neighbouring cell: with multisampling a fragment on a quad's edge is shaded a little beyond it
+  vec2 ort = art > 6.5 && art < 7.5 ? clamp(v_wand.xy, v_bau.xy + 0.01, v_bau.zw - 0.01) : v_wand.xy;
+  vec4 bild = texture(u_atlas, vec2(ort.x, u_atlasMass.y - ort.y) / u_atlasMass);
   vec3 ziegelbild = texture(u_ziegel, v_wand.xy / u_ziegelMass).rgb, putzbild = texture(u_putz, v_wand.xy / u_putzMass).rgb;
   if (v_ton.a * u_deckung <= raster4(gl_FragCoord.xy * 0.5)) discard;
 
@@ -671,11 +773,11 @@ void main() {
 
   if (art > 6.5) {                                         // dressed in sprites: the picture is the drawing, only the light is added
     stufe = nn.z > 0.5 ? (d > 0.72 ? 1.0 : d > 0.45 ? 0.93 : 0.84) : (d > 0.3 ? 1.0 : d > -0.15 ? 0.92 : 0.82);
-    if (art < 7.5) grund = v_wand.y > v_farbe.y + 0.02 ? putzbild : bild.rgb;      // a gable above the eaves is plaster
-    else if (art < 8.5) { if (bild.a < 0.5) discard; grund = bild.rgb; }
-    else if (art < 9.5) grund = putzbild;
-    else if (art < 10.5) grund = ziegelbild;
-    else grund = putzbild * vec3(0.5, 0.48, 0.47);
+    // v_farbe is the tint: the wanted colour divided by the picture's own. On a façade only the wall takes it (the atlas marks wall pixels with half alpha)
+    if (art < 7.5) grund = mix(bild.rgb, min(bild.rgb * v_farbe.rgb, vec3(1.0)), clamp((1.0 - bild.a) * 2.0, 0.0, 1.0));
+    else if (art < 8.5) { if (bild.a < 0.25) discard; grund = bild.rgb; }
+    else if (art < 10.5 && art > 9.5) grund = min(ziegelbild * v_farbe.rgb, vec3(1.0));
+    else grund = min(putzbild * v_farbe.rgb, vec3(1.0));
     fein = grund; grob = grund; mittel = grund;
     f = 0.0;                                               // the texture's own mip levels look after the distance
   } else if (art < 2.5) {                                  // a wall: street front, yard front or party wall
@@ -799,13 +901,14 @@ void main() {
 
 /**
  * Put the houses into the scene: one primitive for all of them, one pickable instance per house.
- * `nur(haus)` limits it to some houses. Returns the handle the world view works with; nothing in it rebuilds geometry.
+ * `nur(haus)` limits it to some houses; `saetze` (the façade kits, with `basis` as the folder of their pictures) dresses
+ * them in sprites. Returns the handle the world view works with; nothing in it rebuilds geometry.
  */
-export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, frame, pos, nur = null, bausatz = null, basis = null }) {
+export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, frame, pos, nur = null, saetze = null, basis = null }) {
   const liste = viertel(gebaeude, frame, { wege }).filter((h) => !nur || nur(h));
-  // houses the kit names are dressed in its sprites, if they have its number of storeys
-  if (bausatz) for (const h of liste) if (h.art === 'haus' && bausatz.haeuser.includes(h.adresse) && h.etagen === bausatz.fassade.geschosse) kleide(h, bausatz);
-  const blatt = bausatz ? packe(liste, bausatz) : null;
+  // with façade kits every house is dressed in sprites; where each picture lies on the sheet is known before one of them has loaded
+  const blatt = saetze ? packe(saetze) : null;
+  if (saetze) for (const h of kleideViertel(liste, saetze)) h.kleid.lage = blatt.lage;
   const eintraege = [], nachOid = new Map(), eigene = new Set(), instanzen = [];
   const attribut = (werte, n, typ = Cesium.ComponentDatatype.FLOAT) => new Cesium.GeometryAttribute({ componentDatatype: typ, componentsPerAttribute: n, values: werte });
   let ecken = 0, dreiecke = 0;
@@ -841,30 +944,35 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, frame, pos, 
   };
   const leinwand = (w, h) => Object.assign(document.createElement('canvas'), { width: w, height: h });
   const leer = leinwand(2, 2), lg = leer.getContext('2d');
-  lg.fillStyle = bausatz?.fassade.wand ?? '#888888'; lg.fillRect(0, 0, 2, 2);
+  lg.fillStyle = '#888888'; lg.fillRect(0, 0, 2, 2);
   const platzhalter = textur(leer, true);
   erscheinung.uniforms = { u_licht: new Cesium.Cartesian3(...lichtvektor(73, 45, konvergenz)), u_staerke: 1, u_deckung: 1,
     u_atlas: platzhalter, u_ziegel: platzhalter, u_putz: platzhalter, u_atlasMass: new Cesium.Cartesian2(2, 2), u_ziegelMass: new Cesium.Cartesian2(1, 1), u_putzMass: new Cesium.Cartesian2(1, 1) };
   const primitive = instanzen.length ? scene.primitives.add(new Cesium.Primitive({ geometryInstances: instanzen, appearance: erscheinung, asynchronous: false, compressVertices: false })) : null;
 
-  /** Load the kit's pictures, set the façade runs together on one sheet and hand the textures to the shader. No geometry changes. */
+  /**
+   * Load the kits' pictures and lay them on one sheet, pixel for pixel. A façade's wall pixels get half alpha (the shader
+   * tints only those), transparent margins take the wall colour, roof parts keep their cut-out. No geometry changes.
+   */
   async function male() {
-    const lade = (teil) => ladeBild(new URL(teil.datei, basis).href), f = bausatz.fassade, H = f.hoehe;
-    const [fassade, teile, ziegel, putz] = await Promise.all([lade(f), lade(bausatz.teile), lade(bausatz.ziegel), lade(bausatz.putz)]);
-    const c = leinwand(blatt.breite, blatt.hoehe), g = c.getContext('2d');
-    g.imageSmoothingEnabled = false;
-    for (const z of blatt.zeichne) {
-      const [x, y, w, h] = z.nach;
-      if (z.teil) { g.drawImage(teile, z.von[0], z.von[1], z.von[2], z.von[3], x, y, w, h); continue; }
-      g.fillStyle = f.wand; g.fillRect(x - 1, y - 1, w + 2, h + 2); // the wall colour under everything, and a pixel beyond the edge
-      if (z.gestreckt) { g.drawImage(fassade, z.spalten[0][0], 0, 1, H, x - 1, y, w + 2, H); continue; }
-      let cx = x;
-      for (const [a, b] of z.spalten) { g.drawImage(fassade, a, 0, b - a, H, cx, y, b - a, H); cx += b - a; }
-    }
+    const lade = (datei) => ladeBild(new URL(datei, basis).href);
+    const pixel = (img) => { const c = leinwand(img.width, img.height), g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0); return g.getImageData(0, 0, img.width, img.height); };
+    const [ziegel, putz, ...bilder] = await Promise.all([lade(saetze.ziegel.datei), lade(saetze.putz.datei), ...blatt.bilder.map((b) => lade(b.datei))]);
+    const W = blatt.breite, H = blatt.hoehe, atlas = new Uint8ClampedArray(W * H * 4);
+    blatt.bilder.forEach((b, nr) => {
+      const q = pixel(bilder[nr]), [x0, y0, w, h] = b.nach, maske = b.satz ? wandmaske(q, b.satz) : null, wandfarbe = b.satz ? rgb(b.satz.wand).map((v) => Math.round(v * 255)) : null;
+      for (let y = -1; y <= h; y++) for (let x = -1; x <= w; x++) { // one pixel beyond every edge repeats the edge, for the far-away levels
+        const sx = Math.min(w - 1, Math.max(0, x)), sy = Math.min(h - 1, Math.max(0, y)), s = (sy * q.width + sx) * 4, z = ((y0 + y) * W + x0 + x) * 4, klar = q.data[s + 3] < 128;
+        if (b.satz) { for (let k = 0; k < 3; k++) atlas[z + k] = klar ? wandfarbe[k] : q.data[s + k]; atlas[z + 3] = klar || maske[sy * q.width + sx] ? 128 : 255; }
+        else { for (let k = 0; k < 3; k++) atlas[z + k] = q.data[s + k]; atlas[z + 3] = klar ? 0 : 255; }
+      }
+    });
     const u = erscheinung.uniforms, m = (t) => new Cesium.Cartesian2(t.breite / t.px_je_m, t.hoehe / t.px_je_m);
-    u.u_atlas = textur(c, false); u.u_atlasMass = new Cesium.Cartesian2(blatt.breite, blatt.hoehe);
-    u.u_ziegel = textur(ziegel, true); u.u_ziegelMass = m(bausatz.ziegel);
-    u.u_putz = textur(putz, true); u.u_putzMass = m(bausatz.putz);
+    u.u_atlas = textur({ width: W, height: H, arrayBufferView: new Uint8Array(atlas.buffer) }, false); u.u_atlasMass = new Cesium.Cartesian2(W, H);
+    u.u_ziegel = textur(ziegel, true); u.u_ziegelMass = m(saetze.ziegel);
+    u.u_putz = textur(putz, true); u.u_putzMass = m(saetze.putz);
+    const c = leinwand(W, H); // the sheet as a picture, for looking at it
+    c.getContext('2d').putImageData(new ImageData(atlas, W, H), 0, 0);
     return c;
   }
   const gemalt = blatt && primitive ? male() : Promise.resolve(null);

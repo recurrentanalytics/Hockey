@@ -21,9 +21,8 @@ const TOKEN_KEY = 'boniCesiumToken'; // stored by the intro (src/intro/main.js)
 const LGLN = 'https://opendata.lgln.niedersachsen.de/doorman/noauth/';
 const FALLBACK_HEIGHT = 10;          // metres, for footprints without any height information
 const GAME_VIEW = { heading: 118.2, tilt: 60 }; // the game camera: looking A → B, 60° from vertical
-// The houses of haeuser.js wait for the owner's approval: ?haeuser=probe shows the houses dressed in the
-// SpriteCook façade kit (assets/welt/haeuser/bausatz.json names them), ?haeuser=neu also draws every other
-// house by rule; without it every footprint stays the plain volume it was.
+// The houses of haeuser.js wait for the owner's approval: ?haeuser=neu shows the whole quarter dressed in the
+// SpriteCook façade kits (assets/welt/haeuser/bausaetze.json); without it every footprint stays the plain volume it was.
 
 const Q = new URLSearchParams(location.search);
 const ort = Q.get('ort') || 'boni';
@@ -82,10 +81,9 @@ async function main() {
   let grove = { baeume: baumListe, zeige() {} };
   const hindernisse = baueHindernisse({ gebaeude, einfriedungen, platz, frame });
   const haeuser = []; // drawn building volumes, so the ones hiding the player can turn see-through
-  const hausArt = Q.get('haeuser') ?? 'alt'; // 'alt' plain volumes, 'probe' the houses of the sprite kit, 'neu' every house
+  const hausArt = Q.get('haeuser') ?? 'alt'; // 'alt' plain volumes, 'neu' every house dressed in the façade kits
   let viertelHaeuser = null;                 // the houses of haeuser.js
-  const satz = (Q.get('bausatz') ?? '').replace(/[^a-z0-9]/g, ''); // ?bausatz=b: another kit for the same houses, to compare
-  const bausatz = hausArt === 'alt' ? null : await fetch(new URL(`welt/haeuser/bausatz${satz ? '-' + satz : ''}.json`, ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const saetze = hausArt === 'alt' ? null : await fetch(new URL('welt/haeuser/bausaetze.json', ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   let spieler = null;
   status('Lade 3D-Ansicht …');
   const Cesium = await loadCesium(Q.get('cesiumBase') || `https://cdn.jsdelivr.net/npm/cesium@${CESIUM_VERSION}/Build/Cesium/`);
@@ -169,7 +167,7 @@ async function main() {
     const blocks = layer('gebaeude');
     haeuser.length = 0;
     if (hausArt !== 'alt' && scene.context.webgl2) {           // drawn houses: built once; ground, cover and records follow here
-      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, frame, pos, bausatz, basis: new URL('welt/haeuser/', ASSETS), nur: hausArt === 'probe' ? (h) => !!bausatz?.haeuser.includes(h.adresse) : null });
+      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS) });
       viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.verzeichne(blocks);
     }
     for (const f of gebaeude.features) {
