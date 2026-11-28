@@ -435,6 +435,12 @@ export function steckbrief(h) {
  * A dressed house (h.kleid) shows sprites instead: on a façade cell or a roof part `wand` is the place in the picture atlas
  * in pixels, and `farbe` is the tint, the wanted colour divided by the picture's own.
  */
+/** Storey lines of a house, from the ground to the eaves: where each drawn storey of a façade is stretched to. */
+export function geschosslinien(h) {
+  const T = h.traufe, etagen = h.etagen;
+  return [0, ...Array.from({ length: etagen }, (_, e) => (e === etagen - 1 ? T : h.egHoehe + (e * (T - h.egHoehe)) / (etagen - 1)))];
+}
+
 export function netz(h) {
   const P = [], N = [], W = [], B = [], F = [], I = [];
   let n = 0;
@@ -455,7 +461,7 @@ export function netz(h) {
     I.push(i, i + 1, i + 2, i, i + 2, i + 3);
   };
   // storey lines of a dressed house, from the ground to the eaves
-  const etagen = h.etagen, stock = [0, ...Array.from({ length: etagen }, (_, e) => (e === etagen - 1 ? T : h.egHoehe + (e * (T - h.egHoehe)) / (etagen - 1)))];
+  const stock = geschosslinien(h);
   for (const k of h.kanten) for (const s of k.stuecke) {
     const L = s.t1 - s.t0, p0 = auf(k, s.t0), p1 = auf(k, s.t1), unten = s.muendung ? Math.min(DURCHFAHRT, T - 0.5) : h.sockel;
     const lauf = K && s.lauf != null ? K.laeufe[s.lauf] : null;
@@ -552,6 +558,106 @@ export function netz(h) {
     unterseite(df.ring, hoch);
     for (const [a, b] of df.waende) { const l = Math.hypot(b[0] - a[0], b[1] - a[1]); wand(a, b, 0, hoch, hoch, (b[1] - a[1]) / l, -(b[0] - a[0]) / l, 0, l, [l, T, bauZ, EG.neben], ARTEN.tunnel, dunkel); }
   }
+  return { positionen: new Float64Array(P), normalen: new Float32Array(N), wand: new Float32Array(W), bau: new Float32Array(B), farbe: new Float32Array(F), indizes: n < 65536 ? new Uint16Array(I) : new Uint32Array(I) };
+}
+
+// ------------------------------------------------------------------ relief: the façade's parts stand out of the wall
+
+/**
+ * How far the parts of a drawn façade stand out of the wall (metres), and where there is relief: the street sides
+ * of the houses within `umkreis` metres of the court, what the game camera and a ride through the streets see.
+ * The whole quarter with its yards would be some 1.6 million corners, this about 130 000.
+ */
+export const RELIEF = { rahmen: 0.08, bank: 0.14, gesims: 0.18, hof: false, umkreis: 100 };
+
+/**
+ * The relief of a dressed house: a second mesh, in the format of `netz`, that lifts the parts its façade kit knows
+ * (bausaetze.json: `oeffnungen`, `gesimse`) out of the flat, drawn wall. Window and door frames stand out with
+ * their reveals running back to the glass, which stays in the wall; the bottom of a frame stands out further as a
+ * sill; cornice bands run along the whole front. Every face shows the façade's own pixels: front faces the same
+ * place of the sheet as the flat wall behind them, sides the pixel row or column at their edge, stretched. A part
+ * gets relief only where it lies wholly in one cell (one cut piece, one storey) of the wall; party walls, plain
+ * walls and houses without a kit get none. `hof: false` leaves the yard sides flat; `umkreis` (metres round the
+ * court centre) limits the relief to the houses that reach into it.
+ */
+export function relief(h, { hof = RELIEF.hof, umkreis = RELIEF.umkreis } = {}) {
+  const P = [], N = [], W = [], B = [], F = [], I = [];
+  let n = 0;
+  const leer = { positionen: new Float64Array(0), normalen: new Float32Array(0), wand: new Float32Array(0), bau: new Float32Array(0), farbe: new Float32Array(0), indizes: new Uint16Array(0) };
+  const K = h.kleid;
+  if (!K?.satz || !K.lage) return leer;
+  const [x0k, y0k, x1k, y1k] = h.kasten; // only houses that reach into the circle round the court
+  if (Math.hypot(Math.max(0, Math.abs((x0k + x1k) / 2) - (x1k - x0k) / 2), Math.max(0, Math.abs((y0k + y1k) / 2) - (y1k - y0k) / 2)) > umkreis) return leer;
+  const stock = geschosslinien(h);
+  // a quad: four corners in space with their places on the sheet; turned so that it faces `nrm`
+  const flaeche4 = (p, wo, nrm, box, ton) => {
+    const u = [p[1][0] - p[0][0], p[1][1] - p[0][1], p[1][2] - p[0][2]], v = [p[2][0] - p[0][0], p[2][1] - p[0][1], p[2][2] - p[0][2]];
+    const c = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    if (Math.hypot(...c) < 1e-9) return;
+    const ordnung = c[0] * nrm[0] + c[1] * nrm[1] + c[2] * nrm[2] >= 0 ? [0, 1, 2, 3] : [0, 3, 2, 1], i = n;
+    for (const m of ordnung) { P.push(...p[m]); N.push(...nrm); W.push(wo[m][0], wo[m][1], 0, ARTEN.bild); B.push(...box); F.push(...ton); n++; }
+    I.push(i, i + 1, i + 2, i, i + 2, i + 3);
+  };
+  // the pieces of every run along the house's edges
+  const stuecke = new Map();
+  for (const k of h.kanten) for (const st of k.stuecke) if (st.lauf != null) (stuecke.get(st.lauf) ?? stuecke.set(st.lauf, []).get(st.lauf)).push({ k, st });
+  K.laeufe.forEach((lauf, nr) => {
+    if (lauf.bild.gestreckt || (!hof && lauf.art !== 'strasse')) return;
+    const satz = lauf.satz, [ox, oy] = K.lage[satz.id], g = lauf.grenzen, teile = stuecke.get(nr) ?? [];
+    // a place along the run (u, metres) → the edge piece it lies on
+    const stueckBei = (u) => teile.find(({ st }) => u >= st.u0 - 1e-6 && u <= st.u0 + (st.t1 - st.t0) + 1e-6);
+    lauf.bild.spalten.forEach(([sx0, sx1], c) => {
+      const ua = g[c], ub = g[c + 1], X = (x) => ua + ((x - sx0) / (sx1 - sx0)) * (ub - ua);
+      lauf.zeilen.forEach(([y0, y1], e) => {
+        const zu = stock[e], zo = stock[e + 1], Z = (y) => zu + ((y1 - y) / (y1 - y0)) * (zo - zu);
+        const box = [ox + sx0, oy + y0, ox + sx1, oy + y1];
+        // a box standing out of the wall over the picture rectangle [xa, xb] × [ya, yb], `tief` deep; `seiten`: which
+        // sides to close (o, u, l, r); `innen` turns the sides into a reveal (facing into the box: a hole's walls)
+        const kasten = (xa, xb, ya, yb, tief, seiten = 'oulr', innen = false) => {
+          const A = stueckBei(X(xa)), Bst = stueckBei(X(xb));
+          if (!A || A !== Bst) return false; // across a corner of the house: no relief
+          const { k, st } = A, nx = k.n[0], ny = k.n[1];
+          const ort = (x, y, t) => { const q = auf(k, st.t0 + X(x) - st.u0); return [q[0] + nx * t, q[1] + ny * t, Z(y)]; };
+          const at = (x, y) => [ox + x, oy + y];
+          if (!innen) flaeche4([ort(xa, yb, tief), ort(xb, yb, tief), ort(xb, ya, tief), ort(xa, ya, tief)], [at(xa, yb), at(xb, yb), at(xb, ya), at(xa, ya)], [nx, ny, 0], box, lauf.ton);
+          const s = innen ? -1 : 1, r = 0.5; // sides show the pixel line just inside their edge
+          if (seiten.includes('o')) flaeche4([ort(xa, ya, 0), ort(xb, ya, 0), ort(xb, ya, tief), ort(xa, ya, tief)], [at(xa, ya + r * s), at(xb, ya + r * s), at(xb, ya + r * s), at(xa, ya + r * s)], [0, 0, s], box, lauf.ton);
+          if (seiten.includes('u')) flaeche4([ort(xa, yb, 0), ort(xb, yb, 0), ort(xb, yb, tief), ort(xa, yb, tief)], [at(xa, yb - r * s), at(xb, yb - r * s), at(xb, yb - r * s), at(xa, yb - r * s)], [0, 0, -s], box, lauf.ton);
+          if (seiten.includes('l')) flaeche4([ort(xa, ya, 0), ort(xa, yb, 0), ort(xa, yb, tief), ort(xa, ya, tief)], [at(xa + r * s, ya), at(xa + r * s, yb), at(xa + r * s, yb), at(xa + r * s, ya)], [-k.d[0] * s, -k.d[1] * s, 0], box, lauf.ton);
+          if (seiten.includes('r')) flaeche4([ort(xb, ya, 0), ort(xb, yb, 0), ort(xb, yb, tief), ort(xb, ya, tief)], [at(xb - r * s, ya), at(xb - r * s, yb), at(xb - r * s, yb), at(xb - r * s, ya)], [k.d[0] * s, k.d[1] * s, 0], box, lauf.ton);
+          return true;
+        };
+        for (const o of satz.oeffnungen ?? []) {
+          if (o.x < sx0 || o.x + o.b > sx1 || o.y < y0 || o.y + o.h > y1) continue; // not wholly in this cell
+          if (o.art === 'tuer' && !lauf.bild.spalten.includes(satz.mitte)) continue; // the door piece is not on this wall
+          const [x0, y0o, x1, y1o] = [o.x, o.y, o.x + o.b, o.y + o.h];
+          const [gx0, gy0, gx1, gy1] = o.glas ? [o.glas[0], o.glas[1], o.glas[0] + o.glas[2], o.glas[1] + o.glas[3]] : [x0 + 1, y0o + 1, x1 - 1, y1o]; // a door: a frame one pixel wide, open at the threshold
+          if (gx1 - gx0 < 1 || gy1 - gy0 < 1) continue;
+          const T = RELIEF.rahmen;
+          // the frame: four bars round the glass, each a box; the glass behind stays in the wall
+          // (the frame's narrow outer sides are left out: 8 cm, hardly ever seen, and the most faces)
+          if (gy0 > y0o) kasten(x0, x1, y0o, gy0, T, 'o');                            // lintel, with its top
+          if (gx0 > x0) kasten(x0, gx0, gy0, gy1, T, '');                             // left jamb
+          if (x1 > gx1) kasten(gx1, x1, gy0, gy1, T, '');                             // right jamb
+          if (y1o > gy1) kasten(x0, x1, gy1, y1o, o.art === 'tuer' ? T : RELIEF.bank, o.art === 'tuer' ? '' : 'ou'); // sill (deeper, a ledge) or threshold
+          // the reveal: from the frame's inner edge back to the glass
+          kasten(gx0, gx1, gy0, gy1, T, o.art === 'tuer' ? 'olr' : 'oulr', true);
+        }
+        // cornices: bands across the cell, broken where a door or window crosses them (a plinth band does not run
+        // over the front door); closed at the ends of the run and at every break
+        const letzte = lauf.bild.spalten.length - 1;
+        for (const [ga, gb] of satz.gesimse ?? []) {
+          if (ga < y0 || gb > y1 || gb - ga < 1) continue;
+          const luecken = (satz.oeffnungen ?? []).filter((o) => o.y < gb && o.y + o.h > ga && o.x < sx1 && o.x + o.b > sx0).map((o) => [Math.max(sx0, o.x), Math.min(sx1, o.x + o.b)]).sort((p, q) => p[0] - q[0]);
+          let von = sx0, offenL = c === 0;
+          for (const [la, lb] of [...luecken, [sx1, sx1]]) {
+            if (la - von >= 1) kasten(von, la, ga, gb, RELIEF.gesims, 'ou' + (offenL ? 'l' : '') + (la < sx1 || c === letzte ? 'r' : ''));
+            von = Math.max(von, lb); offenL = true;
+          }
+        }
+      });
+    });
+  });
   return { positionen: new Float64Array(P), normalen: new Float32Array(N), wand: new Float32Array(W), bau: new Float32Array(B), farbe: new Float32Array(F), indizes: n < 65536 ? new Uint16Array(I) : new Uint32Array(I) };
 }
 

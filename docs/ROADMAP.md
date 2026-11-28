@@ -135,7 +135,7 @@ Grundlage ist die Architektur-Analyse vom 2026-11-28 (Roadmap-Schritte 0–9). E
 | 2 | Hausregeln engine-neutral in `src/bau/haus.js`, Cesium nur noch Adapter, Referenz des gebauten Viertels | ✅ `3a6b937` |
 | 3 | Datenmodell: `schema/bausatz.schema.json`, `schema/bauplan.schema.json` | ✅ `235befc` |
 | 5 | Echte Dächer und Höhen aus dem LoD2-Gebäudemodell des LGLN (`tools/ort/lod2.py`, `locations/boni/geo/daecher.json`) | ✅ 2026-11-28 |
-| 4 | 3D-Pilot: Fensterachse und Gesims als 3D-Modul in Blender, als Relief an einigen Häusern | ruht: kostet Leistung, bei der Pixel-Optik wenig sichtbar; braucht Blender |
+| 4 | 3D-Elemente der Fassaden: prozedurales Relief (Rahmen, Laibungen, Bänke, Gesimse) aus den vermessenen Bauteilen, ohne Blender; Straßenseiten im Umkreis von 100 m um den Platz | ✅ 2026-11-28, Leistung auf dem Gerät prüfen (`?relief=0`) |
 | 6–9 | Zweiter Grafikstil, Godot-Adapter, zweite Architekturfamilie, eigenes Repository | ruht bis zu einem zweiten Projekt; nützt dem Spiel nicht |
 
 ---

@@ -5,7 +5,7 @@
 // The shader draws edges, corners and ridges on a grid of PX art pixels per metre of wall or roof: the
 // coarse scale of the scenery, the same as the façade kits and the ground (assets/welt/massstab.json, px_je_m).
 import { ladeBild } from './bild.js';
-import { viertel, kleideViertel, packe, netz, steckbrief, wandmaske, lichtvektor, rgb, ACHSE, DURCHFAHRT, KONTUR } from '../bau/haus.js';
+import { viertel, kleideViertel, packe, netz, relief, steckbrief, wandmaske, lichtvektor, rgb, ACHSE, DURCHFAHRT, KONTUR } from '../bau/haus.js';
 export * from '../bau/haus.js'; // the rules stay importable from here, as before
 
 export const PX = 12.5; // art pixels per metre on walls and roofs: the scenery scale, = assets/welt/massstab.json px_je_m (tested)
@@ -239,14 +239,18 @@ void main() {
  * `nur(haus)` limits it to some houses; `saetze` (the façade kits, with `basis` as the folder of their pictures) dresses
  * them in sprites. Returns the handle the world view works with; nothing in it rebuilds geometry.
  */
-export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = null, frame, pos, nur = null, saetze = null, basis = null }) {
+export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = null, frame, pos, nur = null, saetze = null, basis = null, mitRelief = true }) {
   const liste = viertel(gebaeude, frame, { wege, daecher }).filter((h) => !nur || nur(h));
   // with façade kits every house is dressed in sprites; where each picture lies on the sheet is known before one of them has loaded
   const blatt = saetze ? packe(saetze) : null;
   if (saetze) for (const h of kleideViertel(liste, saetze)) h.kleid.lage = blatt.lage;
-  const eintraege = [], nachOid = new Map(), eigene = new Set(), instanzen = [];
+  const eintraege = [], nachOid = new Map(), eigene = new Set(), instanzen = [], reliefInstanzen = [];
   const attribut = (werte, n, typ = Cesium.ComponentDatatype.FLOAT) => new Cesium.GeometryAttribute({ componentDatatype: typ, componentsPerAttribute: n, values: werte });
-  let ecken = 0, dreiecke = 0;
+  let ecken = 0, dreiecke = 0, reliefEcken = 0;
+  const geometrie = (m) => new Cesium.Geometry({
+    attributes: { position: attribut(m.positionen, 3, Cesium.ComponentDatatype.DOUBLE), normal: attribut(m.normalen, 3), wand: attribut(m.wand, 4), bau: attribut(m.bau, 4), farbe: attribut(m.farbe, 4) },
+    indices: m.indizes, primitiveType: Cesium.PrimitiveType.TRIANGLES, boundingSphere: Cesium.BoundingSphere.fromVertices(m.positionen),
+  });
   for (const h of liste) {
     const m = netz(h);
     if (!m.indizes.length) continue;
@@ -257,14 +261,10 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
     eigene.add(h.oid);
     for (const df of h.durchfahrten) eigene.add(df.oid);
     ecken += m.positionen.length / 3; dreiecke += m.indizes.length / 3;
-    instanzen.push(new Cesium.GeometryInstance({
-      id: eintrag,
-      geometry: new Cesium.Geometry({
-        attributes: { position: attribut(m.positionen, 3, Cesium.ComponentDatatype.DOUBLE), normal: attribut(m.normalen, 3), wand: attribut(m.wand, 4), bau: attribut(m.bau, 4), farbe: attribut(m.farbe, 4) },
-        indices: m.indizes, primitiveType: Cesium.PrimitiveType.TRIANGLES, boundingSphere: Cesium.BoundingSphere.fromVertices(m.positionen),
-      }),
-      attributes: { color: new Cesium.ColorGeometryInstanceAttribute(1, 1, 1, 1) },
-    }));
+    instanzen.push(new Cesium.GeometryInstance({ id: eintrag, geometry: geometrie(m), attributes: { color: new Cesium.ColorGeometryInstanceAttribute(1, 1, 1, 1) } }));
+    // the façade's parts standing out of the wall (src/bau/haus.js, relief): same record, same look, own primitive
+    const r = mitRelief && h.kleid ? relief(h) : null;
+    if (r?.indizes.length) { reliefEcken += r.positionen.length / 3; reliefInstanzen.push(new Cesium.GeometryInstance({ id: eintrag, geometry: geometrie(r), attributes: { color: new Cesium.ColorGeometryInstanceAttribute(1, 1, 1, 1) } })); }
   }
   const konvergenz = frame.meridiankonvergenz_grad ?? 0;
   const erscheinung = new Cesium.Appearance({ translucent: false, closed: true, vertexShaderSource: VS, fragmentShaderSource: FS,
@@ -284,6 +284,19 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
   erscheinung.uniforms = { u_licht: new Cesium.Cartesian3(...lichtvektor(73, 45, konvergenz)), u_staerke: 1, u_deckung: 1,
     u_atlas: platzhalter, u_ziegel: platzhalter, u_putz: platzhalter, u_atlasMass: new Cesium.Cartesian2(2, 2), u_ziegelMass: new Cesium.Cartesian2(1, 1), u_putzMass: new Cesium.Cartesian2(1, 1) };
   const primitive = instanzen.length ? scene.primitives.add(new Cesium.Primitive({ geometryInstances: instanzen, appearance: erscheinung, asynchronous: false, compressVertices: false })) : null;
+  // the relief comes a moment after the houses (it is a second look at the same walls, not needed to see them);
+  // raw geometry cannot be built on CesiumJS's workers, so it is built on the main thread, just later
+  let reliefPrimitive = null;
+  const alle = [primitive].filter(Boolean);
+  const reliefFertig = new Promise((fertig) => setTimeout(() => {
+    if (reliefInstanzen.length && !scene.isDestroyed()) {
+      reliefPrimitive = scene.primitives.add(new Cesium.Primitive({ geometryInstances: reliefInstanzen, appearance: erscheinung, asynchronous: false, compressVertices: false, show: reliefAn && (primitive?.show ?? true) }));
+      reliefPrimitive.modelMatrix = primitive.modelMatrix;
+      alle.push(reliefPrimitive);
+      const bereit = scene.postRender.addEventListener(() => { if (reliefPrimitive.ready) { bereit(); for (const oid of durch) setze(oid, DURCHSICHT); scene.requestRender(); fertig(reliefPrimitive); } });
+      scene.requestRender();
+    } else fertig(null);
+  }, 1500));
 
   /**
    * Load the kits' pictures and lay them on one sheet, pixel for pixel. A façade's wall pixels get half alpha (the shader
@@ -312,8 +325,8 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
   }
   const gemalt = blatt && primitive ? male() : Promise.resolve(null);
 
-  let durch = new Set(), wunsch = null;
-  const setze = (oid, anteil) => { for (const e of nachOid.get(oid) ?? []) { const a = primitive.getGeometryInstanceAttributes(e); if (a) a.color = [255, 255, 255, Math.round(anteil * 255)]; } };
+  let durch = new Set(), wunsch = null, reliefAn = true;
+  const setze = (oid, anteil) => { for (const e of nachOid.get(oid) ?? []) for (const p of alle) { if (!p.ready) continue; const a = p.getGeometryInstanceAttributes(e); if (a) a.color = [255, 255, 255, Math.round(anteil * 255)]; } };
   const zeige = (ids) => {
     if (!primitive) return;
     if (!primitive.ready) { wunsch = ids; return; }
@@ -326,7 +339,7 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
   if (primitive) { const fertig = scene.postRender.addEventListener(() => { if (primitive.ready) { fertig(); if (wunsch) zeige(wunsch); } }); }
 
   return {
-    liste, eintraege, primitive, anzahl: liste.length, ecken, dreiecke,
+    liste, eintraege, primitive, get reliefPrimitive() { return reliefPrimitive; }, reliefFertig, anzahl: liste.length, ecken, dreiecke, reliefEcken,
     /** Resolves when the sprites of the dressed houses are in (with the sheet they were set together on), or with null. */
     gemalt, gekleidet: liste.filter((h) => h.kleid).length,
     /** Is this ALKIS object (a house, or a gateway of one) drawn here? */
@@ -337,7 +350,8 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
       const [E0, N0] = frame.ursprung_utm32, o = pos([E0, N0], 0), C = Cesium.Cartesian3;
       const ost = C.multiplyByScalar(C.subtract(pos([E0 + 100, N0], 0), o, new C()), 0.01, new C()), nord = C.multiplyByScalar(C.subtract(pos([E0, N0 + 100], 0), o, new C()), 0.01, new C());
       const auf = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(o, new C());
-      primitive.modelMatrix = new Cesium.Matrix4(ost.x, nord.x, auf.x, o.x, ost.y, nord.y, auf.y, o.y, ost.z, nord.z, auf.z, o.z, 0, 0, 0, 1);
+      const matrix = new Cesium.Matrix4(ost.x, nord.x, auf.x, o.x, ost.y, nord.y, auf.y, o.y, ost.z, nord.z, auf.z, o.z, 0, 0, 0, 1);
+      for (const p of alle) p.modelMatrix = matrix;
     },
     /** The houses with these ids stand between camera and player: they thin out to a screen of pixels. */
     zeige,
@@ -345,7 +359,9 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
     deckung(anteil) { erscheinung.uniforms.u_deckung = anteil; },
     /** The sun: compass bearing it shines from, elevation, strength 0..1. Changes three numbers, no geometry. */
     licht({ azimut, hoehe, staerke = 1 }) { erscheinung.uniforms.u_licht = new Cesium.Cartesian3(...lichtvektor(azimut, hoehe, konvergenz)); erscheinung.uniforms.u_staerke = staerke; },
-    sichtbar(an) { if (primitive) primitive.show = an; },
+    sichtbar(an) { if (primitive) primitive.show = an; if (reliefPrimitive) reliefPrimitive.show = an && reliefAn; },
+    /** The façade relief on or off (a layer of the world view). */
+    relief(an) { reliefAn = an; if (reliefPrimitive) reliefPrimitive.show = an && (primitive?.show ?? true); scene.requestRender(); },
     /** Enter the houses' records in a layer's entity list (they carry the click text and are the pick ids). */
     verzeichne(entities) { for (const e of eintraege) { if (e.entityCollection && e.entityCollection !== entities) e.entityCollection.remove(e); if (!entities.contains(e)) entities.add(e); } },
   };

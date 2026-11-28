@@ -84,6 +84,27 @@ Genutzt werden die Bauteile noch nicht. Sie sind die Grundlage für:
 - echte Fensterlaibungen,
 - andere Darstellungen als Cesium.
 
+## Relief
+
+Die Fassaden der Häuser rund um den Platz sind nicht mehr flach. `relief()` in `src/bau/haus.js` baut aus den vermessenen Bauteilen (`oeffnungen`, `gesimse`) ein zweites Netz:
+
+| Bauteil | Tiefe vor der Wand |
+|---|---|
+| Fensterrahmen, Türrahmen, Sturz; Laibung zurück zum Glas, das in der Wand bleibt | 0,08 m |
+| Fensterbank | 0,14 m |
+| Gesimse (an den Enden einer Front geschlossen) | 0,18 m |
+
+**Wie das Relief aussieht:** Jede Fläche zeigt die Pixel der Fassade. Vorderflächen zeigen dieselbe Stelle des Bildbogens wie die flache Wand dahinter. Seitenflächen zeigen die Pixelreihe an ihrer Kante, gestreckt. Hell und dunkel ergibt sich aus der vorhandenen Beleuchtung nach Normalen: Unterseiten von Gesimsen und Stürzen liegen im Schatten.
+
+**Wo es Relief gibt:** an den Straßenseiten der Häuser im Umkreis von 100 m um den Platz (`RELIEF` in `haus.js`). Das sind etwa 126 000 Ecken, gut die Hälfte des Hausnetzes. Mit allen Hofseiten im ganzen Viertel wären es 1,6 Millionen gewesen.
+
+**Darstellung:** In der Weltansicht ist das Relief ein eigenes Zeichenobjekt mit derselben Darstellung wie die Häuser. Es baut sich kurz nach ihnen auf. Abschalten lässt es sich mit der Ebene „Fassaden-Relief“ oder mit `?relief=0`, zum Vergleich mit `?fps`.
+
+**Grenzen:**
+- Ein Bauteil bekommt nur Relief, wenn es ganz in einer Zelle liegt, also in einem Schnittstück und einem Geschoss.
+- Die schmalen Außenseiten der Rahmen fehlen, sie wären die meisten Flächen und kaum zu sehen.
+- Die Referenz `tests/referenz/viertel.json` hält je Haus einen Prüfwert des Reliefs fest.
+
 ## Prüfung
 
 `npm run assets:check` prüft neben der Art-Bibliothek auch die Bausätze der Welt (`validateWelt` in `tools/assets/validate.mjs`):

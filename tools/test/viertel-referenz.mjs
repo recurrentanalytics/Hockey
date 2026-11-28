@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { viertel, kleideViertel, packe, netz } from '../../src/bau/haus.js';
+import { viertel, kleideViertel, packe, netz, relief } from '../../src/bau/haus.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const DATEI = path.join(ROOT, 'tests/referenz/viertel.json');
@@ -39,6 +39,7 @@ export function baueReferenz() {
       laeufe: (k?.laeufe ?? []).map((l) => ({ art: l.art, laenge: r(l.laenge), satz: l.satz?.id ?? null, spalten: l.bild?.spalten ?? null, zeilen: l.zeilen, gestreckt: l.bild?.gestreckt ?? null })),
       aufbauten: (k?.aufbauten ?? []).map((a) => ({ art: a.art, mitte: a.mitte.map((v) => r(v, 2)) })),
       netz: { ecken: m.positionen.length / 3, dreiecke: m.indizes.length / 3, hash: netzHash(m) },
+      relief: (() => { const r = relief(h); return { ecken: r.positionen.length / 3, dreiecke: r.indizes.length / 3, hash: netzHash(r) }; })(),
     };
   });
 }

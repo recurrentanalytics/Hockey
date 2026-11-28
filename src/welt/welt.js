@@ -58,6 +58,7 @@ const LAYERS = [
   { id: 'google', name: 'Google-3D-Kacheln', on: false },
   { id: 'nutzung', name: 'Straßen, Wege, Flächen (ALKIS)', on: false },
   { id: 'gebaeude', name: 'Gebäude als Volumen (ALKIS)', on: true },
+  { id: 'relief', name: 'Fassaden-Relief (3D, um den Platz)', on: Q.get('relief') !== '0' },
   { id: 'wege', name: 'Wegelinien (OSM)', on: false },
   { id: 'baeume', name: 'Bäume mit Schatten (OSM-Standorte)', on: true },
   { id: 'einfriedungen', name: 'Zäune, Mauern (OSM)', on: true },
@@ -207,7 +208,7 @@ async function main() {
     haeuser.length = 0;
     if (hausArt !== 'alt' && scene.context.webgl2) {           // drawn houses: built once; ground, cover and records follow here
       viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, daecher, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS) });
-      viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on && !rundum ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.verzeichne(blocks);
+      viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on && !rundum ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.relief(LAYERS.find((l) => l.id === 'relief').on); viertelHaeuser.verzeichne(blocks);
     }
     for (const f of gebaeude.features) {
       if (viertelHaeuser?.hat(f.properties.oid)) continue;
@@ -400,6 +401,7 @@ async function main() {
       if (l.id === 'pixelboden') { if (pixelLayer) pixelLayer.show = l.on; }
       else if (l.id === 'boden') { if (bodenLayer) bodenLayer.show = l.on; build(); } // the trees' shadows depend on the ground
       else if (l.id === 'platz') { if (platzModell) platzModell.show = l.on; }
+      else if (l.id === 'relief') { viertelHaeuser?.relief(l.on); }
       else if (l.id === 'luftbild') { if (lokal) lokal.show = l.on; build(); }
       else if (l.id === 'luftbildlive') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
       else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); rundum = false; ganzerGlobus(); } }

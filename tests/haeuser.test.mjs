@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { viertel, netz, trianguliere, rechteck, flaeche, saeubere, dachhoehe, achsen, steckbrief, lichtvektor, hoehen, fuege, schichte, wandmaske, kleideViertel, packe, PUTZ, KLINKER, DURCHFAHRT, ACHSE } from '../src/bau/haus.js';
+import { viertel, netz, relief, RELIEF, trianguliere, rechteck, flaeche, saeubere, dachhoehe, achsen, steckbrief, lichtvektor, hoehen, fuege, schichte, wandmaske, kleideViertel, packe, PUTZ, KLINKER, DURCHFAHRT, ACHSE } from '../src/bau/haus.js';
 import { decodePng } from '../tools/assets/png.mjs';
 
 const json = (n) => JSON.parse(fs.readFileSync(`locations/boni/geo/${n}`, 'utf8'));
@@ -324,4 +324,41 @@ test('houses: a building the LoD2 model knows in parts is built part by part, bu
   }
   assert.ok(geteilt >= 80, `${geteilt} buildings in parts`);
   assert.ok(stufen >= 10, `${stufen} of them with parts of clearly different height`);
+});
+
+test('houses: the façade relief lifts frames, sills and cornices out of the wall, in the façade\'s own pixels', () => {
+  const saetze = JSON.parse(fs.readFileSync('assets/welt/haeuser/bausaetze.json', 'utf8')), blatt = packe(saetze);
+  const liste = kleideViertel(viertel(gebaeude, frame, { wege, daecher: json('daecher.json') }), saetze);
+  const tiefste = Math.max(RELIEF.rahmen, RELIEF.bank, RELIEF.gesims);
+  /** Distance of a point from the footprint's outline (metres). */
+  const abstand = ([x, y], ring) => Math.min(...ring.map((a, i) => { const b = ring[(i + 1) % ring.length], dx = b[0] - a[0], dy = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(x - a[0] - t * dx, y - a[1] - t * dy); }));
+  let ecken = 0, mitRelief = 0, tiefen = new Set();
+  for (const h of liste) {
+    h.kleid.lage = blatt.lage;
+    const m = relief(h), P = m.positionen, N = m.normalen, W = m.wand, B = m.bau;
+    if (!h.kleid.satz) { assert.equal(m.indizes.length, 0, `${h.oid}: no kit, no relief`); continue; }
+    if (!m.indizes.length) continue;
+    mitRelief++; ecken += P.length / 3;
+    for (let i = 0; i < m.indizes.length; i += 3) { // every triangle faces the way its normal says
+      const [a, b, c] = [0, 1, 2].map((k) => m.indizes[i + k]), p = (j) => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]];
+      const A = p(a), u = p(b).map((x, k) => x - A[k]), v = p(c).map((x, k) => x - A[k]);
+      const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]], l = Math.hypot(...n);
+      if (l > 1e-9) assert.ok((n[0] * N[a * 3] + n[1] * N[a * 3 + 1] + n[2] * N[a * 3 + 2]) / l > 0.99, `${h.oid}: a relief face looks the way its normal says`);
+    }
+    for (let j = 0; j < P.length / 3; j++) {
+      const q = [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]], d = abstand(q, h.ring);
+      assert.ok(q[2] >= -1e-6 && q[2] <= h.traufe + 1e-6, `${h.oid}: relief between the ground and the eaves`);
+      assert.ok(d <= tiefste + 1e-6, `${h.oid}: relief at most ${tiefste} m in front of the wall (${d.toFixed(3)})`);
+      if (d > 0.01) tiefen.add(Math.round(d * 100) / 100);
+      // every face shows pixels of its own cell of the façade sheet (the flat wall's cell)
+      assert.ok(W[j * 4] >= B[j * 4] - 0.51 && W[j * 4] <= B[j * 4 + 2] + 0.51 && W[j * 4 + 1] >= B[j * 4 + 1] - 0.51 && W[j * 4 + 1] <= B[j * 4 + 3] + 0.51, `${h.oid}: relief pixels inside their cell`);
+    }
+  }
+  for (const t of [RELIEF.rahmen, RELIEF.bank, RELIEF.gesims]) assert.ok(tiefen.has(t), `parts stand out ${t} m (frames, sills, cornices)`);
+  assert.ok(mitRelief > 40, `${mitRelief} houses round the court have relief`);
+  assert.ok(ecken < 160000, `a relief a tablet can draw (${ecken} corners)`);
+  // a yard building and a house far from the court stay flat
+  const fern = liste.find((h) => h.kleid.satz && Math.hypot((h.kasten[0] + h.kasten[2]) / 2, (h.kasten[1] + h.kasten[3]) / 2) > RELIEF.umkreis + 60);
+  assert.equal(relief(fern).indizes.length, 0, 'beyond the circle round the court: no relief');
+  assert.ok(relief(fern, { umkreis: Infinity, hof: true }).indizes.length > 0, 'but it has relief when asked for');
 });
