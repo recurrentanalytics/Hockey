@@ -5,7 +5,7 @@
 // The shader draws edges, corners and ridges on a grid of PX art pixels per metre of wall or roof: the
 // coarse scale of the scenery, the same as the façade kits and the ground (assets/welt/massstab.json, px_je_m).
 import { ladeBild } from './bild.js';
-import { viertel, kleideViertel, packe, netz, relief, anbauten, steckbrief, wandmaske, schattenkarte, lichtvektor, rgb, ACHSE, DURCHFAHRT, KONTUR } from '../bau/haus.js';
+import { viertel, kleideViertel, packe, netz, relief, anbauten, steckbrief, wandmaske, schattenkarte, tiefenkarte, lichtvektor, rgb, ACHSE, DURCHFAHRT, KONTUR } from '../bau/haus.js';
 export * from '../bau/haus.js'; // the rules stay importable from here, as before
 
 export const PX = 12.5; // art pixels per metre on walls and roofs: the scenery scale, = assets/welt/massstab.json px_je_m (tested)
@@ -30,11 +30,13 @@ out vec4 v_farbe;
 out vec4 v_ton;
 out vec3 v_normalEC;   // these two are what CesiumJS's shadow map looks for, to let the houses receive cast shadows
 out vec3 v_positionEC;
+out vec3 v_wandnormale; // the wall a fragment belongs to: its own normal, or for a part of the relief its wall's
 void main() {
   vec4 p = czm_computePosition();
   v_positionEC = (czm_modelViewRelativeToEye * p).xyz;
   // a part of the relief takes its wall's bearing for the cast shadows (haus.js, relief: -(10 + angle) in wand.z)
-  v_normalEC = czm_normal * (wand.z < -5.0 ? vec3(cos(-wand.z - 10.0), sin(-wand.z - 10.0), 0.0) : normal);
+  v_wandnormale = wand.z < -5.0 ? vec3(cos(-wand.z - 10.0), sin(-wand.z - 10.0), 0.0) : normal;
+  v_normalEC = czm_normal * v_wandnormale;
   v_normale = normal;
   v_wand = wand;
   v_bau = bau;
@@ -54,6 +56,7 @@ in vec4 v_farbe;
 in vec4 v_ton;
 in vec3 v_normalEC;
 in vec3 v_positionEC;
+in vec3 v_wandnormale;
 uniform vec3 u_licht;
 uniform float u_staerke;
 uniform float u_wurf;        // 1 while the shadow map darkens the sides turned from the sun itself
@@ -61,6 +64,8 @@ uniform float u_deckung;
 uniform sampler2D u_atlas;   // façade pictures and cut-out parts of the dressed houses
 uniform sampler2D u_ziegel;  // roof tiles, repeating
 uniform sampler2D u_putz;    // plaster of party walls, repeating
+uniform sampler2D u_tiefe;   // laid out like the atlas: r how far a façade pixel stands out (mm / 255), g the shade painted into the picture, b its share at the wall's foot
+uniform float u_wandern;     // 1: the shade of a façade's parts follows the sun
 uniform vec2 u_atlasMass;    // size of the atlas in pixels
 uniform vec2 u_ziegelMass;   // metres one repeat of the tiles covers
 uniform vec2 u_putzMass;
@@ -116,7 +121,26 @@ void main() {
     // v_farbe is the tint: the wanted colour divided by the picture's own. On a façade only the wall takes it (the atlas marks wall pixels with half alpha)
     if (art < 8.5) {
       vec4 bild = textureGrad(u_atlas, auv, adx, ady);
-      if (art < 7.5) grund = mix(bild.rgb, min(bild.rgb * v_farbe.rgb, vec3(1.0)), clamp((1.0 - bild.a) * 2.0, 0.0, 1.0));
+      if (art < 7.5) {
+        grund = mix(bild.rgb, min(bild.rgb * v_farbe.rgb, vec3(1.0)), clamp((1.0 - bild.a) * 2.0, 0.0, 1.0));
+        // The shade of the façade's own parts (cornices, frames, sills) is painted into the picture for a light from the
+        // upper left. Where the sun shines on the wall and the wall is near, it follows the sun instead: a pixel is in
+        // shade when, on its way to the sun, a part stands higher than the ray. Three steps, in whole pixels.
+        vec3 wn = normalize(v_wandnormale);
+        float zu = dot(wn, u_licht), nah = u_wandern * u_staerke * smoothstep(0.05, 0.25, zu) * (1.0 - smoothstep(1.5, 3.5, f));
+        if (nah > 0.01) {
+          vec4 k = textureLod(u_tiefe, auv, 0.0);
+          vec2 weg = vec2(dot(u_licht, vec3(-wn.y, wn.x, 0.0)), -u_licht.z) * (PX / max(zu, 0.15)); // art pixels the ray crosses per metre it leaves the wall
+          float h0 = k.r * 0.255, sonne = 1.0;
+          for (int i = 1; i <= 4; i++) {
+            float hoch = 0.05 * float(i);
+            vec2 v = weg * hoch; float l = length(v); if (l > 9.0) v *= 9.0 / l;
+            vec2 q = clamp(floor(ort + v) + 0.5, v_bau.xy + 0.5, v_bau.zw - 0.5);
+            if (textureLod(u_tiefe, vec2(q.x, u_atlasMass.y - q.y) / u_atlasMass, 0.0).r * 0.255 > h0 + hoch) sonne = 0.64;
+          }
+          grund *= mix(k.g, sonne * k.b, nah) / max(k.g, 0.3);
+        }
+      }
       else { if (bild.a < 0.25) discard; grund = bild.rgb; }
     }
     else if (art > 11.5) {                                 // a railing: iron bars with a rail at the top and the foot, open between them
@@ -257,7 +281,7 @@ void main() {
  * `nur(haus)` limits it to some houses; `saetze` (the façade kits, with `basis` as the folder of their pictures) dresses
  * them in sprites. Returns the handle the world view works with; nothing in it rebuilds geometry.
  */
-export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = null, frame, pos, nur = null, saetze = null, basis = null, mitRelief = true, mitAnbauten = true, schatten = 1, wurf = true }) {
+export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = null, frame, pos, nur = null, saetze = null, basis = null, mitRelief = true, mitAnbauten = true, schatten = 1, wurf = true, wandern = true }) {
   const liste = viertel(gebaeude, frame, { wege, daecher }).filter((h) => !nur || nur(h));
   // with façade kits every house is dressed in sprites; where each picture lies on the sheet is known before one of them has loaded
   const blatt = saetze ? packe(saetze) : null;
@@ -308,7 +332,10 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
   const leer = leinwand(2, 2), lg = leer.getContext('2d');
   lg.fillStyle = '#888888'; lg.fillRect(0, 0, 2, 2);
   const platzhalter = textur(leer, true);
-  erscheinung.uniforms = { u_licht: new Cesium.Cartesian3(...lichtvektor(73, 45, konvergenz)), u_staerke: 1, u_deckung: 1, u_wurf: 0,
+  lg.fillStyle = '#00ffff'; lg.fillRect(0, 0, 2, 2); // nothing stands out, nothing is shaded
+  const karte = (quelle) => new Cesium.Texture({ context: scene.context, source: quelle, sampler: new Cesium.Sampler({ minificationFilter: Cesium.TextureMinificationFilter.NEAREST, magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST }) });
+  const ohneTiefe = karte(leer);
+  erscheinung.uniforms = { u_licht: new Cesium.Cartesian3(...lichtvektor(73, 45, konvergenz)), u_staerke: 1, u_deckung: 1, u_wurf: 0, u_wandern: wandern ? 1 : 0, u_tiefe: ohneTiefe,
     u_atlas: platzhalter, u_ziegel: platzhalter, u_putz: platzhalter, u_atlasMass: new Cesium.Cartesian2(2, 2), u_ziegelMass: new Cesium.Cartesian2(1, 1), u_putzMass: new Cesium.Cartesian2(1, 1) };
   const primitive = instanzen.length ? scene.primitives.add(new Cesium.Primitive({ geometryInstances: instanzen, appearance: erscheinung, asynchronous: false, compressVertices: false, shadows: wurfAn ? Cesium.ShadowMode.ENABLED : Cesium.ShadowMode.DISABLED })) : null;
   // the shader knows whether the shadow map is at work this frame (it is off under clouds and at night)
@@ -336,18 +363,22 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
     const lade = (datei) => ladeBild(new URL(datei, basis).href);
     const pixel = (img) => { const c = leinwand(img.width, img.height), g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0); return g.getImageData(0, 0, img.width, img.height); };
     const [ziegel, putz, ...bilder] = await Promise.all([lade(saetze.ziegel.datei), lade(saetze.putz.datei), ...blatt.bilder.map((b) => lade(b.datei))]);
-    const W = blatt.breite, H = blatt.hoehe, atlas = new Uint8ClampedArray(W * H * 4);
+    const W = blatt.breite, H = blatt.hoehe, atlas = new Uint8ClampedArray(W * H * 4), tiefe = new Uint8Array(W * H * 4);
+    for (let i = 0; i < tiefe.length; i += 4) { tiefe[i + 1] = 255; tiefe[i + 2] = 255; tiefe[i + 3] = 255; }
     blatt.bilder.forEach((b, nr) => {
       const q = pixel(bilder[nr]), [x0, y0, w, h] = b.nach, maske = b.satz ? wandmaske(q, b.satz) : null, wandfarbe = b.satz ? rgb(b.satz.wand).map((v) => Math.round(v * 255)) : null;
       const dunkel = b.satz ? schattenkarte(b.satz, schatten) : null; // the shade the façade's own parts throw on it (haus.js)
+      const fuss = b.satz ? schattenkarte(b.satz, schatten, { nurFuss: true }) : null, hoch = b.satz ? tiefenkarte(b.satz) : null; // and what the shader needs to let it follow the sun
       for (let y = -1; y <= h; y++) for (let x = -1; x <= w; x++) { // one pixel beyond every edge repeats the edge, for the far-away levels
         const sx = Math.min(w - 1, Math.max(0, x)), sy = Math.min(h - 1, Math.max(0, y)), s = (sy * q.width + sx) * 4, z = ((y0 + y) * W + x0 + x) * 4, klar = q.data[s + 3] < 128;
-        if (b.satz) { const licht = dunkel[sy * q.width + sx] / 255; for (let k = 0; k < 3; k++) atlas[z + k] = (klar ? wandfarbe[k] : q.data[s + k]) * licht; atlas[z + 3] = klar || maske[sy * q.width + sx] ? 128 : 255; }
+        if (b.satz) { const o = sy * q.width + sx; tiefe[z] = hoch[o]; tiefe[z + 1] = dunkel[o]; tiefe[z + 2] = fuss[o];
+          const licht = dunkel[o] / 255; for (let k = 0; k < 3; k++) atlas[z + k] = (klar ? wandfarbe[k] : q.data[s + k]) * licht; atlas[z + 3] = klar || maske[sy * q.width + sx] ? 128 : 255; }
         else { for (let k = 0; k < 3; k++) atlas[z + k] = q.data[s + k]; atlas[z + 3] = klar ? 0 : 255; }
       }
     });
     const u = erscheinung.uniforms, m = (t) => new Cesium.Cartesian2(t.breite / t.px_je_m, t.hoehe / t.px_je_m);
     u.u_atlas = textur({ width: W, height: H, arrayBufferView: new Uint8Array(atlas.buffer) }, false); u.u_atlasMass = new Cesium.Cartesian2(W, H);
+    u.u_tiefe = karte({ width: W, height: H, arrayBufferView: tiefe });
     u.u_ziegel = textur(ziegel, true); u.u_ziegelMass = m(saetze.ziegel);
     u.u_putz = textur(putz, true); u.u_putzMass = m(saetze.putz);
     const c = leinwand(W, H); // the sheet as a picture, for looking at it

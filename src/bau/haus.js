@@ -974,14 +974,14 @@ export const SCHATTEN = { gesims: [0.62, 0.78, 0.9], bank: [0.7, 0.86], laibung:
  * a thin shadow to the right of each frame, and the foot of the wall a little darker. Pixel rows and columns, no blur.
  * `staerke` 0 … 1 scales all of it (0: no shade at all).
  */
-export function schattenkarte(f, staerke = 1) {
+export function schattenkarte(f, staerke = 1, { nurFuss = false } = {}) {
   const w = f.breite, h = f.hoehe, karte = new Uint8Array(w * h).fill(255);
   if (!(staerke > 0)) return karte;
   const dunkel = (x, y, anteil) => { if (x < 0 || y < 0 || x >= w || y >= h) return; const v = Math.round(255 * (1 - (1 - anteil) * staerke)), i = y * w + x; if (v < karte[i]) karte[i] = v; };
   const zeile = (x0, x1, y, anteil) => { for (let x = x0; x < x1; x++) dunkel(x, y, anteil); };
-  const oeffnungen = f.oeffnungen ?? [];
+  const oeffnungen = nurFuss ? [] : f.oeffnungen ?? [];
   // cornices: the band ends at row gb; a thin one throws a shorter shadow. Not below the plinth at the wall's foot
-  for (const [ga, gb] of f.gesimse ?? []) {
+  for (const [ga, gb] of nurFuss ? [] : f.gesimse ?? []) {
     if (gb - ga < 1 || gb >= h - SCHATTEN.fuss.length) continue;
     const stufen = gb - ga >= 3 ? SCHATTEN.gesims : SCHATTEN.gesims.slice(1);
     stufen.forEach((anteil, k) => zeile(0, w, gb + k, anteil));
@@ -999,6 +999,26 @@ export function schattenkarte(f, staerke = 1) {
   }
   // the foot of the wall, where the street's light does not reach
   SCHATTEN.fuss.forEach((anteil, k) => zeile(0, w, h - 1 - k, anteil));
+  return karte;
+}
+
+/**
+ * How far every pixel of a façade's picture stands out of the wall, in millimetres (0 … 255): the same parts and
+ * depths as the relief (RELIEF): cornice bands, the frames round the glass, the sills. Wall and glass are 0. With
+ * this a drawing can let the shade of the parts follow the sun (a pixel is in shade when, on the way to the sun,
+ * something stands higher than the ray): what `schattenkarte` paints once, for one light, moves.
+ */
+export function tiefenkarte(f) {
+  const w = f.breite, h = f.hoehe, karte = new Uint8Array(w * h);
+  const feld = (x0, y0, x1, y1, m) => { const v = Math.round(m * 1000); for (let y = Math.max(0, y0); y < Math.min(h, y1); y++) for (let x = Math.max(0, x0); x < Math.min(w, x1); x++) if (v > karte[y * w + x]) karte[y * w + x] = v; };
+  for (const [ga, gb] of f.gesimse ?? []) if (gb - ga >= 1) feld(0, ga, w, gb, RELIEF.gesims);
+  for (const o of f.oeffnungen ?? []) {
+    const [gx, gy, gb, gh] = o.glas ?? [o.x + 1, o.y + 1, o.b - 2, o.h - 1], x1 = o.x + o.b, y1 = o.y + o.h;
+    if (gb < 1 || gh < 1) continue;
+    for (let y = o.y; y < y1; y++) for (let x = o.x; x < x1; x++) karte[y * w + x] = 0; // an opening breaks a cornice
+    feld(o.x, o.y, x1, gy, RELIEF.rahmen); feld(o.x, gy, gx, gy + gh, RELIEF.rahmen); feld(gx + gb, gy, x1, gy + gh, RELIEF.rahmen); // lintel and jambs
+    if (y1 > gy + gh) feld(o.x, gy + gh, x1, y1, o.art === 'tuer' ? RELIEF.rahmen : RELIEF.bank); // sill or threshold
+  }
   return karte;
 }
 

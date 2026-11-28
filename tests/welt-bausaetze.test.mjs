@@ -82,3 +82,25 @@ test('façade shade: under cornices and sills, in the reveals and at the foot, a
   const f = saetze.fassaden[0], voll = schattenkarte(f), halb = schattenkarte(f, 0.5);
   for (let i = 0; i < voll.length; i += 97) assert.ok(Math.abs((255 - halb[i]) * 2 - (255 - voll[i])) <= 2);
 });
+
+test('façade heights: cornices, frames and sills stand out as deep as the relief, wall and glass do not', async () => {
+  const { tiefenkarte, schattenkarte, RELIEF, SCHATTEN } = await import('../src/bau/haus.js');
+  const saetze = JSON.parse(fs.readFileSync(KIT, 'utf8')), mm = (m) => Math.round(m * 1000);
+  for (const f of saetze.fassaden) {
+    const karte = tiefenkarte(f), bei = (x, y) => karte[y * f.breite + x];
+    assert.equal(karte.length, f.breite * f.hoehe);
+    assert.ok(karte.every((v) => [0, mm(RELIEF.rahmen), mm(RELIEF.bank), mm(RELIEF.gesims)].includes(v)), `${f.id}: only the relief's depths`);
+    for (const o of f.oeffnungen.filter((x) => x.glas)) {
+      const [gx, gy, gb, gh] = o.glas;
+      assert.equal(bei(gx + (gb >> 1), gy + (gh >> 1)), 0, `${f.id}: glass lies in the wall`);
+      if (gx > o.x) assert.equal(bei(o.x, gy + 1), mm(RELIEF.rahmen), `${f.id}: the jamb stands out`);
+      if (o.y + o.h > gy + gh) assert.equal(bei(gx + 1, o.y + o.h - 1), mm(o.art === 'tuer' ? RELIEF.rahmen : RELIEF.bank), `${f.id}: the sill stands out further`);
+    }
+    // a cornice band stands out wherever no opening crosses it
+    const band = f.gesimse.find(([a, b]) => b - a >= 1), frei = [...Array(f.breite).keys()].find((x) => !f.oeffnungen.some((o) => x >= o.x && x < o.x + o.b && band[0] < o.y + o.h && band[1] > o.y));
+    assert.equal(bei(frei, band[0]), mm(RELIEF.gesims), `${f.id}: the cornice at row ${band[0]}`);
+    // the foot of the wall alone: the last rows, nothing else
+    const fuss = schattenkarte(f, 1, { nurFuss: true });
+    assert.ok(fuss.slice(0, f.breite * (f.hoehe - SCHATTEN.fuss.length)).every((v) => v === 255) && fuss[fuss.length - 1] === Math.round(255 * SCHATTEN.fuss[0]), `${f.id}: only the foot`);
+  }
+});
