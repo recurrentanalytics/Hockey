@@ -60,3 +60,25 @@ test('world kits: the house kits follow schema/bausatz.schema.json, and the chec
   assert.match(geaendert((w) => json(path.join(w, 'haeuser/bausaetze.json'), (d) => { d.fassaden[0].oeffnungen[0].art = 'erker'; })).join('\n'), /oeffnungen\/0\/art: "erker" is not one of fenster, schaufenster, tuer/);
   assert.match(geaendert((w) => json(path.join(w, 'haeuser/bausaetze.json'), (d) => { d.fassaden[3].fenster = 7; })).join('\n'), /"fenster" is not part of the schema/);
 });
+
+test('façade shade: under cornices and sills, in the reveals and at the foot, and nowhere when switched off', async () => {
+  const { schattenkarte, SCHATTEN } = await import('../src/bau/haus.js');
+  const saetze = JSON.parse(fs.readFileSync(KIT, 'utf8'));
+  for (const f of saetze.fassaden) {
+    const karte = schattenkarte(f), bei = (x, y) => karte[y * f.breite + x];
+    assert.equal(karte.length, f.breite * f.hoehe, `${f.id}: one number per pixel`);
+    assert.ok(schattenkarte(f, 0).every((v) => v === 255), `${f.id}: strength 0 leaves the picture as drawn`);
+    const anteil = karte.filter((v) => v < 255).length / karte.length;
+    assert.ok(anteil > 0.05 && anteil < 0.3, `${f.id}: ${(anteil * 100).toFixed(1)} % shaded: shade, not a darker picture`);
+    assert.equal(bei(0, f.hoehe - 1), Math.round(255 * SCHATTEN.fuss[0]), `${f.id}: the wall's foot is darkest in its last row`);
+    // the deepest shade lies directly under a broad cornice and at the top of a reveal
+    const band = f.gesimse.find(([a, b]) => b - a >= 3 && b < f.hoehe - 10);
+    if (band) assert.ok(karte.slice(band[1] * f.breite, (band[1] + 1) * f.breite).every((v) => v <= Math.round(255 * SCHATTEN.gesims[0])), `${f.id}: a full row of shadow under the cornice at ${band[1]}`);
+    const fenster = f.oeffnungen.find((o) => o.art === 'fenster' && o.glas);
+    assert.ok(bei(fenster.glas[0] + 2, fenster.glas[1]) <= Math.round(255 * SCHATTEN.laibung[0]), `${f.id}: the lintel's shadow on the glass`);
+    assert.ok(bei(fenster.x + 2, fenster.y + fenster.h) <= Math.round(255 * SCHATTEN.bank[0]), `${f.id}: the sill's shadow on the wall`);
+  }
+  // half strength is half as dark
+  const f = saetze.fassaden[0], voll = schattenkarte(f), halb = schattenkarte(f, 0.5);
+  for (let i = 0; i < voll.length; i += 97) assert.ok(Math.abs((255 - halb[i]) * 2 - (255 - voll[i])) <= 2);
+});

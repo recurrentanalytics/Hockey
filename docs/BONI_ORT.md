@@ -256,3 +256,9 @@ Die genaue Lage am Ende (Abstand zur Ecke) ist geschätzt. `assets/intro/boni_pl
 ## Bedienfeld einklappbar (2026-11-28)
 
 Der Knopf ☰ klappt das Bedienfeld der Weltansicht auf seinen Knopf zusammen; die Ebenenliste klappt für sich ein und ist anfangs zu. Beides merkt sich das Gerät (`boni.tafel`, `boni.ebenen`). Auf kleinen Bildschirmen (kürzere Seite bis 640 Pixel) startet das Bedienfeld eingeklappt. Die Hauptadresse ohne Dateinamen leitet auf `welt.html` weiter; `index.html` beim Namen ist die Halle.
+
+## Schatten an den Häusern und Himmel (2026-11-28)
+
+- **Fassaden:** Schatten der eigenen Bauteile sind in die Fassadenbilder gemalt; die Häuser werfen bei Sonne Schlagschatten auf Straße und Nachbarn. Einzelheiten, Schalter und Kosten: `docs/art/HAEUSER.md`, Abschnitt „Schatten“.
+- **Himmel:** Nach der Landung steht die Atmosphäre von CesiumJS über dem Viertel, beleuchtet von der Sonne der Uhr: blau am Mittag, warm am Abend, dunkel in der Nacht, dann mit Sternen. Unter Wolken, Regen, Schnee und Nebel ist sie grauer und dunkler. Vorher war der Himmel aus Straßenhöhe schwarz mit Sternen. Mit den Google-Kacheln und ihrem Dunst bleibt der Himmel die Dunstfarbe; im Anflug aus dem All gilt der Himmel des Anflugs.
+- **Nicht geprüft:** Google-Kacheln zusammen mit dem neuen Himmel, Handy und Tablet.

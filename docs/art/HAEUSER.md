@@ -107,6 +107,25 @@ Die Fassaden der Häuser rund um den Platz sind nicht mehr flach. `relief()` in 
 - Die schmalen Außenseiten der Rahmen fehlen, sie wären die meisten Flächen und kaum zu sehen.
 - Die Referenz `tests/referenz/viertel.json` hält je Haus einen Prüfwert des Reliefs fest.
 
+## Schatten
+
+Drei Dinge geben den Häusern Tiefe. Keines davon braucht neue Bilder.
+
+| Was | Wie | Schalter |
+|---|---|---|
+| **Schatten der eigenen Bauteile** auf der Fassade: unter jedem Gesims und jeder Fensterbank, oben und links in jeder Laibung, rechts neben jedem Rahmen, am Fuß der Wand | `schattenkarte()` in `src/bau/haus.js` rechnet aus den vermessenen Bauteilen eine Zahl je Pixel des Fassadenbilds, `haeuser.js` malt sie beim Laden in den Bildbogen. Stufen in ganzen Pixelreihen, Licht von links oben wie in den Sprites. Kostet beim Zeichnen nichts | `?fassadenschatten=0 … 1` (Stärke; 0 zeigt die Bilder wie gezeichnet) |
+| **Schlagschatten der Häuser** auf Straße, Höfe und Nachbarhäuser | die Schattenkarte von CesiumJS; die Häuser werfen und empfangen. Nur bei Sonne (unter Wolken und nachts schaltet das Umweltmodul sie ab) | Ebene „Schlagschatten der Häuser“, `?schlagschatten=0` |
+| **Schattenseite** eines Hauses | mit Schlagschatten dunkelt die Schattenkarte abgewandte Flächen selbst ab; der Shader gibt ihnen etwas Licht zurück und einen kühlen Ton | – |
+
+**Relief und Schlagschatten:** Ein Reliefteil ist 8 bis 18 cm tief, dafür ist die Schattenkarte zu grob. Jedes Teil trägt deshalb die Richtung seiner Wand mit (dritte Zahl von `wand`, als `-(10 + Winkel)`) und bekommt den Schatten seiner Wand. Das Relief wirft auch selbst: Nur empfangend lag es stellenweise außerhalb des Bereichs, den die Schattenkarte um ihre Werfer legt, und leuchtete auf Schattenwänden.
+
+**Kosten:** Auf einem Apple M4 bei 1280 × 800 braucht ein Bild mit Schlagschatten etwa 8 bis 9 ms statt 5 bis 6 ms. Auf Handy und Tablet nicht gemessen. Darum die Bremse in `welt.js`: Läuft die Ansicht mit Schlagschatten 60 Bilder lang unter etwa 33 Bildern je Sekunde, nimmt sie die Schatten zur Probe 60 Bilder lang weg. Ist es dann mindestens ein Fünftel schneller, bleiben sie aus und das Bedienfeld sagt es; sonst kommen sie zurück.
+
+**Grenzen:**
+- Die gemalten Schatten stehen fest (Licht von links oben), sie drehen sich nicht mit der Sonne.
+- Bäume sind Bildtafeln: Sie werfen keinen Schlagschatten in die Schattenkarte und empfangen keinen. Ihre eigenen Bodenschatten bleiben.
+- Eine Fassade im Schlagschatten eines Nachbarn ist etwas dunkler als eine, die selbst von der Sonne abgewandt ist.
+
 ## Prüfung
 
 `npm run assets:check` prüft neben der Art-Bibliothek auch die Bausätze der Welt (`validateWelt` in `tools/assets/validate.mjs`):

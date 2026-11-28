@@ -30,6 +30,8 @@ const GAME_VIEW = { heading: ORT.blick.richtung, tilt: ORT.blick.neigung }; // t
 // SpriteCook façade kits (assets/welt/haeuser/bausaetze.json); without it every footprint stays the plain volume it was.
 
 const Q = new URLSearchParams(location.search);
+// ?fassadenschatten=0 … 1: how strong the shade painted on the façades is (cornices, sills, reveals); 0 shows the flat pictures
+const FASSADENSCHATTEN = Q.has('fassadenschatten') ? Math.min(1, Math.max(0, Number(Q.get('fassadenschatten')) || 0)) : 1;
 // distance haze on the Google tiles and coarser far tiles (see showGoogle). ?dunst=0 off; ?dunst=a,b,s tunes it:
 // clear up to a metres beyond the edge of the drawn quarter, full strength s (0–1) from b metres beyond it
 const DUNST = Q.get('dunst') !== '0';
@@ -60,6 +62,7 @@ const LAYERS = [
   { id: 'nutzung', name: 'Straßen, Wege, Flächen (ALKIS)', on: false },
   { id: 'gebaeude', name: 'Gebäude als Volumen (ALKIS)', on: true },
   { id: 'relief', name: 'Fassaden-Relief (3D, um den Platz)', on: Q.get('relief') !== '0' },
+  { id: 'wurf', name: 'Schlagschatten der Häuser (bei Sonne)', on: Q.get('schlagschatten') !== '0' },
   { id: 'wege', name: 'Wegelinien (OSM)', on: false },
   { id: 'baeume', name: 'Bäume mit Schatten (OSM-Standorte)', on: true },
   { id: 'einfriedungen', name: 'Zäune, Mauern (OSM)', on: true },
@@ -181,6 +184,21 @@ async function main() {
   scene.globe.baseColor = Cesium.Color.fromCssColorString('#3a4038');
   scene.globe.depthTestAgainstTerrain = false;
   scene.skyAtmosphere.show = false; scene.fog.enabled = false;
+  // cast shadows only as far as the quarter is looked at: the shadow map's pixels go where they are seen
+  scene.shadowMap.maximumDistance = 1500;
+  // ---- the sky: once landed, CesiumJS's atmosphere stands over the quarter, lit by the clock's sun (blue at noon, warm
+  // at dusk, dark at night, then with the stars), greyer and dimmer under clouds. With the Google tiles and their
+  // haze the sky stays the haze colour (dunstAn); during the approach from space the sky is the approach's own.
+  const HIMMEL = { grau: 0, tag: 1, dunstig: false };
+  function himmel() {
+    if (document.body.classList.contains('anflug')) return;
+    const atm = scene.skyAtmosphere;
+    scene.atmosphere.dynamicLighting = Cesium.DynamicAtmosphereLightingType.SUNLIGHT;
+    atm.show = !HIMMEL.dunstig;
+    atm.saturationShift = -0.75 * HIMMEL.grau; atm.brightnessShift = -0.2 * HIMMEL.grau;
+    if (scene.skyBox && !HIMMEL.dunstig) scene.skyBox.show = HIMMEL.tag < 0.3;
+    scene.requestRender();
+  }
   viewer.creditDisplay.addStaticCredit(new Cesium.Credit('Wege, Bäume, Höhen © OpenStreetMap-Mitwirkende, ODbL', true));
   if (daecher) viewer.creditDisplay.addStaticCredit(new Cesium.Credit(`Dächer und Gebäudehöhen ${daecher.quelle.split(':')[0]}`, true)); // © GeoBasis-DE / LGLN (Jahr), dl-de/by-2-0
 
@@ -232,7 +250,7 @@ async function main() {
     const blocks = layer('gebaeude');
     haeuser.length = 0;
     if (hausArt !== 'alt' && scene.context.webgl2) {           // drawn houses: built once; ground, cover and records follow here
-      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, daecher, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS) });
+      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, daecher, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS), schatten: FASSADENSCHATTEN, wurf: LAYERS.find((l) => l.id === 'wurf').on });
       viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on && !rundum ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.relief(LAYERS.find((l) => l.id === 'relief').on); viertelHaeuser.verzeichne(blocks);
     }
     for (const f of gebaeude.features) {
@@ -346,6 +364,7 @@ async function main() {
     if (an) dunstGebiet();
     if (scene.skyBox) scene.skyBox.show = !an;
     scene.backgroundColor = an ? DUNST_FARBE : Cesium.Color.BLACK;
+    HIMMEL.dunstig = an; himmel();
   }
   function viertelSchnitt() {
     // one rectangle round the data's cutout and every house that reaches beyond it: a single cut is the cheapest to draw
@@ -427,6 +446,7 @@ async function main() {
       else if (l.id === 'boden') { if (bodenLayer) bodenLayer.show = l.on; build(); } // the trees' shadows depend on the ground
       else if (l.id === 'platz') { if (platzModell) platzModell.show = l.on; }
       else if (l.id === 'relief') { viertelHaeuser?.relief(l.on); }
+      else if (l.id === 'wurf') { viertelHaeuser?.wurf?.(l.on); }
       else if (l.id === 'luftbild') { if (lokal) lokal.show = l.on; build(); }
       else if (l.id === 'luftbildlive') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
       else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); rundum = false; ganzerGlobus(); } }
@@ -583,6 +603,7 @@ async function main() {
     $('surface').textContent = belag.label;
     LICHT.azimut = v.sun.az; LICHT.hoehe = Math.max(v.sun.alt, 8); LICHT.staerke = Math.min(1, v.sunlit * 1.2);
     viertelHaeuser?.licht(LICHT); // the houses take the light at once: three numbers, nothing is rebuilt
+    HIMMEL.grau = { clouds: 1, rain: 1, fog: 1, snow: 0.9, partly: 0.3 }[st.look] ?? 0; HIMMEL.tag = v.day; himmel();
     clearTimeout(neuZeichnen); neuZeichnen = setTimeout(() => { if (sources.baeume) build(); }, 400); // tree shadows turn with the sun
   };
   try {
@@ -591,6 +612,37 @@ async function main() {
     $('wxBtn').hidden = false; $('surface').hidden = false;
   } catch (e) { status('Wetter nicht verfügbar: ' + e.message); }
 
+  // Cast shadows cost a second pass over the houses. Where the view runs slowly with them (60 frames in a row at
+  // under about 33 a second), they are taken away for a trial of 60 frames: if the view is then at least a fifth
+  // faster they stay off and the panel says so (the layer list turns them back on); if not, they were not the
+  // reason (a slow display, a throttled tab) and come back. One trial per visit.
+  {
+    let zuletzt = 0, summe = 0, n = 0, stand = 'messen', mit = 0, warten = 0;
+    const seit = performance.now(), ebene = LAYERS.find((l) => l.id === 'wurf');
+    scene.postRender.addEventListener(() => {
+      const jetzt = performance.now(), dt = jetzt - zuletzt;
+      zuletzt = jetzt;
+      if (stand === 'fertig') return;
+      if (!ebene.on || !scene.shadowMap.enabled || jetzt - seit < 15000 || dt > 120 || document.body.classList.contains('anflug')) { summe = 0; n = 0; return; }
+      if (warten > 0) { warten--; return; }
+      summe += dt;
+      if (++n < 60) return;
+      const schnitt = summe / n;
+      summe = 0; n = 0;
+      if (stand === 'messen') {
+        if (schnitt <= 30) return;
+        mit = schnitt; stand = 'probe'; warten = 10; viertelHaeuser?.wurf?.(false);
+      } else {
+        stand = 'fertig';
+        if (schnitt < mit * 0.8) {
+          ebene.on = false;
+          const haken = $('ebenen').querySelectorAll('input[type=checkbox]')[LAYERS.indexOf(ebene)];
+          if (haken) haken.checked = false;
+          status('Schlagschatten der Häuser aus: dieses Gerät zeichnet damit zu langsam (Ebenen schaltet sie wieder ein)');
+        } else viertelHaeuser?.wurf?.(true);
+      }
+    });
+  }
   window.addEventListener('resize', () => { if (imSpiel) spielkamera(); });
   $('spielstart').addEventListener('click', (e) => { e.preventDefault(); betrete().catch((err) => { status('Spiel nicht geladen: ' + err.message); verlasse(); }); });
   $('verlassen').addEventListener('click', verlasse);
@@ -611,7 +663,8 @@ async function main() {
   if (Q.has('sicht') || Q.has('ohneanflug')) view(Q.get('sicht') in VIEWS ? Q.get('sicht') : 'schraeg');
   else {
     document.body.classList.add('anflug');
-    scene.skyAtmosphere.show = true;
+    scene.skyAtmosphere.show = true; scene.atmosphere.dynamicLighting = Cesium.DynamicAtmosphereLightingType.NONE;
+    scene.skyAtmosphere.saturationShift = 0; scene.skyAtmosphere.brightnessShift = 0; if (scene.skyBox) scene.skyBox.show = true;
     flug = starteAnflug({
       setze: (k) => {
         anstossen(400); // drawing on demand: the flight asks for the next frame itself
@@ -619,7 +672,7 @@ async function main() {
         camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
       },
       untertitel: $('untertitel'), stimmen: new URL('voice/', ASSETS), renderEreignis: scene.preUpdate,
-      amEnde: () => { document.body.classList.remove('anflug'); document.body.classList.add('gelandet'); scene.skyAtmosphere.show = false; current = 'spiel'; status('bereit'); },
+      amEnde: () => { document.body.classList.remove('anflug'); document.body.classList.add('gelandet'); himmel(); current = 'spiel'; status('bereit'); },
     });
     // "a country … a city": Germany's outline and Hannover light up while the story names them (as in the intro)
     const marken = new Cesium.CustomDataSource('anflug');

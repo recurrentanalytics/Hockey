@@ -5,7 +5,7 @@
 // The shader draws edges, corners and ridges on a grid of PX art pixels per metre of wall or roof: the
 // coarse scale of the scenery, the same as the façade kits and the ground (assets/welt/massstab.json, px_je_m).
 import { ladeBild } from './bild.js';
-import { viertel, kleideViertel, packe, netz, relief, steckbrief, wandmaske, lichtvektor, rgb, ACHSE, DURCHFAHRT, KONTUR } from '../bau/haus.js';
+import { viertel, kleideViertel, packe, netz, relief, steckbrief, wandmaske, schattenkarte, lichtvektor, rgb, ACHSE, DURCHFAHRT, KONTUR } from '../bau/haus.js';
 export * from '../bau/haus.js'; // the rules stay importable from here, as before
 
 export const PX = 12.5; // art pixels per metre on walls and roofs: the scenery scale, = assets/welt/massstab.json px_je_m (tested)
@@ -28,8 +28,13 @@ out vec4 v_wand;
 out vec4 v_bau;
 out vec4 v_farbe;
 out vec4 v_ton;
+out vec3 v_normalEC;   // these two are what CesiumJS's shadow map looks for, to let the houses receive cast shadows
+out vec3 v_positionEC;
 void main() {
   vec4 p = czm_computePosition();
+  v_positionEC = (czm_modelViewRelativeToEye * p).xyz;
+  // a part of the relief takes its wall's bearing for the cast shadows (haus.js, relief: -(10 + angle) in wand.z)
+  v_normalEC = czm_normal * (wand.z < -5.0 ? vec3(cos(-wand.z - 10.0), sin(-wand.z - 10.0), 0.0) : normal);
   v_normale = normal;
   v_wand = wand;
   v_bau = bau;
@@ -47,8 +52,11 @@ in vec4 v_wand;
 in vec4 v_bau;
 in vec4 v_farbe;
 in vec4 v_ton;
+in vec3 v_normalEC;
+in vec3 v_positionEC;
 uniform vec3 u_licht;
 uniform float u_staerke;
+uniform float u_wurf;        // 1 while the shadow map darkens the sides turned from the sun itself
 uniform float u_deckung;
 uniform sampler2D u_atlas;   // façade pictures and cut-out parts of the dressed houses
 uniform sampler2D u_ziegel;  // roof tiles, repeating
@@ -227,10 +235,14 @@ void main() {
     grund *= 0.42; fein = grund; grob = grund; mittel = grund;
   }
 
+  // With cast shadows on, the shadow map itself darkens every face turned from the sun, softly over the last
+  // degrees (CesiumJS: up to 0.3 of the cosine). Such a face gets no second step of shade on top, and a little
+  // light back, so a house in the shade keeps its colour: open sky lights it.
+  float heben = u_wurf * (1.0 - smoothstep(0.0, 0.3, dot(normalize(v_normalEC), czm_sunDirectionEC)));
   vec3 c = mix(grob, fein, 1.0 - smoothstep(0.9, 2.0, f));
   c = mix(mittel, c, 1.0 - smoothstep(5.0, 11.0, f));
-  c *= mix(0.9, stufe, u_staerke);
-  if (stufe < 0.8) c *= mix(vec3(1.0), vec3(0.95, 0.97, 1.06), u_staerke);       // shade is a little cooler
+  c *= mix(mix(0.9, stufe, u_staerke), 1.3, heben);
+  c *= mix(vec3(1.0), vec3(0.95, 0.97, 1.06), u_staerke * max(heben, stufe < 0.8 ? 1.0 : 0.0)); // shade is a little cooler
   out_FragColor = czm_gammaCorrect(vec4(c * v_ton.rgb, 1.0));
 }`;
 
@@ -239,7 +251,7 @@ void main() {
  * `nur(haus)` limits it to some houses; `saetze` (the façade kits, with `basis` as the folder of their pictures) dresses
  * them in sprites. Returns the handle the world view works with; nothing in it rebuilds geometry.
  */
-export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = null, frame, pos, nur = null, saetze = null, basis = null, mitRelief = true }) {
+export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = null, frame, pos, nur = null, saetze = null, basis = null, mitRelief = true, schatten = 1, wurf = true }) {
   const liste = viertel(gebaeude, frame, { wege, daecher }).filter((h) => !nur || nur(h));
   // with façade kits every house is dressed in sprites; where each picture lies on the sheet is known before one of them has loaded
   const blatt = saetze ? packe(saetze) : null;
@@ -267,6 +279,7 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
     if (r?.indizes.length) { reliefEcken += r.positionen.length / 3; reliefInstanzen.push(new Cesium.GeometryInstance({ id: eintrag, geometry: geometrie(r), attributes: { color: new Cesium.ColorGeometryInstanceAttribute(1, 1, 1, 1) } })); }
   }
   const konvergenz = frame.meridiankonvergenz_grad ?? 0;
+  let wurfAn = wurf;
   const erscheinung = new Cesium.Appearance({ translucent: false, closed: true, vertexShaderSource: VS, fragmentShaderSource: FS,
     renderState: { depthTest: { enabled: true }, cull: { enabled: true, face: Cesium.CullFace.BACK } } });
   // sprites: crisp pixels up close, the texture's own smaller levels far away
@@ -281,16 +294,18 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
   const leer = leinwand(2, 2), lg = leer.getContext('2d');
   lg.fillStyle = '#888888'; lg.fillRect(0, 0, 2, 2);
   const platzhalter = textur(leer, true);
-  erscheinung.uniforms = { u_licht: new Cesium.Cartesian3(...lichtvektor(73, 45, konvergenz)), u_staerke: 1, u_deckung: 1,
+  erscheinung.uniforms = { u_licht: new Cesium.Cartesian3(...lichtvektor(73, 45, konvergenz)), u_staerke: 1, u_deckung: 1, u_wurf: 0,
     u_atlas: platzhalter, u_ziegel: platzhalter, u_putz: platzhalter, u_atlasMass: new Cesium.Cartesian2(2, 2), u_ziegelMass: new Cesium.Cartesian2(1, 1), u_putzMass: new Cesium.Cartesian2(1, 1) };
-  const primitive = instanzen.length ? scene.primitives.add(new Cesium.Primitive({ geometryInstances: instanzen, appearance: erscheinung, asynchronous: false, compressVertices: false })) : null;
+  const primitive = instanzen.length ? scene.primitives.add(new Cesium.Primitive({ geometryInstances: instanzen, appearance: erscheinung, asynchronous: false, compressVertices: false, shadows: wurfAn ? Cesium.ShadowMode.ENABLED : Cesium.ShadowMode.DISABLED })) : null;
+  // the shader knows whether the shadow map is at work this frame (it is off under clouds and at night)
+  if (primitive) scene.preRender.addEventListener(() => { erscheinung.uniforms.u_wurf = wurfAn && scene.shadowMap.enabled ? 1 : 0; });
   // the relief comes a moment after the houses (it is a second look at the same walls, not needed to see them);
   // raw geometry cannot be built on CesiumJS's workers, so it is built on the main thread, just later
   let reliefPrimitive = null;
   const alle = [primitive].filter(Boolean);
   const reliefFertig = new Promise((fertig) => setTimeout(() => {
     if (reliefInstanzen.length && !scene.isDestroyed()) {
-      reliefPrimitive = scene.primitives.add(new Cesium.Primitive({ geometryInstances: reliefInstanzen, appearance: erscheinung, asynchronous: false, compressVertices: false, show: reliefAn && (primitive?.show ?? true) }));
+      reliefPrimitive = scene.primitives.add(new Cesium.Primitive({ geometryInstances: reliefInstanzen, appearance: erscheinung, asynchronous: false, compressVertices: false, show: reliefAn && (primitive?.show ?? true), shadows: wurfAn ? Cesium.ShadowMode.ENABLED : Cesium.ShadowMode.DISABLED }));
       reliefPrimitive.modelMatrix = primitive.modelMatrix;
       alle.push(reliefPrimitive);
       const bereit = scene.postRender.addEventListener(() => { if (reliefPrimitive.ready) { bereit(); for (const oid of durch) setze(oid, DURCHSICHT); scene.requestRender(); fertig(reliefPrimitive); } });
@@ -300,7 +315,8 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
 
   /**
    * Load the kits' pictures and lay them on one sheet, pixel for pixel. A façade's wall pixels get half alpha (the shader
-   * tints only those), transparent margins take the wall colour, roof parts keep their cut-out. No geometry changes.
+   * tints only those), transparent margins take the wall colour, roof parts keep their cut-out. The shade of a façade's
+   * own parts (cornices, sills, reveals: schattenkarte) is painted into its picture here. No geometry changes.
    */
   async function male() {
     const lade = (datei) => ladeBild(new URL(datei, basis).href);
@@ -309,9 +325,10 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
     const W = blatt.breite, H = blatt.hoehe, atlas = new Uint8ClampedArray(W * H * 4);
     blatt.bilder.forEach((b, nr) => {
       const q = pixel(bilder[nr]), [x0, y0, w, h] = b.nach, maske = b.satz ? wandmaske(q, b.satz) : null, wandfarbe = b.satz ? rgb(b.satz.wand).map((v) => Math.round(v * 255)) : null;
+      const dunkel = b.satz ? schattenkarte(b.satz, schatten) : null; // the shade the façade's own parts throw on it (haus.js)
       for (let y = -1; y <= h; y++) for (let x = -1; x <= w; x++) { // one pixel beyond every edge repeats the edge, for the far-away levels
         const sx = Math.min(w - 1, Math.max(0, x)), sy = Math.min(h - 1, Math.max(0, y)), s = (sy * q.width + sx) * 4, z = ((y0 + y) * W + x0 + x) * 4, klar = q.data[s + 3] < 128;
-        if (b.satz) { for (let k = 0; k < 3; k++) atlas[z + k] = klar ? wandfarbe[k] : q.data[s + k]; atlas[z + 3] = klar || maske[sy * q.width + sx] ? 128 : 255; }
+        if (b.satz) { const licht = dunkel[sy * q.width + sx] / 255; for (let k = 0; k < 3; k++) atlas[z + k] = (klar ? wandfarbe[k] : q.data[s + k]) * licht; atlas[z + 3] = klar || maske[sy * q.width + sx] ? 128 : 255; }
         else { for (let k = 0; k < 3; k++) atlas[z + k] = q.data[s + k]; atlas[z + 3] = klar ? 0 : 255; }
       }
     });
@@ -360,6 +377,12 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
     /** The sun: compass bearing it shines from, elevation, strength 0..1. Changes three numbers, no geometry. */
     licht({ azimut, hoehe, staerke = 1 }) { erscheinung.uniforms.u_licht = new Cesium.Cartesian3(...lichtvektor(azimut, hoehe, konvergenz)); erscheinung.uniforms.u_staerke = staerke; },
     sichtbar(an) { if (primitive) primitive.show = an; if (reliefPrimitive) reliefPrimitive.show = an && reliefAn; },
+    /**
+     * Cast shadows on or off: the houses throw them on the ground and on each other and receive them. The relief
+     * casts too: a part that only received stood, in places, outside the range the shadow map fits round its
+     * casters, and shone on a wall in the shade.
+     */
+    wurf(an) { wurfAn = an; for (const p of alle) p.shadows = an ? Cesium.ShadowMode.ENABLED : Cesium.ShadowMode.DISABLED; scene.requestRender(); },
     /** The façade relief on or off (a layer of the world view). */
     relief(an) { reliefAn = an; if (reliefPrimitive) reliefPrimitive.show = an && (primitive?.show ?? true); scene.requestRender(); },
     /** Enter the houses' records in a layer's entity list (they carry the click text and are the pick ids). */

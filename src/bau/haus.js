@@ -589,13 +589,17 @@ export function relief(h, { hof = RELIEF.hof, umkreis = RELIEF.umkreis } = {}) {
   const [x0k, y0k, x1k, y1k] = h.kasten; // only houses that reach into the circle round the court
   if (Math.hypot(Math.max(0, Math.abs((x0k + x1k) / 2) - (x1k - x0k) / 2), Math.max(0, Math.abs((y0k + y1k) / 2) - (y1k - y0k) / 2)) > umkreis) return leer;
   const stock = geschosslinien(h);
+  // Every part carries the bearing of the wall it sits on (third number of `wand`, negative so that it is no height:
+  // -(10 + angle)). A drawing with cast shadows gives a part its wall's shade: a sill of 14 cm is far too small for a
+  // shadow map to tell whether it is lit.
+  let wandwinkel = 0;
   // a quad: four corners in space with their places on the sheet; turned so that it faces `nrm`
   const flaeche4 = (p, wo, nrm, box, ton) => {
     const u = [p[1][0] - p[0][0], p[1][1] - p[0][1], p[1][2] - p[0][2]], v = [p[2][0] - p[0][0], p[2][1] - p[0][1], p[2][2] - p[0][2]];
     const c = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
     if (Math.hypot(...c) < 1e-9) return;
     const ordnung = c[0] * nrm[0] + c[1] * nrm[1] + c[2] * nrm[2] >= 0 ? [0, 1, 2, 3] : [0, 3, 2, 1], i = n;
-    for (const m of ordnung) { P.push(...p[m]); N.push(...nrm); W.push(wo[m][0], wo[m][1], 0, ARTEN.bild); B.push(...box); F.push(...ton); n++; }
+    for (const m of ordnung) { P.push(...p[m]); N.push(...nrm); W.push(wo[m][0], wo[m][1], wandwinkel, ARTEN.bild); B.push(...box); F.push(...ton); n++; }
     I.push(i, i + 1, i + 2, i, i + 2, i + 3);
   };
   // the pieces of every run along the house's edges
@@ -617,6 +621,7 @@ export function relief(h, { hof = RELIEF.hof, umkreis = RELIEF.umkreis } = {}) {
           const A = stueckBei(X(xa)), Bst = stueckBei(X(xb));
           if (!A || A !== Bst) return false; // across a corner of the house: no relief
           const { k, st } = A, nx = k.n[0], ny = k.n[1];
+          wandwinkel = -(10 + Math.atan2(ny, nx));
           const ort = (x, y, t) => { const q = auf(k, st.t0 + X(x) - st.u0); return [q[0] + nx * t, q[1] + ny * t, Z(y)]; };
           const at = (x, y) => [ox + x, oy + y];
           if (!innen) flaeche4([ort(xa, yb, tief), ort(xb, yb, tief), ort(xb, ya, tief), ort(xa, ya, tief)], [at(xa, yb), at(xb, yb), at(xb, ya), at(xa, ya)], [nx, ny, 0], box, lauf.ton);
@@ -808,6 +813,45 @@ export function packe(saetze, breite = 1024) {
   let hoehe = 64;
   while (hoehe < y + zeile + 2) hoehe *= 2;
   return { breite, hoehe, bilder, lage };
+}
+
+/** How dark the shade painted on a façade is at its deepest (share of the light that stays), and how far it runs in pixels. */
+export const SCHATTEN = { gesims: [0.62, 0.78, 0.9], bank: [0.7, 0.86], laibung: [0.55, 0.76], seite: 0.74, rahmen: 0.86, fuss: [0.8, 0.88, 0.95] };
+
+/**
+ * The shade a façade's own parts throw on it, as one number per pixel of its picture (255 = full light). The picture
+ * is drawn flat; its measured parts (bausaetze.json: `gesimse`, `oeffnungen`) say what stands out and what lies back,
+ * so the shade can be painted where it belongs, with the light from the upper left as in the sprites themselves:
+ * a stepped shadow under every cornice band and window sill, the top and the left of every reveal dark on the glass,
+ * a thin shadow to the right of each frame, and the foot of the wall a little darker. Pixel rows and columns, no blur.
+ * `staerke` 0 … 1 scales all of it (0: no shade at all).
+ */
+export function schattenkarte(f, staerke = 1) {
+  const w = f.breite, h = f.hoehe, karte = new Uint8Array(w * h).fill(255);
+  if (!(staerke > 0)) return karte;
+  const dunkel = (x, y, anteil) => { if (x < 0 || y < 0 || x >= w || y >= h) return; const v = Math.round(255 * (1 - (1 - anteil) * staerke)), i = y * w + x; if (v < karte[i]) karte[i] = v; };
+  const zeile = (x0, x1, y, anteil) => { for (let x = x0; x < x1; x++) dunkel(x, y, anteil); };
+  const oeffnungen = f.oeffnungen ?? [];
+  // cornices: the band ends at row gb; a thin one throws a shorter shadow. Not below the plinth at the wall's foot
+  for (const [ga, gb] of f.gesimse ?? []) {
+    if (gb - ga < 1 || gb >= h - SCHATTEN.fuss.length) continue;
+    const stufen = gb - ga >= 3 ? SCHATTEN.gesims : SCHATTEN.gesims.slice(1);
+    stufen.forEach((anteil, k) => zeile(0, w, gb + k, anteil));
+  }
+  for (const o of oeffnungen) {
+    const [gx, gy, gb, gh] = o.glas ?? [o.x + 1, o.y + 1, o.b - 2, o.h - 1]; // a door: the leaf inside its frame
+    if (gb < 1 || gh < 1) continue;
+    // the reveal: the lintel's shadow on the glass, and the left jamb's
+    SCHATTEN.laibung.forEach((anteil, k) => { if (k < gh) zeile(gx, gx + gb, gy + k, anteil); });
+    for (let y = gy; y < gy + gh; y++) dunkel(gx, y, SCHATTEN.seite);
+    // the frame stands out: a line of shadow on the wall to its right
+    for (let y = o.y + 1; y < o.y + o.h; y++) dunkel(o.x + o.b, y, SCHATTEN.rahmen);
+    // the sill is a ledge: its shadow falls on the wall below, a pixel to the right
+    if (o.art !== 'tuer') SCHATTEN.bank.forEach((anteil, k) => zeile(o.x + 1, o.x + o.b + 1, o.y + o.h + k, anteil));
+  }
+  // the foot of the wall, where the street's light does not reach
+  SCHATTEN.fuss.forEach((anteil, k) => zeile(0, w, h - 1 - k, anteil));
+  return karte;
 }
 
 /** Unit vector towards the sun in the grid (east, north, up) from a compass bearing and an elevation in degrees. */
