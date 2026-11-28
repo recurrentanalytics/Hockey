@@ -190,3 +190,14 @@ node tools/assets/library.mjs list
 - **Goalie.** Next character to generate, so both player types match. The full list of motions the game already animates in code, and what each needs from the new art, is in `prompts/skater.md`.
 - **Palette.** The arena still uses the cool built-in palette; the warm palette above is not applied anywhere yet.
 - **World geometry.** The game is a rink only. The Bonifatiusplatz world built from OpenStreetMap footprints is a separate pipeline (Python; Blender is not installed here) and has not been started.
+
+## Ordnung bei SpriteCook (2026-11-28)
+
+Im SpriteCook-Projekt „BORSTENBOOM“ gibt es zwei Sammlungen:
+
+- **„Im Spiel (benutzt)“**: die 34 Assets, auf die das Repository verweist (`source.asset_id` und `still_asset_id` im Manifest, `asset_id` in `assets/welt/haeuser/bausaetze.json` und `assets/welt/boden/boden.json`). Wer ein Asset einträgt, legt es auch dort ab.
+- **„Kandidaten Jahreszeiten (Auswahl offen)“**: Frühling, Herbst und Winter für Platane und Linde, je zwei Kandidaten. Nach der Wahl des Besitzers wandern die gewählten in „Im Spiel“.
+
+Alles außerhalb dieser beiden Sammlungen sind verworfene Kandidaten und Versuche. Die Anbindung kann Assets sortieren, aber nicht löschen und zeigt nur die 100 neuesten; löschen muss der Besitzer in der SpriteCook-App selbst.
+
+**Jahreszeiten im Manifest:** Ein Baum-Asset kann unter `jahreszeiten` eigene Bilder nennen (`fruehling`, `herbst`, `winter`, je mit `file`); `jahreszeit()` in `src/welt/baeume.js` wählt nach dem Jahreslauf des Umweltmoduls. Die Kandidaten sind mit dem Sommerbaum als Vorlage erzeugt (`edit_asset_id`, Modell `gemini-nano-banana-2.1`), damit Stamm und Raster gleich bleiben. Bei der Linde (Hochformat) hält das Modell das Raster nur mit `aspect_ratio: 9:16`.
