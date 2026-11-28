@@ -1,5 +1,7 @@
 # BORSTENBOOM! – Architektur (Ist-Zustand)
 
+> **Stand 2026-11-28:** `intro.html`, `src/intro/main.js` und `src/intro/photoreal.js` sind entfernt. Einstieg ist `welt.html` (`src/welt/*`): Anflug, Viertel und Spiel in einer Szene; sie setzt `BONI_3D` selbst (`toCss`, `shadow`, `pausiert`). `src/intro/environment.js` (Sonne, Wetter, Jahreszeit) bleibt und wird von der Welt benutzt. Abschnitte unten, die `photoreal.js` beschreiben, gelten nur noch als Geschichte; das gemeinsame Bild steht in `docs/BONI_ORT.md`.
+
 Stand: 27. November 2026, Commit `3938495`. Beschreibt, wie der Code heute tatsächlich zusammenhängt. Bewertungen und Befunde stehen in [PROJECT_AUDIT.md](PROJECT_AUDIT.md), Verbesserungen in [TECHNICAL_DEBT.md](TECHNICAL_DEBT.md).
 
 ---

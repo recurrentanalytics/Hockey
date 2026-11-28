@@ -6,7 +6,7 @@ green-grey double-rod fence with diagonal struts, galvanised football goals buil
 at both ends, and red street-hockey goals with white nets.
 
 Local frame: a along the long side (A->D, 25.2 m), b across (A->B, 18 m), up. The glTF is Y-up:
-X = a, Y = up, Z = -b. src/intro/photoreal.js places it on the fence rectangle.
+X = a, Y = up, Z = -b. src/welt/welt.js places it on the fence rectangle. (The ground model it also writes, boni_boden.glb, was used only by the former intro and is no longer in the repository.)
 
 Usage: python3 tools/intro/court_glb.py <clean_asphalt_diff_2k.jpg> <props.glb> <ground.glb> <flecks.png>
 """
@@ -17,6 +17,11 @@ from PIL import Image, ImageDraw, ImageFilter
 RNG = np.random.default_rng(7)
 L, W = 25.2, 18.0            # fence rectangle (m)
 FENCE_H = 4.0
+# entrances in the fence (court metres a, b), as the club describes them; the same list is
+# PLATZ_EINGAENGE in src/welt/hindernisse.js: hippo side (b = -9) at its right-hand end,
+# opposite side (b = +9) at both ends
+DOORS = [(10.9, -9.0), (-10.9, 9.0), (10.9, 9.0)]
+DOOR_W = 2.0
 
 # ------------------------------------------------------------------ textures
 def court_texture(asphalt_path, px_per_m=82):
@@ -255,18 +260,39 @@ def build(asphalt, out, out_ground, out_flecks):
     sides = [((-ga, gb), (ga, gb)), ((ga, gb), (ga, -gb)), ((ga, -gb), (-ga, -gb)), ((-ga, -gb), (-ga, gb))]
     for (x0, y0), (x1, y1) in sides:
         ln = math.hypot(x1 - x0, y1 - y0)
+        at = lambda t: (x0 + (x1 - x0) * t, y0 + (y1 - y0) * t)
+        # openings: the parts of this side (0..1) that a door takes out
+        gaps = []
+        for dx, dy in DOORS:
+            t = ((dx - x0) * (x1 - x0) + (dy - y0) * (y1 - y0)) / (ln * ln)
+            if 0 <= t <= 1 and math.hypot(*np.subtract(at(t), (dx, dy))) < 0.5:
+                gaps.append((t - DOOR_W / 2 / ln, t + DOOR_W / 2 / ln))
+        keep, start = [], 0.0
+        for g0, g1 in sorted(gaps):
+            keep.append((start, g0)); start = g1
+        keep.append((start, 1.0))
+        inside = lambda t: any(g0 < t < g1 for g0, g1 in gaps)
         # the side facing the game camera (b = -W/2) stays almost see-through, as in sports games
-        (near if y0 == y1 == -gb else fence).quad((x0, y0, 0), (x1, y1, 0), (x1, y1, FENCE_H), (x0, y0, FENCE_H), uv=((0, FENCE_H), (ln, FENCE_H), (ln, 0), (0, 0)))
+        for t0, t1 in keep:
+            (a0, b0), (a1, b1) = at(t0), at(t1)
+            (near if y0 == y1 == -gb else fence).quad((a0, b0, 0), (a1, b1, 0), (a1, b1, FENCE_H), (a0, b0, FENCE_H), uv=((t0 * ln, FENCE_H), (t1 * ln, FENCE_H), (t1 * ln, 0), (t0 * ln, 0)))
+            posts.beam((a0, b0, FENCE_H), (a1, b1, FENCE_H), 0.05)
+            posts.beam((a0, b0, 0.06), (a1, b1, 0.06), 0.05)
         n = round(ln / 2.5)
         out_n = np.array([-(y1 - y0), x1 - x0]) / ln
         out_n = out_n if np.dot(out_n, [(x0 + x1) / 2, (y0 + y1) / 2]) > 0 else -out_n
         for k in range(n + 1):
-            x, y = x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n
+            if inside(k / n):
+                continue                # no post standing in a doorway
+            x, y = at(k / n)
             posts.beam((x, y, 0), (x, y, FENCE_H + 0.05), 0.07)
             if k % 3 == 1:   # diagonal strut on the outside
                 posts.beam((x, y, FENCE_H * 0.62), (x + out_n[0] * 1.6, y + out_n[1] * 1.6, 0), 0.05)
-        posts.beam((x0, y0, FENCE_H), (x1, y1, FENCE_H), 0.05)
-        posts.beam((x0, y0, 0.06), (x1, y1, 0.06), 0.05)
+        for g0, g1 in gaps:             # door posts and a lintel over each opening
+            (a0, b0), (a1, b1) = at(g0), at(g1)
+            posts.beam((a0, b0, 0), (a0, b0, FENCE_H + 0.05), 0.08)
+            posts.beam((a1, b1, 0), (a1, b1, FENCE_H + 0.05), 0.08)
+            posts.beam((a0, b0, 2.2), (a1, b1, 2.2), 0.06)
     g.mesh('fence', fence.p, fence.n, fence.t, fence.i, m_fence)
     g.mesh('fence camera side', near.p, near.n, near.t, near.i, m_fence_near)
     g.mesh('fence posts', posts.p, posts.n, posts.t, posts.i, m_post)

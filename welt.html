@@ -27,7 +27,19 @@
     #lage, #info { white-space: pre-wrap; word-break: break-word; font-variant-numeric: tabular-nums; }
     #info { background: #00000055; border-radius: 5px; padding: 5px 7px; min-height: 2.6em; }
     #status { color: #ffd23f; }
-    /* weather panel: markup and styles of the intro (intro.html), here beside the panel */
+    /* the approach from space: only the story is on screen until the camera has landed */
+    body.anflug #tafel, body.anflug #wetter, body.gelandet #tafel, body.gelandet #wetter, body.anflug #spielstart, body.gelandet #spielstart { display: none !important; }
+    #untertitel { position: fixed; left: 50%; bottom: 13%; transform: translateX(-50%); width: min(86vw, 760px); text-align: center; z-index: 3; pointer-events: none;
+                  font: 700 clamp(17px, 3vw, 28px)/1.3 'Pixelify Sans', system-ui, sans-serif; color: #fff; text-shadow: 0 2px 0 #000, 0 0 12px #000; opacity: 0; transition: opacity .6s; }
+    #untertitel.an { opacity: 1; }
+    #ueberspringen { display: none; position: fixed; right: 12px; bottom: 12px; z-index: 3; background: #14151fcc; color: #fff; border: 1px solid #ffffff55; }
+    body.anflug #ueberspringen { display: block; }
+    #landung { display: none; position: fixed; inset: 0; z-index: 3; flex-direction: column; align-items: center; justify-content: flex-end; gap: 10px; padding-bottom: 7vh; pointer-events: none;
+               font: 700 clamp(14px, 2.2vw, 20px) 'Pixelify Sans', system-ui, sans-serif; color: #fff; text-shadow: 0 2px 0 #000, 0 0 10px #000; text-align: center; }
+    body.gelandet #landung { display: flex; }
+    #landung img { width: min(52vw, 420px); image-rendering: pixelated; margin-bottom: auto; margin-top: 6vh; }
+    #landung button { pointer-events: auto; font: 700 clamp(16px, 2.6vw, 22px) 'Pixelify Sans', system-ui, sans-serif; padding: 10px 20px; margin: 0 6px; border: 3px solid #14151f; box-shadow: 0 4px 0 #14151f; }
+    /* weather panel (sun, weather, season: src/intro/environment.js), beside the panel */
     #weatherFx { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
     #surface { position: absolute; left: 62px; top: 40px; pointer-events: none; font: 600 13px 'Pixelify Sans', sans-serif; color: #fff; background: rgba(20, 18, 30, 0.72); border-radius: 8px; padding: 4px 8px; text-shadow: 0 1px 0 #000; }
     #wxSurf { margin-top: 4px; color: #ffd23f; }
@@ -61,9 +73,8 @@
   <div id="cesium"></div>
   <div id="tafel">
     <h1>Der Boni als Welt</h1>
-    <small>Stand 15 · 27.11.</small>
+    <small>Stand 18 · 28.11.</small>
     <div id="status">…</div>
-    <a href="intro.html" style="color:#ffd23f">Intro ansehen</a>
     <h2>Ansicht</h2>
     <button data-sicht="schraeg">Schrägblick</button><button data-sicht="oben">Von oben</button><button data-sicht="spiel">Spielkamera</button><button data-sicht="platz">Platz</button><button data-sicht="fahren">Losfahren</button>
     <small>Ziehen dreht und verschiebt, Mausrad zoomt, Strg + Ziehen kippt (Touch: zwei Finger).</small>
@@ -75,6 +86,10 @@
     <h2>Objekt (Klick)</h2>
     <div id="info">Auf ein Gebäude, einen Weg oder Baum klicken.</div>
   </div>
+  <div id="untertitel"></div>
+  <button id="ueberspringen" type="button">Überspringen ›</button>
+  <div id="landung"><img src="assets/pixel/logo.png" alt="BORSTENBOOM!" /><div>Ein Inlinehockey-Abenteuer der Boni Borstentiere</div>
+    <span><button id="los" type="button">Losfahren ▶</button><button id="losSpiel" type="button">Spiel starten</button></span></div>
   <canvas id="screen" tabindex="0"></canvas>
   <canvas id="weatherFx"></canvas>
   <div id="wetter">
@@ -96,7 +111,7 @@
   <a id="spielstart" href="test.html">Spiel starten ▶<br><small>Hockey auf dem Boni, 3 gegen 3</small></a>
   <button id="verlassen" type="button">◀ Platz verlassen</button>
   <script src="src/native/pads.js"></script>
-  <script type="module" src="src/welt/welt.js?v=15"></script>
+  <script type="module" src="src/welt/welt.js?v=18"></script>
   <!-- Leistungsanzeige nur mit ?fps in der Adresse (docs/PERFORMANCE_TEST.md) -->
   <script type="module">if (new URLSearchParams(location.search).has('fps')) import('./src/diag/fps.js');</script>
 </body>

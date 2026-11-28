@@ -1,5 +1,5 @@
 // Quick test page (test.html): the real Boni court rules (23 × 17 m, 3 on 3, real goals, same
-// physics as intro.html) without the 3D backdrop. A plain 2D drawing of the court from the same
+// physics as the world view, welt.html) without the 3D backdrop. A plain 2D drawing of the court from the same
 // camera angle replaces it, so the game starts at once.
 const back = document.getElementById('flat');
 const bctx = back.getContext('2d');
