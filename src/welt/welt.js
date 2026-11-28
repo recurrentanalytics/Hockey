@@ -18,9 +18,9 @@ import { baueHaeuser } from './haeuser.js';
 import { bodenplan, bodenKacheln } from './boden.js';
 import { ladeBild } from './bild.js';
 
-const CESIUM_VERSION = '1.147.0';    // keep in step with src/intro/photoreal.js
+const CESIUM_VERSION = '1.147.0';    // keep in step with tools/android/build.sh and package.json
 const GOOGLE_3D_TILES = 2275207;     // Cesium ion asset, as in the intro
-const TOKEN_KEY = 'boniCesiumToken'; // stored by the intro (src/intro/main.js)
+const TOKEN_KEY = 'boniCesiumToken'; // the Cesium ion token on this device
 const LGLN = 'https://opendata.lgln.niedersachsen.de/doorman/noauth/';
 const FALLBACK_HEIGHT = 10;          // metres, for footprints without any height information
 const GAME_VIEW = { heading: 118.2, tilt: 60 }; // the game camera: looking A → B, 60° from vertical
@@ -60,7 +60,7 @@ const LAYERS = [
   { id: 'wege', name: 'Wegelinien (OSM)', on: false },
   { id: 'baeume', name: 'Bäume mit Schatten (OSM-Standorte)', on: true },
   { id: 'einfriedungen', name: 'Zäune, Mauern (OSM)', on: true },
-  { id: 'platz', name: 'Bolzplatz: Zaun und Tore (Modell des Intros)', on: true },
+  { id: 'platz', name: 'Bolzplatz: Zaun und Tore (Platzmodell)', on: true },
   { id: 'platzmarken', name: 'Platz-Ecken und Achsen (Prüfung)', on: false },
   { id: 'bibliothek', name: 'Art-Bibliothek (SpriteCook)', on: true },
 ];
@@ -89,7 +89,7 @@ async function main() {
   let flug = null;
   const hindernisse = baueHindernisse({ gebaeude, einfriedungen, platz, frame });
   const haeuser = []; // drawn building volumes, so the ones hiding the player can turn see-through
-  const hausArt = Q.get('haeuser') ?? 'alt'; // 'alt' plain volumes, 'neu' every house dressed in the façade kits
+  const hausArt = Q.get('haeuser') ?? 'neu'; // every house dressed in the façade kits; ?haeuser=alt shows plain volumes
   let viertelHaeuser = null;                 // the houses of haeuser.js
   const saetze = hausArt === 'alt' ? null : await fetch(new URL('welt/haeuser/bausaetze.json', ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   // the drawn ground belongs to the same review: streets, pavements and yards in SpriteCook textures (boden.js)
@@ -99,7 +99,8 @@ async function main() {
   const bodenAn = () => !!bodenLayer?.show;
   let spieler = null;
   status('Lade 3D-Ansicht …');
-  const Cesium = await loadCesium(Q.get('cesiumBase') || `https://cdn.jsdelivr.net/npm/cesium@${CESIUM_VERSION}/Build/Cesium/`);
+  // inside the Android app CesiumJS comes from the copy bundled in the APK (tools/android/build.sh)
+  const Cesium = await loadCesium(Q.get('cesiumBase') || (location.host === 'appassets.androidplatform.net' ? 'vendor/cesium/' : `https://cdn.jsdelivr.net/npm/cesium@${CESIUM_VERSION}/Build/Cesium/`));
   Cesium.Ion.defaultAccessToken = undefined; // nothing here needs Cesium ion unless the Google layer is switched on
 
   const [E0, N0] = frame.ursprung_utm32, A = frame.achse_a, B = frame.achse_b;
@@ -268,7 +269,8 @@ async function main() {
   // ---- Google photorealistic 3D tiles (the intro's 3D context), only with the club's token
   const google = LAYERS.find((l) => l.id === 'google');
   let tiles = null;
-  let token = Q.get('token') || (() => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } })();
+  // the Android app keeps the token itself (shared by its live and bundled copy)
+  let token = Q.get('token') || window.BoniAndroid?.token?.() || (() => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } })();
   google.available = !!token;
   // With the drawn houses the quarter stays ours when the tiles are on: they are cut away over it and lowered to the
   // aerial photo's level, and the globe (photo, pixel ground) is drawn only inside the cut. Google's city round the
@@ -418,6 +420,7 @@ async function main() {
       const value = tokenBox.querySelector('input').value.trim();
       if (!value) return;
       try { localStorage.setItem(TOKEN_KEY, value); } catch { /* private window: kept until the page closes */ }
+      try { window.BoniAndroid?.saveToken?.(value); } catch { /* not in the app */ }
       token = value; google.available = true;
       googleCheck.disabled = false; googleCheck.parentElement.querySelector('small')?.remove();
       tokenUi(false);
@@ -593,4 +596,9 @@ async function main() {
   window.welt = { get flug() { return flug; }, get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; }, get haeuser() { return viertelHaeuser; }, get boden() { return bodenLayer; } }; // for the console and tests
 }
 
-main().catch((e) => { status('Fehler: ' + e.message); console.error(e); });
+main().catch((e) => {
+  console.error(e);
+  // without the 3D library (offline, CDN unreachable) the world cannot start: the arena game still can
+  if (/CesiumJS/.test(e.message)) { status('Keine 3D-Ansicht möglich – Hallen-Version startet'); setTimeout(() => location.replace('index.html'), 1800); }
+  else status('Fehler: ' + e.message);
+});

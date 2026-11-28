@@ -1,5 +1,5 @@
 // Leistungsanzeige für Gerätetests (docs/PERFORMANCE_TEST.md). Wird nur geladen, wenn die Adresse
-// „?fps“ enthält (siehe index.html, test.html, intro.html); sonst existiert dieses Modul im Spiel nicht.
+// „?fps“ enthält (siehe index.html, test.html, welt.html); sonst existiert dieses Modul im Spiel nicht.
 //
 // Messmethode: ein eigener requestAnimationFrame-Takt misst den Abstand zwischen zwei Bildern, die
 // der Browser tatsächlich ausgibt. Das erfasst Spiel-Canvas und 3D-Ansicht zusammen, denn beide
@@ -109,7 +109,7 @@ function gpuName() {
   gpu = 'nicht auslesbar';
   try {
     // prefer the 3D view's own context; otherwise a throw-away one that is released at once
-    const v = window.introDebug?.viewer ?? window.welt?.viewer;
+    const v = window.welt?.viewer;
     let gl = v?.scene?.context?._gl, temp = null;
     if (!gl) { temp = document.createElement('canvas'); gl = temp.getContext('webgl2') || temp.getContext('webgl'); }
     if (gl) {
@@ -122,7 +122,7 @@ function gpuName() {
 }
 
 function cesiumInfo(now) {
-  const v = window.introDebug?.viewer ?? window.welt?.viewer;
+  const v = window.welt?.viewer;
   if (!v?.scene) return null;
   const sc = v.scene;
   if (!cesiumHooked) { sc.postRender.addEventListener(() => cesiumFrames.push(performance.now())); cesiumHooked = true; }
@@ -165,7 +165,7 @@ function render() {
   if (ce) {
     lines.push(`3D ${ce.size}  Faktor ${ce.scale}  MSAA ${ce.msaa}  Schatten ${ce.shadows}`);
     lines.push(`3D zeichnet ${ce.mode}: ${ce.perSec}/s   Kacheln ${ce.tiles}`);
-  } else if (location.pathname.endsWith('intro.html')) lines.push('3D noch nicht gestartet');
+  } else if (location.pathname.endsWith('welt.html')) lines.push('3D noch nicht gestartet');
   lines.push(`GPU ${gpuName()}`);
   const scene = window.app?.top?.constructor?.name;
   const surf = document.getElementById('surface')?.textContent;

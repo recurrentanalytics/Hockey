@@ -66,7 +66,7 @@ test('precache: the service worker caches the shared names it expects', () => {
   assert.match(sw, /PRECACHE\.map/);
 });
 
-for (const page of ['index.html', 'test.html', 'intro.html']) {
+for (const page of ['index.html', 'test.html', 'welt.html']) {
   test(`precache: ${page} works offline (its scripts, modules, styles and fonts are listed)`, () => {
     const { files, broken } = closure(page);
     assert.deepEqual(broken, [], `imports that do not resolve to a file:\n${broken.join('\n')}`);

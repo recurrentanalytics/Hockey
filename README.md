@@ -11,6 +11,8 @@ python3 -m http.server 8000
 
 ES modules need HTTP; opening `index.html` straight from disk won't work.
 
+**Start page: `welt.html`** (also the installed web app and the Android app). It opens with the approach from space onto the Bonifatiusplatz, lands on the real court in the real neighbourhood (SpriteCook façades, drawn ground, trees, street furniture, live weather), and from there you skate around or start a match on the court and leave it again, all in one scene. It needs the network for CesiumJS; without it the arena game (`index.html`) starts instead. `test.html` is the quick court match without the 3D world. The former `intro.html` with the Google 3D flight was removed on 2026-11-28; the Google tiles remain a layer in the world view (club token).
+
 ## Tests
 
 ```sh

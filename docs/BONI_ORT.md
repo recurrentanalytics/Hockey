@@ -229,3 +229,11 @@ Bild bei gewähltem Regen am Herbstabend: `docs/ort/boni_welt_regen.jpg`.
 - **Das Intro bleibt** unverändert als eigene Seite bestehen.
 
 Bilder: `docs/ort/boni_anflug_land.jpg`, `docs/ort/boni_anflug_landung.jpg`.
+
+## Stand 2026-11-28: eine Seite für alles
+
+- **`welt.html` ist die Startseite** (Web-App und Android-App): Anflug → Landung auf dem Platz → Losfahren oder Spiel starten, Platz verlassen und wieder betreten, alles in einer Szene.
+- **Normalfall:** SpriteCook-Fassaden für alle Häuser, gezeichneter Boden im Viertel, Straßenmöbel, Bäume, Pixel-Boden am Platz, Wetter. Die schlichten Blöcke gibt es nur noch mit `?haeuser=alt`.
+- **Entfernt:** `intro.html` mit `src/intro/main.js` und `src/intro/photoreal.js`, dazu die nur dort benutzten `assets/intro/boni_boden.glb`, `boni_schatten_luftboden.glb` und `tools/intro/record.cjs`. Abschnitte oben über `intro.html` und `photoreal.js` beschreiben diesen früheren Stand.
+- **Ohne Netz:** CesiumJS kommt vom CDN (in der Android-App aus der mitgelieferten Kopie). Lädt es nicht, startet nach kurzer Meldung die Hallen-Version.
+- **Android-App:** Startadresse und Build-Skript zeigen auf `welt.html` (mit `locations/`); der Token wird mit der App geteilt. Die App ist damit nicht neu gebaut und nicht auf einem Gerät geprüft.

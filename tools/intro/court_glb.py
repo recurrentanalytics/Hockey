@@ -6,7 +6,7 @@ green-grey double-rod fence with diagonal struts, galvanised football goals buil
 at both ends, and red street-hockey goals with white nets.
 
 Local frame: a along the long side (A->D, 25.2 m), b across (A->B, 18 m), up. The glTF is Y-up:
-X = a, Y = up, Z = -b. src/intro/photoreal.js places it on the fence rectangle.
+X = a, Y = up, Z = -b. src/welt/welt.js places it on the fence rectangle. (The ground model it also writes, boni_boden.glb, was used only by the former intro and is no longer in the repository.)
 
 Usage: python3 tools/intro/court_glb.py <clean_asphalt_diff_2k.jpg> <props.glb> <ground.glb> <flecks.png>
 """

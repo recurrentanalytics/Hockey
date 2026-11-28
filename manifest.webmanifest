@@ -3,7 +3,7 @@
   "short_name": "Borstenboom!",
   "description": "Inlinehockey auf dem echten Boni in Hannover-List",
   "lang": "de",
-  "start_url": "intro.html",
+  "start_url": "welt.html",
   "scope": "./",
   "display": "fullscreen",
   "orientation": "landscape",

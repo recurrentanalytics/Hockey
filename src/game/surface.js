@@ -1,6 +1,6 @@
 // The court surface and the air: how weather, temperature, autumn leaves and wind change skating
 // and the ball. Everything is a factor on the normal values (1 = dry asphalt at about 15 °C).
-// The 3D court (src/intro/photoreal.js) sets it from the live, picked or historical weather;
+// The world view (src/welt/welt.js) sets it from the live, picked or historical weather;
 // the arena game and the flat test court keep the neutral values.
 
 const NEUTRAL = {

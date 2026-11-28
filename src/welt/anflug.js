@@ -1,7 +1,7 @@
 // The approach: one continuous camera move from the whole planet down onto the Boni, told in the
 // words of the game's intro, ending in the game camera above the court. It runs in the world's own
 // scene, so what the flight lands on is the world one then skates through. Timing and text follow
-// the intro (src/intro/photoreal.js); the curve itself is a pure function and tested under Node.
+// the former intro page (removed 2026-11-28); the curve itself is a pure function and tested under Node.
 
 /** The story, as in the intro. Times in seconds. */
 export const GESCHICHTE = [

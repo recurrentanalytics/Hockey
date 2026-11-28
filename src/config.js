@@ -14,7 +14,7 @@ export const PROJ = { x: 16, y: 8, z: 14 };
 // while players, goalies, sticks and the ball are drawn with RES× the detail.
 export const RES = 2;
 
-// Played on the real Boni court (intro.html → "Spiel starten"): the photorealistic 3D view is the
+// Played on the real Boni court (welt.html → "Spiel starten", or test.html): the photorealistic 3D view is the
 // backdrop and the game is drawn on top. The intro sets globalThis.BONI_3D before loading the game.
 export const BONI_3D = !!globalThis.BONI_3D;
 

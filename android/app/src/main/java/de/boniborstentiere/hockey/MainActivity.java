@@ -38,8 +38,8 @@ import java.util.Map;
  */
 public class MainActivity extends Activity {
     private static final String HOST = "appassets.androidplatform.net";
-    private static final String START = "https://" + HOST + "/www/intro.html";
-    private static final String LIVE = "https://recurrentanalytics.github.io/Hockey/intro.html";
+    private static final String START = "https://" + HOST + "/www/welt.html";
+    private static final String LIVE = "https://recurrentanalytics.github.io/Hockey/welt.html";
     private static final String LIVE_PREFIX = "https://recurrentanalytics.github.io/Hockey/";
     /** App shortcut "Leistungstest" (long press on the icon): the page starts with ?fps. */
     private static final String ACTION_FPS = "de.boniborstentiere.hockey.LEISTUNGSTEST";
@@ -111,7 +111,7 @@ public class MainActivity extends Activity {
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
                 if (!HOST.equals(req.getUrl().getHost())) return null;
                 String path = req.getUrl().getPath();
-                if (path == null || path.equals("/") ) path = "/www/intro.html";
+                if (path == null || path.equals("/") ) path = "/www/welt.html";
                 try {
                     InputStream in = getAssets().open(path.substring(1));
                     WebResourceResponse r = new WebResourceResponse(mime(path), mime(path).startsWith("text") || mime(path).contains("javascript") || mime(path).contains("json") ? "utf-8" : null, in);

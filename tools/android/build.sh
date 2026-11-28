@@ -10,10 +10,10 @@ WWW=android/app/src/main/assets/www
 CESIUM_VERSION=1.147.0
 
 rm -rf "$WWW"; mkdir -p "$WWW"
-# everything the web version serves: all three pages, code, styles, sound and every asset folder
-# (pixel art, fonts, voice, 3D place, icons), so the bundled copy works offline like the live site
-cp intro.html index.html test.html manifest.webmanifest manifest-test.webmanifest "$WWW/"
-cp -r css src audio assets "$WWW/"
+# everything the web version serves: all three pages, code, styles, sound, every asset folder
+# (pixel art, fonts, voice, 3D place, world art, icons) and the place's geodata, so the bundled copy works offline like the live site
+cp welt.html index.html test.html manifest.webmanifest manifest-test.webmanifest "$WWW/"
+cp -r css src audio assets locations "$WWW/"
 
 # CesiumJS inside the app, so only the Google 3D tiles need the network
 if [ ! -f android/.cesium/node_modules/cesium/Build/Cesium/Cesium.js ]; then
