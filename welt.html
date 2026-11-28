@@ -21,6 +21,12 @@
     #tafel { position: fixed; left: 10px; top: 10px; width: 250px; max-height: calc(100% - 20px); overflow: auto; box-sizing: border-box;
              background: #14151fdd; border: 1px solid #ffffff22; border-radius: 8px; padding: 10px 12px; z-index: 2; }
     h1 { font-size: 15px; margin: 0 0 6px; color: #ffd23f; }
+    /* the panel folds to its button (body.tafelzu); the layer list folds on its own (details) */
+    #tafelKnopf { float: right; margin: -2px -4px 4px 8px; padding: 2px 8px; font-size: 15px; line-height: 1.3; }
+    body.tafelzu #tafel { width: auto; padding: 4px; overflow: visible; background: none; border-color: transparent; }
+    body.tafelzu #tafelKnopf { float: none; margin: 0; padding: 6px 10px; font-size: 18px; border: 2px solid #14151f; }
+    body.tafelzu #tafel h1, body.tafelzu #tafelInhalt { display: none; }
+    #ebenenKlappe > summary { font-size: 11px; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: .06em; color: #a9a7b8; cursor: pointer; }
     h2 { font-size: 11px; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: .06em; color: #a9a7b8; }
     label { display: block; padding: 1px 0; cursor: pointer; } small { color: #a9a7b8; }
     button { font: inherit; color: #14151f; background: #ffd23f; border: 0; border-radius: 5px; padding: 4px 8px; margin: 0 4px 4px 0; cursor: pointer; }
@@ -57,6 +63,7 @@
     #wetter #surface { white-space: nowrap; }
     body.imspiel #wetter { left: 0; }
     @media (max-width: 640px) { #wetter { left: 196px; } }
+    body.tafelzu:not(.imspiel) #wetter { left: 50px; }
     #spielstart { display: none; position: fixed; left: 50%; bottom: 9%; transform: translateX(-50%); z-index: 3; text-align: center; text-decoration: none;
                   font: 700 20px/1.3 system-ui, sans-serif; color: #14151f; background: #ffd23f; border: 3px solid #14151f; border-radius: 10px; padding: 10px 22px; box-shadow: 0 4px 0 #14151f; }
     #spielstart small { font-weight: 500; color: #14151f; }
@@ -73,19 +80,24 @@
 <body>
   <div id="cesium"></div>
   <div id="tafel">
+    <button id="tafelKnopf" type="button" aria-expanded="true" aria-controls="tafelInhalt" title="Bedienfeld ein- und ausklappen">☰</button>
     <h1>Der Boni als Welt</h1>
-    <small>Stand 20 · 28.11.</small>
+    <div id="tafelInhalt">
+    <small>Stand 21 · 28.11.</small>
     <div id="status">…</div>
     <h2>Ansicht</h2>
     <button data-sicht="schraeg">Schrägblick</button><button data-sicht="oben">Von oben</button><button data-sicht="spiel">Spielkamera</button><button data-sicht="platz">Platz</button><button data-sicht="fahren">Losfahren</button>
     <small>Ziehen dreht und verschiebt, Mausrad zoomt, Strg + Ziehen kippt (Touch: zwei Finger).</small>
-    <h2>Ebenen</h2>
-    <div id="ebenen"></div>
-    <small id="bibliothek"></small>
+    <details id="ebenenKlappe">
+      <summary>Ebenen</summary>
+      <div id="ebenen"></div>
+      <small id="bibliothek"></small>
+    </details>
     <h2>Zeiger</h2>
     <div id="lage">–</div>
     <h2>Objekt (Klick)</h2>
     <div id="info">Auf ein Gebäude, einen Weg oder Baum klicken.</div>
+    </div>
   </div>
   <div id="untertitel"></div>
   <button id="ueberspringen" type="button">Überspringen ›</button>
@@ -112,7 +124,7 @@
   <a id="spielstart" href="test.html">Spiel starten ▶<br><small>Borstentiere gegen <select id="gegner" aria-label="Gegner"></select></small></a>
   <button id="verlassen" type="button">◀ Platz verlassen</button>
   <script src="src/native/pads.js"></script>
-  <script type="module" src="src/welt/welt.js?v=20"></script>
+  <script type="module" src="src/welt/welt.js?v=21"></script>
   <!-- Leistungsanzeige nur mit ?fps in der Adresse (docs/PERFORMANCE_TEST.md) -->
   <script type="module">if (new URLSearchParams(location.search).has('fps')) import('./src/diag/fps.js');</script>
 </body>

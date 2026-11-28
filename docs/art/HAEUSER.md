@@ -100,6 +100,8 @@ Die Fassaden der Häuser rund um den Platz sind nicht mehr flach. `relief()` in 
 
 **Darstellung:** In der Weltansicht ist das Relief ein eigenes Zeichenobjekt mit derselben Darstellung wie die Häuser. Es baut sich kurz nach ihnen auf. Abschalten lässt es sich mit der Ebene „Fassaden-Relief“ oder mit `?relief=0`, zum Vergleich mit `?fps`.
 
+**Probeschalter:** `?relieftiefe=3` macht Rahmen, Bänke und Gesimse dreimal so tief (höchstens achtfach). Ergebnis der Probe vom 2026-11-28: Auch dreifach wirken die Fassaden aus normaler Entfernung flach. Es fehlt nicht Tiefe, sondern Schatten: Die vorstehenden Teile werfen keinen Schatten auf die Wand, und große Bauteile (Balkone, Erker, Dachüberstand) gibt es nicht.
+
 **Grenzen:**
 - Ein Bauteil bekommt nur Relief, wenn es ganz in einer Zelle liegt, also in einem Schnittstück und einem Geschoss.
 - Die schmalen Außenseiten der Rahmen fehlen, sie wären die meisten Flächen und kaum zu sehen.

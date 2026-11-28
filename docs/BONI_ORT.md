@@ -252,3 +252,7 @@ Die genaue Lage am Ende (Abstand zur Ecke) ist geschätzt. `assets/intro/boni_pl
 - **„Platz verlassen“** lässt das Match stehen (Uhr steht); beim nächsten Betreten geht es weiter.
 - **Schlusspfiff** oder **„Spiel beenden“** im Pausenmenü (dort statt „Zum Menü“) bringt dich zurück ins Viertel; das nächste Betreten startet ein neues Match.
 - **Figur im Viertel:** der 32er-Chibi aus der Art-Bibliothek (`character.skater.stride`, Bühnenmaß). Ein Versuch, stattdessen Bonny aus dem Figurenrenderer des Spiels zu nehmen, ist beim Zusammenführen zugunsten des Chibi verworfen; `spieler.js` kann weiterhin ein eigenes Standbild (`stehenRechts`, `stehenLinks`) und einen Rand unter den Füßen (`unten`) verarbeiten.
+
+## Bedienfeld einklappbar (2026-11-28)
+
+Der Knopf ☰ klappt das Bedienfeld der Weltansicht auf seinen Knopf zusammen; die Ebenenliste klappt für sich ein und ist anfangs zu. Beides merkt sich das Gerät (`boni.tafel`, `boni.ebenen`). Auf kleinen Bildschirmen (kürzere Seite bis 640 Pixel) startet das Bedienfeld eingeklappt. Die Hauptadresse ohne Dateinamen leitet auf `welt.html` weiter; `index.html` beim Namen ist die Halle.

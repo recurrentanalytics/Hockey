@@ -4,6 +4,7 @@
 // device the Google photorealistic 3D tiles can be switched on as well; without it the view
 // stands on the aerial photo alone. An inspection view, not gameplay yet.
 import ORT from '../../locations/boni/ort.js';
+import { RELIEF } from '../bau/haus.js';
 import { fromUtm32, toUtm32 } from './utm.js';
 import { placeLibrary, usable, frameImages } from './bibliothek.js';
 import { hain, kronenkarte, baumbilder, pflanze, LICHT } from './baeume.js';
@@ -72,6 +73,20 @@ async function main() {
   // The game reads this once when its modules load (config.js, projection.js): it marks the real court.
   // Set before anything from the game is imported; toCss and the rest follow once the scene exists.
   globalThis.BONI_3D = { pausiert: true };
+  // ?relieftiefe=3 makes the façade relief that many times deeper: a trial switch for comparing looks
+  // (docs/art/HAEUSER.md, Relief). Without it the measured depths of haus.js apply.
+  { const k = Number(Q.get('relieftiefe')); if (k > 0 && k !== 1) for (const teil of ['rahmen', 'bank', 'gesims']) RELIEF[teil] *= Math.min(k, 8); }
+  // The panel folds to its button, and the layer list folds on its own; both remembered on this device.
+  // A small screen starts with the panel folded, so the world is what you see.
+  {
+    const merke = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch { /* private window */ } return null; };
+    const knopf = $('tafelKnopf'), klappe = $('ebenenKlappe');
+    const setze = (zu) => { document.body.classList.toggle('tafelzu', zu); knopf.setAttribute('aria-expanded', String(!zu)); };
+    setze((merke('boni.tafel') ?? (Math.min(innerWidth, innerHeight) <= 640 ? 'zu' : 'auf')) === 'zu');
+    knopf.onclick = () => { const zu = !document.body.classList.contains('tafelzu'); setze(zu); merke('boni.tafel', zu ? 'zu' : 'auf'); };
+    klappe.open = merke('boni.ebenen') === 'auf';
+    klappe.ontoggle = () => merke('boni.ebenen', klappe.open ? 'auf' : 'zu');
+  }
   status('Lade Geodaten …');
   const [frame, gebaeude, nutzung, wege, baeume, einfriedungen, platz, ausstattung, flaechen] = await Promise.all(
     ['rahmen.json', 'gebaeude.geojson', 'nutzung.geojson', 'wege.geojson', 'baeume.geojson', 'einfriedungen.geojson', 'platz.geojson', 'ausstattung.geojson', 'flaechen.geojson'].map(load));

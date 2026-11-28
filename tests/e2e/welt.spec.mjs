@@ -52,6 +52,22 @@ test('initialises: Cesium viewer, court frame, panel and no error status', async
   await expect(page.locator('#tafel h1')).toHaveText('Der Boni als Welt');
 });
 
+test('the panel folds to its button and back, and the layer list folds on its own', async () => {
+  const knopf = page.locator('#tafelKnopf');
+  if (await page.evaluate(() => document.body.classList.contains('tafelzu'))) await knopf.click(); // a small window starts folded
+  await expect(page.locator('#tafelInhalt')).toBeVisible();
+  await knopf.click();
+  await expect(page.locator('body')).toHaveClass(/tafelzu/);
+  await expect(page.locator('#tafelInhalt')).toBeHidden();
+  await expect(knopf).toBeVisible();
+  await knopf.click();
+  await expect(page.locator('#tafelInhalt')).toBeVisible();
+  await page.locator('#ebenenKlappe > summary').click();
+  await expect(page.locator('#ebenen')).toBeVisible();
+  await page.locator('#ebenenKlappe > summary').click();
+  await expect(page.locator('#ebenen')).toBeHidden();
+});
+
 test('loads the essential geodata and art', async () => {
   for (const f of GEO) expect(loaded, `locations/boni/geo/${f}`).toContain(`/locations/boni/geo/${f}`);
   for (const f of ['/assets/manifest.json', '/assets/welt/boni_umgebung.jpg', '/assets/intro/boni_schatten_hoehen.png']) expect(loaded, f).toContain(f);
