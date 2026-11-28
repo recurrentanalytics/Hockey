@@ -1,6 +1,6 @@
 # Die Häuser des Viertels – Stilblatt (H1)
 
-Stand: Das ganze Viertel ist eingekleidet (236 Häuser), **wartet auf Freigabe**. Zu sehen mit `welt.html?haeuser=neu`; ohne den Schalter bleibt die Welt, wie sie war.
+Stand: Das ganze Viertel ist eingekleidet (236 Häuser), **wartet auf Freigabe**. Sie sind der Normalfall in `welt.html`; `?haeuser=alt` zeigt die schlichten Blöcke.
 
 ## Grundsatz
 
