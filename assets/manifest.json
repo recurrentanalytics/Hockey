@@ -231,14 +231,14 @@
       "kind": "prop",
       "file": "props/bench.png",
       "frame": {
-        "w": 16,
-        "h": 16
+        "w": 24,
+        "h": 22
       },
       "frames": 1,
       "density": 1,
       "anchor": {
-        "x": 8,
-        "y": 15
+        "x": 12,
+        "y": 21
       },
       "worldHeight": 0.9,
       "place": {
@@ -248,11 +248,11 @@
         }
       },
       "source": {
-        "asset_id": "2d72a995-6cd2-4b7e-aef5-d199574ae1e8",
+        "asset_id": "a897dd63-5aa5-4ffa-91c5-e2aaa557f394",
         "model": "pixel-engine-image-v1",
-        "prompt": "docs/art/prompts/einheitlich.md"
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "b29f89eb0cc4",
+      "sha12": "8a87b6b4cd02",
       "approved": {
         "date": "2026-11-28"
       }
@@ -293,14 +293,14 @@
       "kind": "prop",
       "file": "props/street-lamp.png",
       "frame": {
-        "w": 16,
-        "h": 56
+        "w": 28,
+        "h": 104
       },
       "frames": 1,
       "density": 1,
       "anchor": {
-        "x": 8,
-        "y": 55
+        "x": 14,
+        "y": 103
       },
       "worldHeight": 4.5,
       "place": {
@@ -310,11 +310,11 @@
         }
       },
       "source": {
-        "asset_id": "e60a2e4f-0bb0-4753-94a7-19c4a71f5127",
+        "asset_id": "c1b3b967-575d-4f6e-a01f-4f42c6d0dbcc",
         "model": "pixel-engine-image-v1",
-        "prompt": "docs/art/prompts/einheitlich.md"
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "d12b90c1e582",
+      "sha12": "3d7470fe527a",
       "approved": {
         "date": "2026-11-28"
       }
@@ -324,14 +324,14 @@
       "kind": "prop",
       "file": "props/bicycle-stand.png",
       "frame": {
-        "w": 16,
-        "h": 16
+        "w": 20,
+        "h": 20
       },
       "frames": 1,
       "density": 1,
       "anchor": {
-        "x": 8,
-        "y": 15
+        "x": 10,
+        "y": 19
       },
       "worldHeight": 0.85,
       "place": {
@@ -341,11 +341,11 @@
         }
       },
       "source": {
-        "asset_id": "2e375b6d-4a3f-431e-9660-af8a11085591",
+        "asset_id": "e9d42756-b81d-46e9-8635-6b51af8b02ee",
         "model": "pixel-engine-image-v1",
-        "prompt": "docs/art/prompts/einheitlich.md"
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "f85b81ade296",
+      "sha12": "15bb48960851",
       "approved": {
         "date": "2026-11-28"
       }
@@ -355,14 +355,14 @@
       "kind": "prop",
       "file": "props/waste-basket.png",
       "frame": {
-        "w": 10,
-        "h": 16
+        "w": 16,
+        "h": 24
       },
       "frames": 1,
       "density": 1,
       "anchor": {
-        "x": 5,
-        "y": 15
+        "x": 8,
+        "y": 23
       },
       "worldHeight": 1,
       "place": {
@@ -372,11 +372,11 @@
         }
       },
       "source": {
-        "asset_id": "920c533a-d11b-4569-b9e6-322088b86786",
+        "asset_id": "4f0ff6b8-61df-48b0-8a1a-f393f7948f17",
         "model": "pixel-engine-image-v1",
-        "prompt": "docs/art/prompts/einheitlich.md"
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "9c6e51780cc5",
+      "sha12": "104b3def31c4",
       "approved": {
         "date": "2026-11-28"
       }
@@ -386,14 +386,14 @@
       "kind": "prop",
       "file": "props/picnic-table.png",
       "frame": {
-        "w": 26,
-        "h": 16
+        "w": 40,
+        "h": 20
       },
       "frames": 1,
       "density": 1,
       "anchor": {
-        "x": 13,
-        "y": 15
+        "x": 20,
+        "y": 19
       },
       "worldHeight": 0.8,
       "place": {
@@ -403,11 +403,11 @@
         }
       },
       "source": {
-        "asset_id": "f84c2e0a-7d0a-4f04-bdef-f7905256774e",
+        "asset_id": "a220abc8-6c81-4089-bc73-4bf36d9d5df0",
         "model": "pixel-engine-image-v1",
-        "prompt": "docs/art/prompts/einheitlich.md"
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "ff10eddded34",
+      "sha12": "bb2fcb12bb08",
       "approved": {
         "date": "2026-11-28"
       }
@@ -417,14 +417,14 @@
       "kind": "world",
       "file": "world/bonifatiusplatz/climbing-dome.png",
       "frame": {
-        "w": 34,
-        "h": 28
+        "w": 60,
+        "h": 50
       },
       "frames": 1,
       "density": 1,
       "anchor": {
-        "x": 17,
-        "y": 27
+        "x": 30,
+        "y": 49
       },
       "worldHeight": 2.2,
       "place": {
@@ -434,11 +434,11 @@
         }
       },
       "source": {
-        "asset_id": "50b351ba-5e73-40e0-8533-c7715a88e9b3",
+        "asset_id": "c0ba40bd-8d47-4445-b54f-5c395393ca3f",
         "model": "pixel-engine-image-v1",
-        "prompt": "docs/art/prompts/einheitlich.md"
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "424b719ecd84",
+      "sha12": "0d5e83d9887b",
       "approved": {
         "date": "2026-11-28"
       }
@@ -448,14 +448,14 @@
       "kind": "world",
       "file": "world/bonifatiusplatz/hippo.png",
       "frame": {
-        "w": 24,
-        "h": 16
+        "w": 38,
+        "h": 26
       },
       "frames": 1,
       "density": 1,
       "anchor": {
-        "x": 12,
-        "y": 15
+        "x": 19,
+        "y": 25
       },
       "worldHeight": 1.1,
       "place": {
@@ -465,11 +465,11 @@
         }
       },
       "source": {
-        "asset_id": "87624903-5cbb-48be-8cb6-3d3ab989452e",
+        "asset_id": "6a950971-3d39-47a6-b68b-6010cd8ea363",
         "model": "pixel-engine-image-v1",
-        "prompt": "docs/art/prompts/einheitlich.md"
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "e7a7cb65b10a",
+      "sha12": "b7ba84c7a346",
       "approved": {
         "date": "2026-11-28"
       }

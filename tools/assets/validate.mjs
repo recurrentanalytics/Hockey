@@ -187,9 +187,9 @@ export function validateWelt(root) {
   return { errors, warnings, checked: gelistet.size };
 }
 
-/** Pixels per metre of every placed sprite of the art library, against the world scale. */
+/** Pixels per metre of every placed sprite of the art library, against the stage scale (buehne_px_je_m). */
 export function massstabBericht(root) {
-  const px = JSON.parse(fs.readFileSync(path.join(root, 'welt/massstab.json'), 'utf8')).px_je_m;
+  const mass = JSON.parse(fs.readFileSync(path.join(root, 'welt/massstab.json'), 'utf8')), px = mass.buehne_px_je_m ?? mass.px_je_m;
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
   return manifest.assets.filter((a) => a.worldHeight && a.frame).map((a) => ({ id: a.id, pxJeM: a.frame.h / a.worldHeight, faktor: a.frame.h / a.worldHeight / px }));
 }
@@ -197,7 +197,7 @@ export function massstabBericht(root) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const root = path.resolve(process.argv[2] ?? 'assets');
   if (process.argv.includes('--massstab')) {
-    for (const z of massstabBericht(root)) console.log(`${z.id.padEnd(42)} ${z.pxJeM.toFixed(1).padStart(6)} px/m  ${z.faktor.toFixed(1)}× die Welt`);
+    for (const z of massstabBericht(root)) console.log(`${z.id.padEnd(42)} ${z.pxJeM.toFixed(1).padStart(6)} px/m  ${z.faktor.toFixed(1)}× die Bühne`);
     process.exit(0);
   }
   const bib = validate(root), welt = fs.existsSync(path.join(root, 'welt/massstab.json')) ? validateWelt(root) : { errors: [], warnings: [], checked: 0 };

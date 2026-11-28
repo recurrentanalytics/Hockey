@@ -39,21 +39,21 @@ Hofgebäude und Überdachungen bekommen getönten Putz ohne Fenster.
 
 ## Maßstab
 
-**12,5 Pixel je Meter** für die ganze Weltansicht: Fassaden, Dachziegel, Dachteile, Putz und Boden (160 Pixel für 12,8 m Traufhöhe; ein Pixel ist 8 cm). Das ist die vom Besitzer gewählte grobe Pixelgröße.
+Die Welt hat zwei Ebenen mit je einem Maß. Beide stehen in `assets/welt/massstab.json`:
 
-Der Wert steht an einer Stelle: `assets/welt/massstab.json`. Die Asset-Prüfung (`npm run assets:check`) meldet einen Fehler, wenn ein Bausatz oder der Boden davon um mehr als 5 % abweicht.
+| Ebene | Pixel je Meter | Was |
+|---|---|---|
+| **Kulisse** (`px_je_m`) | 12,5 | Fassaden, Dachziegel, Dachteile, Putz, Boden (160 Pixel für 12,8 m Traufhöhe) |
+| **Bühne** (`buehne_px_je_m`) | 23 | alles auf Augenhöhe neben den Figuren: Spielfiguren (ein 1,4 m großes Kind ist 32 Pixel hoch), Bank, Laterne, Mülleimer, Fahrradbügel, Picknicktisch, Klettergerüst, Nilpferd |
+| Bäume | 9 | Ausnahme, siehe unten |
 
-Das Spielfeld des 2D-Spiels hat ein eigenes Maß (16 Pixel je Meter quer, 8 in der Tiefe). Das ist eine andere Ansicht und bleibt getrennt.
+Vorn ist es also fein und niedlich, die Kulisse dahinter ist ruhiger und gröber. Der Besitzer hat die Bühne nach der Spielfigur gewählt (32er-Chibi, „so niedlich wie möglich“, 2026-11-28, `docs/art/prompts/niedlich.md`).
 
-Die Sprites der Art-Bibliothek, die in der Welt stehen, sind seit dem 2026-11-28 im selben groben Maß neu gezeichnet (`docs/art/prompts/einheitlich.md`). Vorher waren sie 0,5- bis 7-mal so fein wie die Häuser. Das Zeichenmodell kann nur 16 bis 128 Pixel, daher bleiben kleine Abweichungen:
+Die Kulisse auf das Bühnenmaß zu bringen, wurde versucht und geht mit SpriteCook heute nicht. Eine Fassade bräuchte etwa 300 Pixel Höhe. Die Bildmodelle behalten aber das Raster ihrer Vorlage oder zeichnen gröber (160, 96 oder 42 Pixel), und das Exakt-Größen-Modell zeichnet höchstens 128. Bei den Bäumen gilt dasselbe: 14 m wären etwa 320 Pixel. Ein möglicher Weg wäre, Fassaden aus einzeln gezeichneten Achs- und Geschossstücken (je unter 128 Pixel) zusammenzusetzen; das ist nicht erprobt.
 
-| | Pixel je Meter |
-|---|---|
-| Laterne, Klettergerüst | 12–13, genau das Maß |
-| Nilpferd, Mülleimer, Bank, Fahrradbügel, Picknicktisch | 15–20; kleiner als 16 Pixel zeichnet das Modell nicht |
-| Bäume (Platane, Linde) | 9; größer als 128 Pixel zeichnet das Modell nicht, und jeder Baum wird ohnehin auf seine gemessene Höhe gestreckt |
+Die Asset-Prüfung (`npm run assets:check`) meldet einen Fehler, wenn ein Bausatz oder der Boden mehr als 5 % vom Kulissenmaß abweicht. `node tools/assets/validate.mjs assets --massstab` zeigt die Pixeldichte aller Welt-Sprites gegenüber der Bühne.
 
-Die Tabelle zeigt `node tools/assets/validate.mjs assets --massstab`. Die Spielfigur in der Welt ist die animierte Figur des 2D-Spiels (60 Pixel je Meter) und noch nicht angepasst. Neue Welt-Sprites werden im Weltmaß bestellt.
+Das Spielfeld des 2D-Spiels hat ein eigenes Maß (16 Pixel je Meter quer, 8 in der Tiefe). Das ist eine andere Ansicht und bleibt getrennt. Die Spielfigur in der Welt ist noch die animierte Figur des 2D-Spiels; ihre Welt-Variante (32er-Chibi) bekommt als Nächstes eine Laufanimation.
 
 SpriteCook hält die Größe ein, wenn man quadratisch und in der Größe der Stilreferenz bestellt (160 × 160). Kleine Dachteile kommen aus dem Exakt-Größen-Modell.
 
