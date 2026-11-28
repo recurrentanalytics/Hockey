@@ -27,10 +27,10 @@ const GAME_VIEW = { heading: 118.2, tilt: 60 }; // the game camera: looking A �
 // SpriteCook façade kits (assets/welt/haeuser/bausaetze.json); without it every footprint stays the plain volume it was.
 
 const Q = new URLSearchParams(location.search);
-// distance haze and coarser far tiles round the court (see showGoogle). ?dunst=0 off; ?dunst=a,b,s tunes it:
-// clear up to a metres from the court, full strength s (0–1) from b metres on
+// distance haze on the Google tiles and coarser far tiles (see showGoogle). ?dunst=0 off; ?dunst=a,b,s tunes it:
+// clear up to a metres beyond the edge of the drawn quarter, full strength s (0–1) from b metres beyond it
 const DUNST = Q.get('dunst') !== '0';
-const DUNST_WERTE = (() => { const v = (Q.get('dunst') ?? '').split(',').map(Number); return v.length === 3 && v.every(Number.isFinite) ? v : [180, 1600, 0.75]; })();
+const DUNST_WERTE = (() => { const v = (Q.get('dunst') ?? '').split(',').map(Number); return v.length === 3 && v.every(Number.isFinite) ? v : [0, 1500, 0.8]; })();
 const ort = Q.get('ort') || 'boni';
 const base = new URL(`../../locations/${ort}/geo/`, import.meta.url);
 const load = (name) => fetch(new URL(name, base)).then((r) => { if (!r.ok) throw new Error(`${name}: ${r.status}`); return r.json(); });
@@ -270,26 +270,47 @@ async function main() {
   // aerial photo's level, and the globe (photo, pixel ground) is drawn only inside the cut. Google's city round the
   // quarter, nothing of Google and nothing see-through inside it. Without the drawn houses it is as it was.
   let rundum = false, googleBoden = null, schnitt = null;
-  // Haze round the court ("fog of war"): clear round the playground, misting over with distance from the court
-  // (not from the camera), so the coarse far tiles read as distance, not as missing detail. Measured in eye
-  // space against the court centre, so it stays put while the camera moves. Only with the Google tiles; ?dunst=0 off.
-  const mitteWC = Cesium.Cartesian3.fromDegrees(centre[0], centre[1], 0), mitteEC = new Cesium.Cartesian3();
-  const dunst = scene.postProcessStages.add(new Cesium.PostProcessStage({
-    name: 'dunst',
-    fragmentShader: `uniform sampler2D colorTexture; uniform sampler2D depthTexture; in vec2 v_textureCoordinates;
-      uniform vec3 u_mitte; uniform vec3 u_farbe; uniform vec2 u_weite; uniform float u_staerke;
-      void main() {
-        vec4 c = texture(colorTexture, v_textureCoordinates);
-        float d = czm_readDepth(depthTexture, v_textureCoordinates), r = 1e9;
-        if (d < 1.0) { vec4 ec = czm_windowToEyeCoordinates(gl_FragCoord.xy, d); r = distance(ec.xyz / ec.w, u_mitte); }
-        out_FragColor = vec4(mix(c.rgb, u_farbe, u_staerke * smoothstep(u_weite.x, u_weite.y, r)), c.a);
-      }`,
+  // Haze round the quarter ("fog of war"), painted into the Google tiles themselves: our own pixel world (aerial
+  // photo, pixel ground, houses, trees, sprites) is never touched. Clear up to the edge of the cut, misting over
+  // with distance from it (not from the camera), so the coarse far tiles read as distance, not as missing detail.
+  // Only with the Google tiles; ?dunst=0 off. The sky becomes the haze colour, so the horizon melts into it.
+  const DUNST_FARBE = Cesium.Color.fromBytes(204, 214, 219);
+  const dunstShader = DUNST ? new Cesium.CustomShader({
     uniforms: {
-      u_mitte: () => Cesium.Matrix4.multiplyByPoint(scene.camera.viewMatrix, mitteWC, mitteEC),
-      u_farbe: new Cesium.Cartesian3(0.80, 0.84, 0.86), u_weite: new Cesium.Cartesian2(DUNST_WERTE[0], DUNST_WERTE[1]), u_staerke: DUNST_WERTE[2],
+      u_ecToEnu: { type: Cesium.UniformType.MAT4, value: new Cesium.Matrix4() },
+      u_halb: { type: Cesium.UniformType.VEC2, value: new Cesium.Cartesian2() }, // half size of the clear area, metres
+      u_dunst: { type: Cesium.UniformType.VEC3, value: new Cesium.Cartesian3(...DUNST_WERTE) },
+      u_farbe: { type: Cesium.UniformType.VEC3, value: new Cesium.Cartesian3(DUNST_FARBE.red, DUNST_FARBE.green, DUNST_FARBE.blue) },
     },
-  }));
-  dunst.enabled = false;
+    fragmentShaderText: `void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+      vec2 q = (u_ecToEnu * vec4(fsInput.attributes.positionEC, 1.0)).xy;
+      float d = length(max(abs(q) - u_halb, 0.0)); // metres outside the clear rectangle
+      material.diffuse = mix(material.diffuse, czm_srgbToLinear(u_farbe), u_dunst.z * smoothstep(u_dunst.x, u_dunst.y, d));
+    }`,
+  }) : undefined;
+  let dunstEnu = null;
+  function dunstGebiet() { // ENU frame at the centre of the clear area and its half size
+    let lon = centre[0], lat = centre[1], halb = [0, 0];
+    if (schnitt) {
+      const r = schnitt.rechteck, m = Cesium.Rectangle.center(r);
+      lon = Cesium.Math.toDegrees(m.longitude); lat = Cesium.Math.toDegrees(m.latitude);
+      const enu = Cesium.Transforms.eastNorthUpToFixedFrame(Cesium.Cartesian3.fromDegrees(lon, lat, 0)), inv = Cesium.Matrix4.inverseTransformation(enu, new Cesium.Matrix4());
+      const ne = Cesium.Matrix4.multiplyByPoint(inv, Cesium.Cartesian3.fromRadians(r.east, r.north, 0), new Cesium.Cartesian3());
+      halb = [Math.abs(ne.x), Math.abs(ne.y)];
+    }
+    dunstEnu = Cesium.Matrix4.inverseTransformation(Cesium.Transforms.eastNorthUpToFixedFrame(Cesium.Cartesian3.fromDegrees(lon, lat, rundum ? 0 : googleBoden ?? 0)), new Cesium.Matrix4());
+    dunstShader.setUniform('u_halb', new Cesium.Cartesian2(...halb));
+  }
+  if (dunstShader) scene.preRender.addEventListener(() => {
+    if (!tiles?.show || !dunstEnu) return;
+    dunstShader.setUniform('u_ecToEnu', Cesium.Matrix4.multiply(dunstEnu, scene.camera.inverseViewMatrix, new Cesium.Matrix4()));
+  });
+  function dunstAn(an) {
+    if (!dunstShader) return;
+    if (an) dunstGebiet();
+    if (scene.skyBox) scene.skyBox.show = !an;
+    scene.backgroundColor = an ? DUNST_FARBE : Cesium.Color.BLACK;
+  }
   function viertelSchnitt() {
     // one rectangle round the data's cutout and every house that reaches beyond it: a single cut is the cheapest to draw
     const p = [...gebaeude.features.filter((f) => viertelHaeuser.hat(f.properties.oid)).flatMap((f) => polygons(f.geometry).flatMap((poly) => poly[0])), ...(frame.ausschnitt_utm32 ? [frame.ausschnitt_utm32.slice(0, 2), frame.ausschnitt_utm32.slice(2)] : [])];
@@ -313,12 +334,12 @@ async function main() {
         showCreditsOnScreen: true, maximumScreenSpaceError: 20, dynamicScreenSpaceError: true,
         ...(DUNST ? { dynamicScreenSpaceErrorDensity: 1.5e-3, dynamicScreenSpaceErrorFactor: 24 } : {}),
         foveatedScreenSpaceError: true, cullRequestsWhileMoving: true, cacheBytes: 256 * 1024 * 1024,
+        customShader: dunstShader,
       });
       scene.primitives.add(tiles);
       for (const a of ep.attributions ?? []) viewer.creditDisplay.addStaticCredit(new Cesium.Credit(a.html, true));
     }
     if (tiles) tiles.show = on;
-    dunst.enabled = DUNST && on;
     rundum =on && !!viertelHaeuser && Cesium.ClippingPolygonCollection.isSupported(scene);
     ganzerGlobus();
     scene.globe.show = !on; // the tiles carry their own ground; the flat globe would cut through it
@@ -334,6 +355,7 @@ async function main() {
       tiles.modelMatrix = Cesium.Matrix4.fromTranslation(Cesium.Cartesian3.multiplyByScalar(hoch, -googleBoden, hoch));
       scene.globe.show = true; scene.globe.cartographicLimitRectangle = schnitt.rechteck;
     } else if (on) ground = googleBoden;
+    dunstAn(on);
     build(); view(current);
     status(!on ? 'bereit' : rundum ? `Google-3D-Kacheln rund um das Viertel, um ${googleBoden.toFixed(1)} m auf die Höhe des Luftbilds gesenkt` : `Google-3D-Kacheln an, Boden bei ${ground.toFixed(1)} m (Ellipsoid)`);
   }
