@@ -2,6 +2,8 @@
 // x runs along the rink (left → right on screen), y runs across it
 // (far boards → near boards), z is height.
 
+import BONI from '../locations/boni/ort.js';
+
 export const VIEW = {
   baseHeight: 216,   // internal pixel height of the UI layer
   minWidth: 288,     // internal width adapts to the screen's aspect ratio
@@ -30,20 +32,22 @@ const ARENA_RINK = {
 };
 
 // Real court inside the fence (25.2 m × 18 m): end walls at the fronts of the football-goal cages,
-// street-hockey goals 9.2 m from the centre (tools/intro/court_glb.py).
+// street-hockey goals 9.2 m from the centre (tools/intro/court_glb.py). The numbers are the place's own
+// (locations/boni/ort.js, Roadmap 0.6).
+const F = BONI.spielflaeche.inline;
 const BONI_RINK = {
-  length: 22.8,
-  width: 17.2,
-  cornerRadius: 1.0,
-  goalLineX: 9.2,
-  boardHeight: 1.0,
-  centerCircleRadius: 3,
-  endCircle: { x: 6.2, y: 4.2, r: 2 },
-  creaseRadius: 1.2,
+  length: F.laenge,
+  width: F.breite,
+  cornerRadius: F.eckradius,
+  goalLineX: F.torlinie,
+  boardHeight: F.bandenhoehe,
+  centerCircleRadius: F.mittelkreis,
+  endCircle: { ...F.bullykreis },
+  creaseRadius: F.torraum,
 };
 export const RINK = BONI_3D ? BONI_RINK : ARENA_RINK;
 
-export const GOAL = BONI_3D ? { width: 1.37, height: 1.12, depth: 0.6 } : { width: 1.83, height: 1.22, depth: 1.0 };
+export const GOAL = BONI_3D ? { width: F.tor.breite, height: F.tor.hoehe, depth: F.tor.tiefe } : { width: 1.83, height: 1.22, depth: 1.0 };
 
 // Skating feel. grip: how fast sideways drift dies when steering (no "soap"); brakeDrag: how fast
 // a skater stops without input. On the small real court everything runs ~25 % slower so the

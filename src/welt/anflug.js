@@ -2,6 +2,7 @@
 // words of the game's intro, ending in the game camera above the court. It runs in the world's own
 // scene, so what the flight lands on is the world one then skates through. Timing and text follow
 // the former intro page (removed 2026-11-28); the curve itself is a pure function and tested under Node.
+import ORT from '../../locations/boni/ort.js';
 
 /** The story, as in the intro. Times in seconds. */
 export const GESCHICHTE = [
@@ -19,7 +20,7 @@ const DREHUNG = [13.8, 23.4], NEIGUNG = [20.0, 26.2];
 const weich = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * t * (t * (t * 6 - 15) + 10));
 
 /** Camera at time t: { weite (m), richtung (°, compass), neigung (°, 0 = straight down … 60 = the game camera) }. */
-export function kamera(t, ziel = { richtung: 118.2, neigung: 60 }) {
+export function kamera(t, ziel = ORT.blick) {
   t = Math.max(0, Math.min(ENDE, t));
   let i = 0;
   while (i < WEITE.length - 2 && t > WEITE[i + 1][0]) i++;

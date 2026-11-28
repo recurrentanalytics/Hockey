@@ -3,7 +3,8 @@
 // (used by tests/precache.test.mjs and CI).
 const fs = require('fs'), path = require('path');
 const root = path.resolve(__dirname, '../..');
-const list = ['./', 'index.html', 'test.html', 'welt.html', 'manifest.webmanifest', 'manifest-test.webmanifest', 'css/style.css', 'audio/hymne.mp3'];
+const list = ['./', 'index.html', 'test.html', 'welt.html', 'manifest.webmanifest', 'manifest-test.webmanifest', 'css/style.css', 'audio/hymne.mp3',
+  'locations/boni/ort.js']; // the place's numbers: src/config.js reads the court from it
 const walk = (d) => fs.readdirSync(path.join(root, d), { withFileTypes: true }).forEach((e) => {
   const rel = `${d}/${e.name}`;
   if (e.isDirectory()) walk(rel); else list.push(rel);

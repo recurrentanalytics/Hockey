@@ -53,8 +53,8 @@ Phase 4 (neue Orte, Reise), Phase 5 (neue Sportarten und gleichwertige Lebensweg
 | 0.2 | ✅ Boni-Daten reproduzierbar: `tools/ort/abrufen.py`, Quellen und Prüfergebnis in `docs/BONI_ORT.md` | T3 |
 | 0.3 | 🟡 Tablet- und Handytest: Anzeige `?fps` und App-Kurzbefehl „Leistungstest“ (App 0.9) fertig, Anleitung in `docs/PERFORMANCE_TEST.md`; Messung auf den Geräten steht aus | T4 |
 | 0.4 | Boni-Test automatisieren: Testplatz und 3D-Standbilder ins Repo | T2 |
-| 0.5 | Signaturschlüssel sicher an den Verein übergeben | T17 |
-| 0.6 | Direkt danach oder parallel: **eine Ortsbeschreibung für den Boni** (`locations/boni/`), schlicht, ohne Welt-Engine. 🟡 Begonnen: `locations/boni/geo/` mit den Vektor-Geodaten (`tools/ort/geodaten.py`, siehe `docs/BONI_ORT.md`); `ort.js` steht noch aus | T5, WORLD_ARCHITECTURE 2 |
+| 0.5 | ✅ Signaturschlüssel übergeben (2026-11-28, direkt an den Besitzer, nicht über das Repository) | T17 |
+| 0.6 | ✅ **Ortsbeschreibung für den Boni:** `locations/boni/ort.js` mit Ecken, Blick, Zaun, Spielfläche, Tor und Verweisen auf Geodaten, Dächer, Bausätze, Platzmodell und Quellen. `src/config.js` (Spielfeld, Tor) und die Weltansicht (Blick, Zaun) lesen daraus; Python liest sie mit `tools/ort/ort.py`; `tests/ort.test.mjs` gleicht mit `tools/ort/boni.json` ab. Noch nicht umgestellt: Platzmodell- und Schattenwerkzeuge (`tools/intro/`), siehe T5 | T5, WORLD_ARCHITECTURE 2 |
 
 **Leitplanken, damit Phase 0 keine Großbaustelle wird:**
 - Jeder Schritt ist ein eigener, kleiner Auftrag mit sichtbarem Ergebnis.

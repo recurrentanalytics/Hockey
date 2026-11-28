@@ -3,6 +3,7 @@
 // Same 3D stack as the intro (CesiumJS from the CDN). With the club's Cesium ion token on this
 // device the Google photorealistic 3D tiles can be switched on as well; without it the view
 // stands on the aerial photo alone. An inspection view, not gameplay yet.
+import ORT from '../../locations/boni/ort.js';
 import { fromUtm32, toUtm32 } from './utm.js';
 import { placeLibrary, usable, frameImages } from './bibliothek.js';
 import { hain, kronenkarte, baumbilder, pflanze, LICHT } from './baeume.js';
@@ -23,7 +24,7 @@ const GOOGLE_3D_TILES = 2275207;     // Cesium ion asset, as in the intro
 const TOKEN_KEY = 'boniCesiumToken'; // the Cesium ion token on this device
 const LGLN = 'https://opendata.lgln.niedersachsen.de/doorman/noauth/';
 const FALLBACK_HEIGHT = 10;          // metres, for footprints without any height information
-const GAME_VIEW = { heading: 118.2, tilt: 60 }; // the game camera: looking A → B, 60° from vertical
+const GAME_VIEW = { heading: ORT.blick.richtung, tilt: ORT.blick.neigung }; // the game camera: looking A → B, 60° from vertical (locations/boni/ort.js)
 // The houses of haeuser.js wait for the owner's approval: ?haeuser=neu shows the whole quarter dressed in the
 // SpriteCook façade kits (assets/welt/haeuser/bausaetze.json); without it every footprint stays the plain volume it was.
 
@@ -474,7 +475,7 @@ async function main() {
     return { x: ((cx / cw + 1) / 2) * scene.canvas.clientWidth, y: ((1 - cy / cw) / 2) * scene.canvas.clientHeight };
   };
   function spielkamera() { // the fixed game camera of the intro's end: the court fills the width, seen 60° from the vertical
-    const aspekt = scene.canvas.clientWidth / Math.max(1, scene.canvas.clientHeight), breite = 25.2 / (aspekt >= 1 ? 0.78 : 0.95);
+    const aspekt = scene.canvas.clientWidth / Math.max(1, scene.canvas.clientHeight), breite = ORT.zaun.laenge / (aspekt >= 1 ? 0.78 : 0.95);
     camera.frustum.fov = aspekt >= 1 ? SPIELFOV : 2 * Math.atan(Math.tan(SPIELFOV / 2) / aspekt);
     const kurs = Cesium.Math.toRadians(GAME_VIEW.heading), hub = breite * 0.025;
     const ziel = platzmeterZuGitter([0, hub]); // a little beyond the centre, so the court sits just below the middle
