@@ -209,9 +209,19 @@ export async function kronenkarte(url, a0 = -46, b0 = -41.4, zelle = 0.5) {
   } catch { const leer = () => null; leer.roh = () => 0; return leer; }
 }
 
-/** Split a tree sprite into trunk and canopy pictures of the full frame: the canopy starts where the outline widens. */
-export async function baumbilder(asset, base) {
-  const img = await ladeBild(new URL(asset.file, base).href);
+/**
+ * Which picture of a tree shows at this time of the year, from the environment's own measure of the trees
+ * (environment.js, season: leaf cover, autumn colour, fresh May green): bare in winter, light green while the
+ * leaves come out, coloured in autumn, else the summer tree. An asset names its season pictures under
+ * `jahreszeiten` in the manifest; a season without one shows the summer tree.
+ */
+export function jahreszeit({ foliage = 1, autumn = 0, fresh = 0 } = {}) {
+  return foliage < 0.3 ? 'winter' : autumn > 0.3 ? 'herbst' : fresh > 0.25 ? 'fruehling' : 'sommer';
+}
+
+/** Split a tree sprite into trunk and canopy pictures of the full frame: the canopy starts where the outline widens. `zeit`: the season whose picture to take (jahreszeit). */
+export async function baumbilder(asset, base, zeit = 'sommer') {
+  const img = await ladeBild(new URL(asset.jahreszeiten?.[zeit]?.file ?? asset.file, base).href);
   const { w, h } = asset.frame, scale = Math.max(1, Math.round(256 / h));
   const src = Object.assign(document.createElement('canvas'), { width: w, height: h });
   const sg = src.getContext('2d', { willReadFrequently: true }); sg.drawImage(img, 0, 0);

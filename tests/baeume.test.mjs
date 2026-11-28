@@ -145,3 +145,16 @@ test('trees: crowns sway a little, more in wind, each tree on its own beat, and 
   assert.ok(groesster * 12 < 0.4, 'the top of a 12 m tree moves less than 40 cm');
   assert.ok(wechsel >= 10 && wechsel <= 40, `to and fro ${wechsel} times a minute`);
 });
+
+test('trees: the picture of the season follows the environment\'s year: bare, fresh, summer, coloured, bare', async () => {
+  const { jahreszeit } = await import('../src/welt/baeume.js');
+  const { season } = await import('../src/intro/environment.js');
+  const am = (monat, tag) => jahreszeit(season(new Date(2026, monat - 1, tag, 12)));
+  assert.deepEqual([am(1, 15), am(3, 1), am(5, 5), am(7, 15), am(8, 30), am(10, 20), am(11, 28), am(12, 24)],
+    ['winter', 'winter', 'fruehling', 'sommer', 'sommer', 'herbst', 'winter', 'winter']);
+  // through the whole year the order never jumps back, and every season comes once
+  const folge = [];
+  for (let t = 1; t <= 365; t++) { const z = jahreszeit(season(new Date(2026, 0, t, 12))); if (folge.at(-1) !== z) folge.push(z); }
+  assert.deepEqual(folge, ['winter', 'fruehling', 'sommer', 'herbst', 'winter']);
+  assert.equal(jahreszeit(), 'sommer', 'without a measure: the summer tree');
+});

@@ -7,7 +7,7 @@ import ORT from '../../locations/boni/ort.js';
 import { RELIEF } from '../bau/haus.js';
 import { fromUtm32, toUtm32 } from './utm.js';
 import { placeLibrary, usable, frameImages, fahrbahnen, vomFahrdamm } from './bibliothek.js';
-import { hain, haltAbstand, kronenkarte, baumbilder, pflanze, schattenwerfer, wiegeMass, LICHT } from './baeume.js';
+import { hain, haltAbstand, kronenkarte, baumbilder, pflanze, schattenwerfer, wiegeMass, jahreszeit, LICHT } from './baeume.js';
 import { createEnvironment, weatherPanel } from '../intro/environment.js';
 import { surfaceFor, setSurface } from '../game/surface.js';
 import { starte } from './spieler.js';
@@ -108,7 +108,9 @@ async function main() {
     { sperre: (a, b) => Math.abs(a) < 13.4 && Math.abs(b) < 9.8 }), hausRinge, (art) => { const a = baumArten.find((x) => x.id === art); return a ? a.frame.w / a.frame.h : 0.8; }, frame);
   // nothing of the art library stands on a carriageway: such a mapped point moves behind the kerb (bibliothek.js, vomFahrdamm)
   const fahrdamm = fahrbahnen(nutzung);
-  const baumBilder = Object.fromEntries(await Promise.all(baumArten.map(async (a) => [a.id, await baumbilder(a, ASSETS)])));
+  // the trees' pictures of the season (baeume.js, jahreszeit); they are loaded again when the season turns
+  const ladeBaumBilder = async (zeit) => Object.fromEntries(await Promise.all(baumArten.map(async (a) => [a.id, await baumbilder(a, ASSETS, zeit)])));
+  let baumZeit = 'sommer', baumBilder = await ladeBaumBilder(baumZeit);
   const figur = manifest.assets.find((a) => a.id === 'character.skater.stride' && (a.approved || preview));
   // The roaming figure is the art library's skater (the 32 px chibi in the club's jersey), at stage scale.
   const figurBilder = figur ? { rechts: await frameImages(figur), links: await frameImages(figur, true), seiten: figur.frame.w / figur.frame.h } : null;
@@ -680,6 +682,11 @@ async function main() {
     viertelHaeuser?.licht(LICHT); // the houses take the light at once: three numbers, nothing is rebuilt
     HIMMEL.grau = { clouds: 1, rain: 1, fog: 1, snow: 0.9, partly: 0.3 }[st.look] ?? 0; HIMMEL.tag = v.day; himmel();
     BEWEGT.luecken = Math.min(0.5, 0.08 + 0.5 * (1 - (v.leaf ?? 0.85))); // fewer leaves, more light through the crown
+    const zeit = jahreszeit(v.season);
+    if (zeit !== baumZeit && baumArten.some((a) => a.jahreszeiten)) { // the trees change their dress: crowns, and with them their cast shadows
+      baumZeit = zeit;
+      ladeBaumBilder(zeit).then((b) => { if (baumZeit === zeit) { baumBilder = b; build(); } }).catch(() => {});
+    }
     clearTimeout(neuZeichnen); neuZeichnen = setTimeout(() => { if (sources.baeume) build(); }, 400); // tree shadows turn with the sun
   };
   try {
