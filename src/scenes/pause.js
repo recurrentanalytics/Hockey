@@ -28,7 +28,9 @@ export class PauseScene {
     }
     items.push(
       { label: 'EINSTELLUNGEN', onSelect: () => app.push(new SettingsScene(app)) },
-      { label: 'ZUM MENÜ', color: PAL.red, onSelect: () => { app.audio.stopSong(); app.popTo((s) => s.isTournament || s.isMainMenu); } },
+      globalThis.BONI_3D?.zurWelt
+        ? { label: 'SPIEL BEENDEN', color: PAL.red, onSelect: () => { app.audio.stopSong(); globalThis.BONI_3D.zurWelt(); } }
+        : { label: 'ZUM MENÜ', color: PAL.red, onSelect: () => { app.audio.stopSong(); app.popTo((s) => s.isTournament || s.isMainMenu); } },
     );
     this.menu = new Menu(items, { width: 190, top: 70 });
   }

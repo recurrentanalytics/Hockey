@@ -245,3 +245,10 @@ Drei Türen, je 2 m breit, in Zaunmodell (`tools/intro/court_glb.py`, `DOORS`) u
 - auf der gegenüberliegenden Längsseite (B–C, b = +9) je eine an beiden Enden (a = ±10,9).
 
 Die genaue Lage am Ende (Abstand zur Ecke) ist geschätzt. `assets/intro/boni_platz.glb` ist dafür neu erzeugt; außer den Zaunteilen ist es mit dem vorigen Modell gleich (Tore, Netze, Texturen pixelgleich geprüft). Bild: `docs/ort/boni_platz_tueren.jpg`.
+
+## Spiel direkt vom Platz, Bonny im Viertel (2026-11-28)
+
+- **„Spiel starten“ auf dem Platz** führt ohne Titelbild und Menüs direkt zum Bully: Borstentiere gegen den Gegner aus der Auswahl am Knopf (gespeichert wie in den Spieleinstellungen), Regeln und Spielzeit aus den Einstellungen. `main.js` ruft dafür `BONI_3D.start(app)` statt den Titel zu zeigen.
+- **„Platz verlassen“** lässt das Match stehen (Uhr steht); beim nächsten Betreten geht es weiter.
+- **Schlusspfiff** oder **„Spiel beenden“** im Pausenmenü (dort statt „Zum Menü“) bringt dich zurück ins Viertel; das nächste Betreten startet ein neues Match.
+- **Figur im Viertel:** Bonny (#61) im Borstentiere-Trikot, mit demselben Figurenrenderer wie auf dem Platz (`src/world/figures.js`, Laufschritt `stride0`–`stride7`, Stand `idleA`), 1,3 m groß. Der SpriteCook-Skater bleibt in der Art-Bibliothek, wird aber nicht mehr als Figur benutzt.

@@ -29,8 +29,8 @@ export function starte({ Cesium, viewer, entities, frame, pos, bilder, hoehe, ha
   const zuGitter = ([a, b]) => [frame.ursprung_utm32[0] + a * frame.achse_a[0] + b * frame.achse_b[0], frame.ursprung_utm32[1] + a * frame.achse_a[1] + b * frame.achse_b[1]];
   const n = bilder.rechts.length;
   const figur = entities.add({
-    position: new Cesium.CallbackProperty(() => pos(zuGitter(z.ab), 0), false),
-    billboard: { image: new Cesium.CallbackProperty(() => (z.rechts ? bilder.rechts : bilder.links)[z.faehrt ? Math.floor(z.phase) % n : 0], false),
+    position: new Cesium.CallbackProperty(() => pos(zuGitter(z.ab), -(bilder.unten ?? 0)), false), // the picture's margin below the skates goes into the ground
+    billboard: { image: new Cesium.CallbackProperty(() => (z.faehrt ? (z.rechts ? bilder.rechts : bilder.links)[Math.floor(z.phase) % n] : (z.rechts ? bilder.stehenRechts ?? bilder.rechts[0] : bilder.stehenLinks ?? bilder.links[0])), false),
       sizeInMeters: true, width: hoehe * bilder.seiten, height: hoehe, verticalOrigin: Cesium.VerticalOrigin.BOTTOM },
     properties: { text: 'Spieler\nPfeiltasten oder WASD, oder auf den Boden tippen' },
   });

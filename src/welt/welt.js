@@ -67,6 +67,9 @@ const LAYERS = [
 const USE_COLOR = { 'Straßenverkehr': '#8d8a85', 'Weg': '#d9c79a', 'Wohnbaufläche': '#e8dcc0', 'Sport-, Freizeit- und Erholungsfläche': '#8fbf6a' };
 
 async function main() {
+  // The game reads this once when its modules load (config.js, projection.js): it marks the real court.
+  // Set before anything from the game is imported; toCss and the rest follow once the scene exists.
+  globalThis.BONI_3D = { pausiert: true };
   status('Lade Geodaten …');
   const [frame, gebaeude, nutzung, wege, baeume, einfriedungen, platz, ausstattung, flaechen] = await Promise.all(
     ['rahmen.json', 'gebaeude.geojson', 'nutzung.geojson', 'wege.geojson', 'baeume.geojson', 'einfriedungen.geojson', 'platz.geojson', 'ausstattung.geojson', 'flaechen.geojson'].map(load));
@@ -83,7 +86,33 @@ async function main() {
     { sperre: (a, b) => Math.abs(a) < 13.4 && Math.abs(b) < 9.8 });
   const baumBilder = Object.fromEntries(await Promise.all(baumArten.map(async (a) => [a.id, await baumbilder(a, ASSETS)])));
   const figur = manifest.assets.find((a) => a.id === 'character.skater.stride' && (a.approved || preview));
-  const figurBilder = figur ? { rechts: await frameImages(figur), links: await frameImages(figur, true), seiten: figur.frame.w / figur.frame.h } : null;
+  // The roaming figure is the game's own: Bonny (#61) of the Borstentiere, drawn by the same figure
+  // renderer as on the court (src/world/figures.js), so stepping onto the court changes nothing about him.
+  const { TEAMS } = await import('../config.js');
+  const einstellungen = await import('../settings.js');
+  const figurBilder = await (async () => {
+    const { skaterFigures } = await import('../world/figures.js');
+    const fig = skaterFigures(TEAMS.borstentiere, { kind: 'boar' });
+    // enlarged with hard pixels first: the 3D view would otherwise smooth the small frames into mush
+    const url = (c) => {
+      const k = Math.max(1, Math.round(256 / c.height)), big = Object.assign(document.createElement('canvas'), { width: c.width * k, height: c.height * k });
+      const bg = big.getContext('2d'); bg.imageSmoothingEnabled = false; bg.drawImage(c, 0, 0, big.width, big.height);
+      return big.toDataURL();
+    };
+    const fahren = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => fig.frame(`stride${i}`));
+    const stehen = fig.frame('idleA');
+    // size: the figure's drawn height (helmet to skates) is 1.3 m; the canvas has a margin below the skates
+    const leinwand = stehen.right, g = leinwand.getContext('2d', { willReadFrequently: true }), d = g.getImageData(0, 0, leinwand.width, leinwand.height).data;
+    let oben = leinwand.height, unten = 0;
+    for (let y = 0; y < leinwand.height; y++) for (let x = 0; x < leinwand.width; x++) if (d[(y * leinwand.width + x) * 4 + 3] > 0) { oben = Math.min(oben, y); unten = y; }
+    const proPixel = 1.3 / Math.max(1, unten - oben + 1);
+    return { rechts: fahren.map((f) => url(f.right)), links: fahren.map((f) => url(f.left)), stehenRechts: url(stehen.right), stehenLinks: url(stehen.left),
+      seiten: leinwand.width / leinwand.height, hoehe: leinwand.height * proPixel, unten: (leinwand.height - 1 - unten) * proPixel };
+  })().catch((e) => { console.error(e); return null; });
+  // the opponent for a match on the court: chosen at the court, remembered like in the game's own settings
+  const gegnerWahl = $('gegner');
+  for (const [key, t] of Object.entries(TEAMS)) if (!t.hidden && key !== 'borstentiere') gegnerWahl.add(new Option(t.name, key, false, key === einstellungen.settings.awayTeam));
+  for (const ev of ['click', 'pointerdown']) gegnerWahl.addEventListener(ev, (e) => e.stopPropagation());
   const foto = await ladeLuftbild(ASSETS).catch(() => null); // the place's own aerial photo; the world stands on it
   let grove = { baeume: baumListe, zeige() {} };
   let flug = null;
@@ -492,11 +521,26 @@ async function main() {
     globalThis.BONI_3D.pausiert = false;
     if (!spielGeladen) {
       status('Lade das Spiel …');
+      rinkModul = await import('../scenes/rink.js');
+      globalThis.BONI_3D.start = neuesMatch;      // main.js calls this instead of showing title and menus
+      globalThis.BONI_3D.zurWelt = () => { matchVorbei = true; verlasse(); };
       await import('../main.js');
       spielGeladen = true;
-    }
+    } else if (matchVorbei) neuesMatch(window.app);
     $('screen').focus({ preventScroll: true });
     status('Spiel läuft – „Platz verlassen“ bringt dich zurück ins Viertel');
+  }
+  // A match on the court: straight to the face-off, Borstentiere against the chosen opponent, under the
+  // rules set in the game's settings. Leaving the court pauses it; after the final whistle (or "Spiel
+  // beenden" in its pause menu) the next visit starts a new one.
+  let rinkModul = null, matchVorbei = false;
+  function neuesMatch(app) {
+    const gegner = $('gegner').value;
+    if (gegner) { einstellungen.settings.awayTeam = gegner; einstellungen.saveSettings(); }
+    app.scenes.length = 0;
+    app.push(new rinkModul.RinkScene(app, { title: 'AUF DEM BONI', mode: 'ai', humans: [{ controller: 'any', side: 'home' }],
+      teams: { home: 'borstentiere', away: einstellungen.settings.awayTeam }, onFinish: () => { matchVorbei = true; verlasse(); } }));
+    matchVorbei = false;
   }
   function verlasse() {
     if (!imSpiel) return;
@@ -511,7 +555,7 @@ async function main() {
   // ---- sun, weather and season: the intro's own module with the intro's own rules (src/intro/environment.js).
   // Colour grade, rain and snow, live weather, the weather panel; and passed on from here: the figures' sun
   // shadow and tree shade, the court's grip and wind for the physics, the direction and depth of the tree shadows.
-  globalThis.BONI_3D = { toCss, pausiert: true }; // before any game module loads: it reads this once
+  Object.assign(globalThis.BONI_3D, { toCss });
   let umwelt = null, neuZeichnen = null;
   const beiUmwelt = (st) => {
     const v = st.visuals, az = (v.sun.az * Math.PI) / 180;
@@ -558,7 +602,7 @@ async function main() {
   if (figurBilder) {
     const eigene = new Cesium.CustomDataSource('spieler'); // kept apart from the layers build() replaces
     viewer.dataSources.add(eigene);
-    spieler = starte({ Cesium, viewer, entities: eigene.entities, frame, pos, bilder: figurBilder, hoehe: figur.worldHeight ?? 1.4, hain: () => grove, bodenpunkt: groundPoint, welt: hindernisse, zeigeHaeuser,
+    spieler = starte({ Cesium, viewer, entities: eigene.entities, frame, pos, bilder: figurBilder, hoehe: figurBilder.hoehe, hain: () => grove, bodenpunkt: groundPoint, welt: hindernisse, zeigeHaeuser,
       aufPlatz: (drin) => { $('spielstart').style.display = drin ? 'block' : 'none'; } });
   }
   // ---- how the world opens: with the approach from space (the default), or straight in with ?sicht=…

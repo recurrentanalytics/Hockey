@@ -69,7 +69,9 @@ input.keyboard.onKeyDown = (code) => {
   if (code === 'KeyF' && !bound && canFullscreen()) { autoTried = true; toggleFullscreen(); return; }
   autoFullscreen();
 };
-app.push(new TitleScene(app));
+// the world view (welt.html) starts the match itself, straight on the court, without title and menus
+if (globalThis.BONI_3D?.start) globalThis.BONI_3D.start(app);
+else app.push(new TitleScene(app));
 loadAssets(); // art arrives in the background; built-in sprites show until then
 
 function drawPortraitHint() {

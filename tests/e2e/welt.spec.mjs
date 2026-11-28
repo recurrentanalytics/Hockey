@@ -6,7 +6,7 @@
 // request that leaves the test server (LGLN aerial service, Open-Meteo, Google) is blocked, so the run
 // does not depend on the internet. The world has to cope with that, and does.
 import { test as base, expect } from '@playwright/test';
-import { watch, startMatchThroughMenus, matchInfo, colours } from './fixtures.mjs';
+import { watch, matchInfo, colours } from './fixtures.mjs';
 
 const CESIUM = '/node_modules/cesium/Build/Cesium/';
 const GEO = ['rahmen.json', 'gebaeude.geojson', 'nutzung.geojson', 'wege.geojson', 'baeume.geojson', 'einfriedungen.geojson', 'platz.geojson', 'ausstattung.geojson', 'flaechen.geojson'];
@@ -132,14 +132,14 @@ test('the player drives: keys move the figure, the match button shows on the cou
 test('the hockey match starts inside the world, sleeps when leaving and resumes', async () => {
   await page.locator('#spielstart').click();
   await expect(page.locator('body')).toHaveClass(/imspiel/, { timeout: 120_000 });
-  await wait(() => page.evaluate(() => window.app?.top?.constructor?.name), 'the game has loaded and shows its title').toBe('TitleScene');
+  // straight to the face-off: no title, no menus (src/welt/welt.js neuesMatch)
+  await wait(() => page.evaluate(() => window.app?.top?.constructor?.name), 'the match starts at once on the court').toBe('RinkScene');
   expect(await page.evaluate(() => window.welt.imSpiel)).toBe(true);
   expect(await page.evaluate(() => globalThis.BONI_3D.pausiert)).toBe(false);
   await expect(page.locator('#screen')).toBeVisible();
-  await wait(() => colours(page), 'the game draws its title over the world').toBeGreaterThan(6);
-
-  await startMatchThroughMenus(page);
+  await wait(() => colours(page), 'the game draws its players over the world').toBeGreaterThan(6);
   await wait(async () => (await matchInfo(page)).state, 'face-off becomes live play').toBe('play');
+  expect(await page.evaluate(() => window.app.top.match.sides.home.team), 'the roaming figure\'s team plays at home').toBe('borstentiere');
   const info = await matchInfo(page);
   expect(info.rinkLength, 'the real court, not the arena').toBe(22.8);
   expect(info).toMatchObject({ rosterHome: 6, goalies: 2 });   // 3 per line; on ice 4 today: known bug, tests/lineup.test.mjs
@@ -159,6 +159,13 @@ test('the hockey match starts inside the world, sleeps when leaving and resumes'
   // the page switches at once, the match wakes after the camera has been drawn twice (slow in software rendering)
   await wait(() => page.evaluate(() => globalThis.BONI_3D.pausiert), 'the match wakes up').toBe(false);
   await wait(async () => (await matchInfo(page)).clock, 'the clock runs again').toBeLessThan(clock);
+
+  // "Spiel beenden" in the pause menu goes back into the neighbourhood, the next visit starts a new match
+  const vorher = await page.evaluate(() => window.app.top.match.ref?.clock);
+  await page.evaluate(() => globalThis.BONI_3D.zurWelt());
+  await expect(page.locator('body')).not.toHaveClass(/imspiel/);
+  await page.locator('#spielstart').click();
+  await wait(async () => (await matchInfo(page)).clock, 'a fresh match starts with a full clock').toBeGreaterThan(vorher);
 });
 
 test('no uncaught errors, console errors or HTTP errors from our own server', async () => {
