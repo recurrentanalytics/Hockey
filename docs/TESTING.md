@@ -44,3 +44,15 @@ Python 3 und `gh` (nur für Pull Requests) unter Windows: `winget install Python
 
 - `tests/lineup.test.mjs`: Auf dem Boni stehen 4 statt 3 Feldspieler pro Seite auf dem Eis.
 - `tests/precache.test.mjs`: `welt.html` und ihre Daten sind nicht im Offline-Precache.
+
+## Wetterphysik und Referenzwerte
+
+`tests/wetter.test.mjs` prüft den Untergrund (`src/game/surface.js`) auf dem Boni mit festem Zufall: Ball rollen und fallen lassen, Spieler anfahren, bremsen, wenden, 200 harte Wenden für die Sturzhäufigkeit, je Wetterlage (trocken, Regen, Schnee, Glätte, Hitze, Wind). Geprüft wird die Richtung (zum Beispiel: bei Schnee rollt der Ball am kürzesten) und, dass die genauen Werte der Referenz `tests/referenz/wetter.json` entsprechen. So fällt jede unbeabsichtigte Physikänderung auf, auch durch Umbauten anderswo.
+
+Wer die Physik absichtlich ändert, erneuert die Referenz und prüft den Unterschied im Diff:
+
+```sh
+UPDATE_REFERENZ=1 node --test tests/wetter.test.mjs      # PowerShell: $env:UPDATE_REFERENZ=1
+```
+
+`tests/helpers/boni.mjs` vor `./helpers/headless.mjs` importieren, damit ein Test mit den Boni-Maßen statt der Halle läuft.
