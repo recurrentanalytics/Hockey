@@ -45,15 +45,15 @@ Der Wert steht an einer Stelle: `assets/welt/massstab.json`. Die Asset-Prüfung 
 
 Das Spielfeld des 2D-Spiels hat ein eigenes Maß (16 Pixel je Meter quer, 8 in der Tiefe). Das ist eine andere Ansicht und bleibt getrennt.
 
-Die Sprites der Art-Bibliothek (Laternen, Bänke, Bäume, Nilpferd …) tragen ihre Größe in Metern (`worldHeight`) und werden in der Welt darauf gestreckt. Ihre Pixeldichte weicht heute stark ab:
+Die Sprites der Art-Bibliothek, die in der Welt stehen, sind seit dem 2026-11-28 im selben groben Maß neu gezeichnet (`docs/art/prompts/einheitlich.md`). Vorher waren sie 0,5- bis 7-mal so fein wie die Häuser. Das Zeichenmodell kann nur 16 bis 128 Pixel, daher bleiben kleine Abweichungen:
 
-| | Pixel je Meter | gegenüber den Häusern |
-|---|---|---|
-| Bäume (Platane, Linde) | 5,7 | halb so fein |
-| Laterne, Klettergerüst | 27–30 | gut doppelt so fein |
-| Bank, Mülleimer, Fahrradständer, Picknicktisch, Nilpferd | 53–85 | vier- bis siebenmal so fein |
+| | Pixel je Meter |
+|---|---|
+| Laterne, Klettergerüst | 12–13, genau das Maß |
+| Nilpferd, Mülleimer, Bank, Fahrradbügel, Picknicktisch | 15–20; kleiner als 16 Pixel zeichnet das Modell nicht |
+| Bäume (Platane, Linde) | 9; größer als 128 Pixel zeichnet das Modell nicht, und jeder Baum wird ohnehin auf seine gemessene Höhe gestreckt |
 
-Die Tabelle zeigt `node tools/assets/validate.mjs assets --massstab`. Das ist eine Entscheidung des Besitzers: ob neue Welt-Sprites auf 12,5 Pixel je Meter bestellt werden und ob die vorhandenen neu bestellt werden. Bis dahin bleibt alles, wie es ist.
+Die Tabelle zeigt `node tools/assets/validate.mjs assets --massstab`. Die Spielfigur in der Welt ist die animierte Figur des 2D-Spiels (60 Pixel je Meter) und noch nicht angepasst. Neue Welt-Sprites werden im Weltmaß bestellt.
 
 SpriteCook hält die Größe ein, wenn man quadratisch und in der Größe der Stilreferenz bestellt (160 × 160). Kleine Dachteile kommen aus dem Exakt-Größen-Modell.
 

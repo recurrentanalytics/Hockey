@@ -200,24 +200,20 @@
       "kind": "world",
       "file": "world/bonifatiusplatz/plane-tree.png",
       "frame": {
-        "w": 80,
-        "h": 80
+        "w": 128,
+        "h": 128
       },
       "frames": 1,
       "anchor": {
-        "x": 40,
-        "y": 78
+        "x": 64,
+        "y": 127
       },
-      "maxColors": 16,
       "source": {
-        "asset_id": "5e75d280-01cf-4bb1-8d6b-5b3ec9196e83",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/pilot.md",
-        "style_asset_ids": [
-          "ac3f660c-397a-430f-b292-eb5bc6447c1f"
-        ]
+        "asset_id": "ceeefc64-1a47-4214-992b-704ee6303e4a",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/einheitlich.md"
       },
-      "sha12": "17dd5f17043b",
+      "sha12": "aaa5b60faada",
       "worldHeight": 14,
       "place": {
         "layer": "baeume",
@@ -226,22 +222,23 @@
         }
       },
       "approved": {
-        "date": "2026-11-27"
-      }
+        "date": "2026-11-28"
+      },
+      "density": 1
     },
     {
       "id": "prop.bench",
       "kind": "prop",
       "file": "props/bench.png",
       "frame": {
-        "w": 70,
-        "h": 64
+        "w": 16,
+        "h": 16
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 35,
-        "y": 63
+        "x": 8,
+        "y": 15
       },
       "worldHeight": 0.9,
       "place": {
@@ -251,13 +248,13 @@
         }
       },
       "source": {
-        "asset_id": "ecf548ac-8726-4846-b691-8d04914e6a8d",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/set.md"
+        "asset_id": "2d72a995-6cd2-4b7e-aef5-d199574ae1e8",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/einheitlich.md"
       },
-      "sha12": "a2d9eedc9635",
+      "sha12": "b29f89eb0cc4",
       "approved": {
-        "date": "2026-11-27"
+        "date": "2026-11-28"
       }
     },
     {
@@ -265,14 +262,14 @@
       "kind": "world",
       "file": "world/bonifatiusplatz/linden.png",
       "frame": {
-        "w": 52,
-        "h": 80
+        "w": 84,
+        "h": 128
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 26,
-        "y": 79
+        "x": 42,
+        "y": 127
       },
       "worldHeight": 14,
       "place": {
@@ -282,13 +279,13 @@
         }
       },
       "source": {
-        "asset_id": "a7a7f747-b924-4a78-8977-ceac9e436228",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/set.md"
+        "asset_id": "7fe44e2c-0cfb-4311-b273-59cd83f3f475",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/einheitlich.md"
       },
-      "sha12": "1b2e4b99922e",
+      "sha12": "442ffb0433af",
       "approved": {
-        "date": "2026-11-27"
+        "date": "2026-11-28"
       }
     },
     {
@@ -296,14 +293,14 @@
       "kind": "prop",
       "file": "props/street-lamp.png",
       "frame": {
-        "w": 20,
-        "h": 120
+        "w": 16,
+        "h": 56
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 10,
-        "y": 119
+        "x": 8,
+        "y": 55
       },
       "worldHeight": 4.5,
       "place": {
@@ -313,11 +310,11 @@
         }
       },
       "source": {
-        "asset_id": "cb5ad196-ef74-400c-a497-e052d4cc7f69",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "e60a2e4f-0bb0-4753-94a7-19c4a71f5127",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/einheitlich.md"
       },
-      "sha12": "2b38b7a8fc54",
+      "sha12": "d12b90c1e582",
       "approved": {
         "date": "2026-11-28"
       }
@@ -327,14 +324,14 @@
       "kind": "prop",
       "file": "props/bicycle-stand.png",
       "frame": {
-        "w": 50,
-        "h": 72
+        "w": 16,
+        "h": 16
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 25,
-        "y": 71
+        "x": 8,
+        "y": 15
       },
       "worldHeight": 0.85,
       "place": {
@@ -344,11 +341,11 @@
         }
       },
       "source": {
-        "asset_id": "b4717e3e-8283-4c5d-b51a-ed480413aab1",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "2e375b6d-4a3f-431e-9660-af8a11085591",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/einheitlich.md"
       },
-      "sha12": "77ca1bea7e5a",
+      "sha12": "f85b81ade296",
       "approved": {
         "date": "2026-11-28"
       }
@@ -358,14 +355,14 @@
       "kind": "prop",
       "file": "props/waste-basket.png",
       "frame": {
-        "w": 46,
-        "h": 70
+        "w": 10,
+        "h": 16
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 23,
-        "y": 69
+        "x": 5,
+        "y": 15
       },
       "worldHeight": 1,
       "place": {
@@ -375,11 +372,11 @@
         }
       },
       "source": {
-        "asset_id": "ded9d598-f6cf-46d9-8868-2a4f8b191d2d",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "920c533a-d11b-4569-b9e6-322088b86786",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/einheitlich.md"
       },
-      "sha12": "ddb5886fbfff",
+      "sha12": "9c6e51780cc5",
       "approved": {
         "date": "2026-11-28"
       }
@@ -389,14 +386,14 @@
       "kind": "prop",
       "file": "props/picnic-table.png",
       "frame": {
-        "w": 68,
-        "h": 42
+        "w": 26,
+        "h": 16
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 34,
-        "y": 41
+        "x": 13,
+        "y": 15
       },
       "worldHeight": 0.8,
       "place": {
@@ -406,11 +403,11 @@
         }
       },
       "source": {
-        "asset_id": "eb725956-299e-4e97-9076-bfd79d948ee5",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "f84c2e0a-7d0a-4f04-bdef-f7905256774e",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/einheitlich.md"
       },
-      "sha12": "bb49c0e6da47",
+      "sha12": "ff10eddded34",
       "approved": {
         "date": "2026-11-28"
       }
@@ -420,14 +417,14 @@
       "kind": "world",
       "file": "world/bonifatiusplatz/climbing-dome.png",
       "frame": {
-        "w": 78,
-        "h": 66
+        "w": 34,
+        "h": 28
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 39,
-        "y": 65
+        "x": 17,
+        "y": 27
       },
       "worldHeight": 2.2,
       "place": {
@@ -437,11 +434,11 @@
         }
       },
       "source": {
-        "asset_id": "cd7abbf1-178a-4018-82c9-f035d19ad0ba",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "50b351ba-5e73-40e0-8533-c7715a88e9b3",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/einheitlich.md"
       },
-      "sha12": "cd3caecec7d0",
+      "sha12": "424b719ecd84",
       "approved": {
         "date": "2026-11-28"
       }
@@ -451,14 +448,14 @@
       "kind": "world",
       "file": "world/bonifatiusplatz/hippo.png",
       "frame": {
-        "w": 110,
-        "h": 68
+        "w": 24,
+        "h": 16
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 55,
-        "y": 67
+        "x": 12,
+        "y": 15
       },
       "worldHeight": 1.1,
       "place": {
@@ -468,11 +465,11 @@
         }
       },
       "source": {
-        "asset_id": "787774fc-9215-4bef-9edd-9f2d7a263596",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "87624903-5cbb-48be-8cb6-3d3ab989452e",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/einheitlich.md"
       },
-      "sha12": "6798d9fd3fc4",
+      "sha12": "e7a7cb65b10a",
       "approved": {
         "date": "2026-11-28"
       }
