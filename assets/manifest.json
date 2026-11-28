@@ -87,45 +87,27 @@
       "kind": "character",
       "file": "characters/skater/stride.png",
       "frame": {
-        "w": 84,
-        "h": 84
+        "w": 32,
+        "h": 34
       },
       "frames": 8,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 45,
-        "y": 83
+        "x": 16,
+        "y": 33
       },
       "idleFrame": 0,
-      "hand": {
-        "x": 11,
-        "y": 30
-      },
-      "teamColors": {
-        "#b8402f": "main",
-        "#882619": "shade",
-        "#9e3324": "shade",
-        "#5b1d14": "shade",
-        "#e1a315": "trim",
-        "#ca860b": "trimShade",
-        "#f5ecd8": "helmet",
-        "#faf5f0": "helmet",
-        "#b6ad9d": "helmetShade",
-        "#a39787": "helmetShade",
-        "#7a7064": "helmetShade",
-        "#21273f": "pants"
-      },
       "approved": {
-        "date": "2026-11-27"
+        "date": "2026-11-28"
       },
       "source": {
-        "asset_id": "918a831b-bacd-4d33-bb67-043aca7c6943",
+        "asset_id": "17823e5b-5101-431d-bc79-c0a0f46dd8f2",
         "model": "pixel-engine-v1.5",
-        "prompt": "docs/art/prompts/skater.md",
-        "still_asset_id": "9eeb43be-a11b-4be0-82a3-27e9583b318f"
+        "prompt": "docs/art/prompts/niedlich.md",
+        "still_asset_id": "94403fa4-3412-479a-a5c2-6c92171fa2de"
       },
-      "sha12": "df0a2d8d19c7",
-      "worldHeight": 1.4,
+      "sha12": "b5c96eb73dc7",
+      "worldHeight": 1.44,
       "place": {
         "court": [
           0,
@@ -200,24 +182,20 @@
       "kind": "world",
       "file": "world/bonifatiusplatz/plane-tree.png",
       "frame": {
-        "w": 80,
-        "h": 80
+        "w": 128,
+        "h": 128
       },
       "frames": 1,
       "anchor": {
-        "x": 40,
-        "y": 78
+        "x": 64,
+        "y": 127
       },
-      "maxColors": 16,
       "source": {
-        "asset_id": "5e75d280-01cf-4bb1-8d6b-5b3ec9196e83",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/pilot.md",
-        "style_asset_ids": [
-          "ac3f660c-397a-430f-b292-eb5bc6447c1f"
-        ]
+        "asset_id": "ceeefc64-1a47-4214-992b-704ee6303e4a",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/einheitlich.md"
       },
-      "sha12": "17dd5f17043b",
+      "sha12": "aaa5b60faada",
       "worldHeight": 14,
       "place": {
         "layer": "baeume",
@@ -226,22 +204,23 @@
         }
       },
       "approved": {
-        "date": "2026-11-27"
-      }
+        "date": "2026-11-28"
+      },
+      "density": 1
     },
     {
       "id": "prop.bench",
       "kind": "prop",
       "file": "props/bench.png",
       "frame": {
-        "w": 70,
-        "h": 64
+        "w": 24,
+        "h": 22
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 35,
-        "y": 63
+        "x": 12,
+        "y": 21
       },
       "worldHeight": 0.9,
       "place": {
@@ -251,13 +230,13 @@
         }
       },
       "source": {
-        "asset_id": "ecf548ac-8726-4846-b691-8d04914e6a8d",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/set.md"
+        "asset_id": "a897dd63-5aa5-4ffa-91c5-e2aaa557f394",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "a2d9eedc9635",
+      "sha12": "8a87b6b4cd02",
       "approved": {
-        "date": "2026-11-27"
+        "date": "2026-11-28"
       }
     },
     {
@@ -265,14 +244,14 @@
       "kind": "world",
       "file": "world/bonifatiusplatz/linden.png",
       "frame": {
-        "w": 52,
-        "h": 80
+        "w": 84,
+        "h": 128
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 26,
-        "y": 79
+        "x": 42,
+        "y": 127
       },
       "worldHeight": 14,
       "place": {
@@ -282,13 +261,13 @@
         }
       },
       "source": {
-        "asset_id": "a7a7f747-b924-4a78-8977-ceac9e436228",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/set.md"
+        "asset_id": "7fe44e2c-0cfb-4311-b273-59cd83f3f475",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/einheitlich.md"
       },
-      "sha12": "1b2e4b99922e",
+      "sha12": "442ffb0433af",
       "approved": {
-        "date": "2026-11-27"
+        "date": "2026-11-28"
       }
     },
     {
@@ -296,14 +275,14 @@
       "kind": "prop",
       "file": "props/street-lamp.png",
       "frame": {
-        "w": 20,
-        "h": 120
+        "w": 28,
+        "h": 104
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 10,
-        "y": 119
+        "x": 14,
+        "y": 103
       },
       "worldHeight": 4.5,
       "place": {
@@ -313,11 +292,11 @@
         }
       },
       "source": {
-        "asset_id": "cb5ad196-ef74-400c-a497-e052d4cc7f69",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "c1b3b967-575d-4f6e-a01f-4f42c6d0dbcc",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "2b38b7a8fc54",
+      "sha12": "3d7470fe527a",
       "approved": {
         "date": "2026-11-28"
       }
@@ -327,14 +306,14 @@
       "kind": "prop",
       "file": "props/bicycle-stand.png",
       "frame": {
-        "w": 50,
-        "h": 72
+        "w": 20,
+        "h": 20
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 25,
-        "y": 71
+        "x": 10,
+        "y": 19
       },
       "worldHeight": 0.85,
       "place": {
@@ -344,11 +323,11 @@
         }
       },
       "source": {
-        "asset_id": "b4717e3e-8283-4c5d-b51a-ed480413aab1",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "e9d42756-b81d-46e9-8635-6b51af8b02ee",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "77ca1bea7e5a",
+      "sha12": "15bb48960851",
       "approved": {
         "date": "2026-11-28"
       }
@@ -358,14 +337,14 @@
       "kind": "prop",
       "file": "props/waste-basket.png",
       "frame": {
-        "w": 46,
-        "h": 70
+        "w": 16,
+        "h": 24
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 23,
-        "y": 69
+        "x": 8,
+        "y": 23
       },
       "worldHeight": 1,
       "place": {
@@ -375,11 +354,11 @@
         }
       },
       "source": {
-        "asset_id": "ded9d598-f6cf-46d9-8868-2a4f8b191d2d",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "4f0ff6b8-61df-48b0-8a1a-f393f7948f17",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "ddb5886fbfff",
+      "sha12": "104b3def31c4",
       "approved": {
         "date": "2026-11-28"
       }
@@ -389,14 +368,14 @@
       "kind": "prop",
       "file": "props/picnic-table.png",
       "frame": {
-        "w": 68,
-        "h": 42
+        "w": 40,
+        "h": 20
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 34,
-        "y": 41
+        "x": 20,
+        "y": 19
       },
       "worldHeight": 0.8,
       "place": {
@@ -406,11 +385,11 @@
         }
       },
       "source": {
-        "asset_id": "eb725956-299e-4e97-9076-bfd79d948ee5",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "a220abc8-6c81-4089-bc73-4bf36d9d5df0",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "bb49c0e6da47",
+      "sha12": "bb2fcb12bb08",
       "approved": {
         "date": "2026-11-28"
       }
@@ -420,14 +399,14 @@
       "kind": "world",
       "file": "world/bonifatiusplatz/climbing-dome.png",
       "frame": {
-        "w": 78,
-        "h": 66
+        "w": 60,
+        "h": 50
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 39,
-        "y": 65
+        "x": 30,
+        "y": 49
       },
       "worldHeight": 2.2,
       "place": {
@@ -437,11 +416,11 @@
         }
       },
       "source": {
-        "asset_id": "cd7abbf1-178a-4018-82c9-f035d19ad0ba",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "c0ba40bd-8d47-4445-b54f-5c395393ca3f",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "cd3caecec7d0",
+      "sha12": "0d5e83d9887b",
       "approved": {
         "date": "2026-11-28"
       }
@@ -451,14 +430,14 @@
       "kind": "world",
       "file": "world/bonifatiusplatz/hippo.png",
       "frame": {
-        "w": 110,
-        "h": 68
+        "w": 38,
+        "h": 26
       },
       "frames": 1,
-      "density": 2,
+      "density": 1,
       "anchor": {
-        "x": 55,
-        "y": 67
+        "x": 19,
+        "y": 25
       },
       "worldHeight": 1.1,
       "place": {
@@ -468,11 +447,11 @@
         }
       },
       "source": {
-        "asset_id": "787774fc-9215-4bef-9edd-9f2d7a263596",
-        "model": "gemini-nano-banana-2.1",
-        "prompt": "docs/art/prompts/strassenmoebel.md"
+        "asset_id": "6a950971-3d39-47a6-b68b-6010cd8ea363",
+        "model": "pixel-engine-image-v1",
+        "prompt": "docs/art/prompts/niedlich.md"
       },
-      "sha12": "6798d9fd3fc4",
+      "sha12": "b7ba84c7a346",
       "approved": {
         "date": "2026-11-28"
       }

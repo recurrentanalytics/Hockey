@@ -75,14 +75,14 @@ for (const page of ['index.html', 'test.html', 'welt.html']) {
   });
 }
 
-// Known gap, tracked rather than hidden: the world view is online-only today (CesiumJS from the CDN,
-// the LGLN aerial service), so welt.html, its data and its art are not precached. The test lists what
-// an offline world view would still need; it stays a TODO until that is decided.
-test('precache: welt.html and its local data (decision pending: online-only for now)', { todo: 'welt.html needs the network anyway; decide whether the data should be precached' }, () => {
-  const { files, broken } = closure('welt.html');
-  assert.deepEqual(broken, []);
-  const data = ['assets/manifest.json', 'assets/welt/boni_umgebung.jpg', 'assets/welt/boni_umgebung.json', 'assets/intro/boni_platz.glb', 'assets/intro/boni_schatten_hoehen.png',
-    ...fs.readdirSync('locations/boni/geo').filter((f) => f.endsWith('.geojson') || f === 'rahmen.json').map((f) => `locations/boni/geo/${f}`)];
-  const missing = [...files, ...data].filter((f) => !listed.has(f));
-  assert.deepEqual(missing, [], `not precached:\n${missing.join('\n')}`);
+// Decided (2026-11-28): in the browser the world view is online-only. It needs CesiumJS from the CDN anyway
+// (and Google's tiles if wanted), so caching its data would not make it work offline. Offline, the page itself
+// loads from the cache and falls back to the hall game (index.html), which is fully precached. The Android app
+// ships everything, CesiumJS included (tools/android/build.sh), and runs the world offline.
+test('precache: offline, the world view falls back to the precached hall game; its data stays online-only on purpose', () => {
+  assert.match(read('src/welt/welt.js'), /location\.replace\('index\.html'\)/, 'the world view falls back to the hall when CesiumJS cannot load');
+  assert.ok(listed.has('index.html') && listed.has('welt.html'), 'both pages are precached');
+  const daten = ['locations/boni/geo/gebaeude.geojson', 'locations/boni/geo/daecher.json', 'assets/welt/haeuser/bausaetze.json'];
+  assert.deepEqual(daten.filter((f) => listed.has(f)), [], 'the world data is deliberately not precached (see the comment above)');
+  assert.match(read('tools/android/build.sh'), /cp -r [^\n]*assets[^\n]*locations/, 'the app carries the world data');
 });

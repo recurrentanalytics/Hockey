@@ -3,6 +3,7 @@
 // Same 3D stack as the intro (CesiumJS from the CDN). With the club's Cesium ion token on this
 // device the Google photorealistic 3D tiles can be switched on as well; without it the view
 // stands on the aerial photo alone. An inspection view, not gameplay yet.
+import ORT from '../../locations/boni/ort.js';
 import { fromUtm32, toUtm32 } from './utm.js';
 import { placeLibrary, usable, frameImages } from './bibliothek.js';
 import { hain, kronenkarte, baumbilder, pflanze, LICHT } from './baeume.js';
@@ -23,7 +24,7 @@ const GOOGLE_3D_TILES = 2275207;     // Cesium ion asset, as in the intro
 const TOKEN_KEY = 'boniCesiumToken'; // the Cesium ion token on this device
 const LGLN = 'https://opendata.lgln.niedersachsen.de/doorman/noauth/';
 const FALLBACK_HEIGHT = 10;          // metres, for footprints without any height information
-const GAME_VIEW = { heading: 118.2, tilt: 60 }; // the game camera: looking A → B, 60° from vertical
+const GAME_VIEW = { heading: ORT.blick.richtung, tilt: ORT.blick.neigung }; // the game camera: looking A → B, 60° from vertical (locations/boni/ort.js)
 // The houses of haeuser.js wait for the owner's approval: ?haeuser=neu shows the whole quarter dressed in the
 // SpriteCook façade kits (assets/welt/haeuser/bausaetze.json); without it every footprint stays the plain volume it was.
 
@@ -57,6 +58,7 @@ const LAYERS = [
   { id: 'google', name: 'Google-3D-Kacheln', on: false },
   { id: 'nutzung', name: 'Straßen, Wege, Flächen (ALKIS)', on: false },
   { id: 'gebaeude', name: 'Gebäude als Volumen (ALKIS)', on: true },
+  { id: 'relief', name: 'Fassaden-Relief (3D, um den Platz)', on: Q.get('relief') !== '0' },
   { id: 'wege', name: 'Wegelinien (OSM)', on: false },
   { id: 'baeume', name: 'Bäume mit Schatten (OSM-Standorte)', on: true },
   { id: 'einfriedungen', name: 'Zäune, Mauern (OSM)', on: true },
@@ -86,29 +88,10 @@ async function main() {
     { sperre: (a, b) => Math.abs(a) < 13.4 && Math.abs(b) < 9.8 });
   const baumBilder = Object.fromEntries(await Promise.all(baumArten.map(async (a) => [a.id, await baumbilder(a, ASSETS)])));
   const figur = manifest.assets.find((a) => a.id === 'character.skater.stride' && (a.approved || preview));
-  // The roaming figure is the game's own: Bonny (#61) of the Borstentiere, drawn by the same figure
-  // renderer as on the court (src/world/figures.js), so stepping onto the court changes nothing about him.
+  // The roaming figure is the art library's skater (the 32 px chibi in the club's jersey), at stage scale.
+  const figurBilder = figur ? { rechts: await frameImages(figur), links: await frameImages(figur, true), seiten: figur.frame.w / figur.frame.h } : null;
   const { TEAMS } = await import('../config.js');
   const einstellungen = await import('../settings.js');
-  const figurBilder = await (async () => {
-    const { skaterFigures } = await import('../world/figures.js');
-    const fig = skaterFigures(TEAMS.borstentiere, { kind: 'boar' });
-    // enlarged with hard pixels first: the 3D view would otherwise smooth the small frames into mush
-    const url = (c) => {
-      const k = Math.max(1, Math.round(256 / c.height)), big = Object.assign(document.createElement('canvas'), { width: c.width * k, height: c.height * k });
-      const bg = big.getContext('2d'); bg.imageSmoothingEnabled = false; bg.drawImage(c, 0, 0, big.width, big.height);
-      return big.toDataURL();
-    };
-    const fahren = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => fig.frame(`stride${i}`));
-    const stehen = fig.frame('idleA');
-    // size: the figure's drawn height (helmet to skates) is 1.3 m; the canvas has a margin below the skates
-    const leinwand = stehen.right, g = leinwand.getContext('2d', { willReadFrequently: true }), d = g.getImageData(0, 0, leinwand.width, leinwand.height).data;
-    let oben = leinwand.height, unten = 0;
-    for (let y = 0; y < leinwand.height; y++) for (let x = 0; x < leinwand.width; x++) if (d[(y * leinwand.width + x) * 4 + 3] > 0) { oben = Math.min(oben, y); unten = y; }
-    const proPixel = 1.3 / Math.max(1, unten - oben + 1);
-    return { rechts: fahren.map((f) => url(f.right)), links: fahren.map((f) => url(f.left)), stehenRechts: url(stehen.right), stehenLinks: url(stehen.left),
-      seiten: leinwand.width / leinwand.height, hoehe: leinwand.height * proPixel, unten: (leinwand.height - 1 - unten) * proPixel };
-  })().catch((e) => { console.error(e); return null; });
   // the opponent for a match on the court: chosen at the court, remembered like in the game's own settings
   const gegnerWahl = $('gegner');
   for (const [key, t] of Object.entries(TEAMS)) if (!t.hidden && key !== 'borstentiere') gegnerWahl.add(new Option(t.name, key, false, key === einstellungen.settings.awayTeam));
@@ -121,6 +104,8 @@ async function main() {
   const hausArt = Q.get('haeuser') ?? 'neu'; // every house dressed in the façade kits; ?haeuser=alt shows plain volumes
   let viertelHaeuser = null;                 // the houses of haeuser.js
   const saetze = hausArt === 'alt' ? null : await fetch(new URL('welt/haeuser/bausaetze.json', ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  // measured roofs and heights (LoD2 of the LGLN, tools/ort/lod2.py); without them the rules estimate from OSM
+  const daecher = hausArt === 'alt' ? null : await load('daecher.json').catch(() => null);
   // the drawn ground belongs to the same review: streets, pavements and yards in SpriteCook textures (boden.js)
   const bodenRegeln = hausArt === 'alt' ? null : await fetch(new URL('welt/boden/boden.json', ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   if (bodenRegeln) LAYERS.splice(LAYERS.findIndex((l) => l.id === 'pixelboden') + 1, 0, { id: 'boden', name: 'Gezeichneter Boden im Viertel (SpriteCook)', on: true });
@@ -182,6 +167,7 @@ async function main() {
   scene.globe.depthTestAgainstTerrain = false;
   scene.skyAtmosphere.show = false; scene.fog.enabled = false;
   viewer.creditDisplay.addStaticCredit(new Cesium.Credit('Wege, Bäume, Höhen © OpenStreetMap-Mitwirkende, ODbL', true));
+  if (daecher) viewer.creditDisplay.addStaticCredit(new Cesium.Credit(`Dächer und Gebäudehöhen ${daecher.quelle.split(':')[0]}`, true)); // © GeoBasis-DE / LGLN (Jahr), dl-de/by-2-0
 
   // ---- the pixel ground: the aerial photo round the court as pixel art, dissolving into the real photo (pixelboden.js)
   const inMetern = (ring) => ring.map((p) => platzmeter(frame, p));
@@ -231,8 +217,8 @@ async function main() {
     const blocks = layer('gebaeude');
     haeuser.length = 0;
     if (hausArt !== 'alt' && scene.context.webgl2) {           // drawn houses: built once; ground, cover and records follow here
-      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS) });
-      viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on && !rundum ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.verzeichne(blocks);
+      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, daecher, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS) });
+      viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on && !rundum ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.relief(LAYERS.find((l) => l.id === 'relief').on); viertelHaeuser.verzeichne(blocks);
     }
     for (const f of gebaeude.features) {
       if (viertelHaeuser?.hat(f.properties.oid)) continue;
@@ -425,6 +411,7 @@ async function main() {
       if (l.id === 'pixelboden') { if (pixelLayer) pixelLayer.show = l.on; }
       else if (l.id === 'boden') { if (bodenLayer) bodenLayer.show = l.on; build(); } // the trees' shadows depend on the ground
       else if (l.id === 'platz') { if (platzModell) platzModell.show = l.on; }
+      else if (l.id === 'relief') { viertelHaeuser?.relief(l.on); }
       else if (l.id === 'luftbild') { if (lokal) lokal.show = l.on; build(); }
       else if (l.id === 'luftbildlive') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
       else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); rundum = false; ganzerGlobus(); } }
@@ -500,7 +487,7 @@ async function main() {
     return { x: ((cx / cw + 1) / 2) * scene.canvas.clientWidth, y: ((1 - cy / cw) / 2) * scene.canvas.clientHeight };
   };
   function spielkamera() { // the fixed game camera of the intro's end: the court fills the width, seen 60° from the vertical
-    const aspekt = scene.canvas.clientWidth / Math.max(1, scene.canvas.clientHeight), breite = 25.2 / (aspekt >= 1 ? 0.78 : 0.95);
+    const aspekt = scene.canvas.clientWidth / Math.max(1, scene.canvas.clientHeight), breite = ORT.zaun.laenge / (aspekt >= 1 ? 0.78 : 0.95);
     camera.frustum.fov = aspekt >= 1 ? SPIELFOV : 2 * Math.atan(Math.tan(SPIELFOV / 2) / aspekt);
     const kurs = Cesium.Math.toRadians(GAME_VIEW.heading), hub = breite * 0.025;
     const ziel = platzmeterZuGitter([0, hub]); // a little beyond the centre, so the court sits just below the middle
@@ -602,7 +589,7 @@ async function main() {
   if (figurBilder) {
     const eigene = new Cesium.CustomDataSource('spieler'); // kept apart from the layers build() replaces
     viewer.dataSources.add(eigene);
-    spieler = starte({ Cesium, viewer, entities: eigene.entities, frame, pos, bilder: figurBilder, hoehe: figurBilder.hoehe, hain: () => grove, bodenpunkt: groundPoint, welt: hindernisse, zeigeHaeuser,
+    spieler = starte({ Cesium, viewer, entities: eigene.entities, frame, pos, bilder: figurBilder, hoehe: figur.worldHeight ?? 1.4, hain: () => grove, bodenpunkt: groundPoint, welt: hindernisse, zeigeHaeuser,
       aufPlatz: (drin) => { $('spielstart').style.display = drin ? 'block' : 'none'; } });
   }
   // ---- how the world opens: with the approach from space (the default), or straight in with ?sicht=…

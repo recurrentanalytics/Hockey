@@ -1,6 +1,7 @@
 // Goalie: holds an arc in front of the net, tracks the puck, reacts to shots.
 import { RINK, GOAL, TEAMS, RES } from '../config.js';
 import { project } from '../world/projection.js';
+import { SURF } from './surface.js';
 import { goalieFigures, shadowSprite, GK_W, GK_AX, GK_AY } from '../world/sprites.js';
 
 // react: seconds before moving on a shot · err: how far off the read can be (m)
@@ -54,7 +55,9 @@ export class Goalie {
     const ang = clamp(Math.atan2(puck.pos.y, Math.max(0.2, dxOut)), -1.2, 1.2);
     let tx = this.gx + this.out * Math.cos(ang) * 0.85;
     let ty = clamp(Math.sin(ang) * 0.85, -HW - 0.1, HW + 0.1);
-    let speed = this.skill.speed;
+    // the court: on wet, snowy or icy ground a goalie pushes off slower and misreads by sliding past
+    const halt = Math.min(1, SURF.accel * (0.6 + 0.4 * Math.min(1, SURF.grip)));
+    let speed = this.skill.speed * halt;
     this.diving = false;
 
     // Read a shot heading for the net and slide across to meet it.
@@ -73,10 +76,10 @@ export class Goalie {
         // Goalies square up to shooters in close, so they react sooner to short-range shots.
         const near = Math.max(0.7, Math.min(1, 0.55 + (puck.shot?.dist ?? 10) * 0.06));
         if (this.reactT >= (this.skill.react + quick) * near) {
-          if (this.guess == null) this.guess = (Math.random() * 2 - 1) * this.skill.err;
+          if (this.guess == null) this.guess = (Math.random() * 2 - 1) * this.skill.err * (1 + SURF.slip);
           tx = this.pos.x;
           ty = clamp(yHit + this.guess, -HW - 0.15, HW + 0.15);
-          speed = this.skill.dive;
+          speed = this.skill.dive * halt;
           this.diving = true;
           // Low shots: drop into the butterfly. High ones: glove or blocker, by side.
           const zHit = puck.z + puck.vz * t - 4.9 * t * t;

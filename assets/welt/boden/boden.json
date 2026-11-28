@@ -2,12 +2,12 @@
   "stand": "Zur Begutachtung, nicht freigegeben. Alle Texturen von SpriteCook (gemini-nano-banana-2.1, mode texture), unverändert. Herkunft und Aufträge: docs/art/prompts/boden.md.",
   "px_je_m": 12.5,
   "texturen": {
-    "asphalt": { "datei": "asphalt.png", "asset_id": "98c2f3fd-1078-49d0-b6af-d37f5d45dd3f", "breite": 100, "hoehe": 100 },
-    "kopfstein": { "datei": "kopfstein.png", "asset_id": "e906de81-5862-4a6d-9802-593d76bafc48", "breite": 47, "hoehe": 50 },
-    "gehweg": { "datei": "gehweg.png", "asset_id": "fa0f4a9e-04db-4620-aaf4-974ee6a63035", "breite": 90, "hoehe": 78 },
-    "platz": { "datei": "platz.png", "asset_id": "52850d99-4ea3-419c-838f-d43e52b23668", "breite": 147, "hoehe": 111 },
-    "hof": { "datei": "hof.png", "asset_id": "965762e5-1c82-40fb-9362-43482b61e5f1", "breite": 200, "hoehe": 200 },
-    "rasen": { "datei": "rasen.png", "asset_id": "09401dd3-f360-40ef-a942-74356bde8a61", "breite": 204, "hoehe": 176 }
+    "asphalt": { "datei": "asphalt.png", "sha12": "10678655e71b", "asset_id": "98c2f3fd-1078-49d0-b6af-d37f5d45dd3f", "breite": 100, "hoehe": 100 },
+    "kopfstein": { "datei": "kopfstein.png", "sha12": "5f3f671ad6af", "asset_id": "e906de81-5862-4a6d-9802-593d76bafc48", "breite": 47, "hoehe": 50 },
+    "gehweg": { "datei": "gehweg.png", "sha12": "6394d0949cc7", "asset_id": "fa0f4a9e-04db-4620-aaf4-974ee6a63035", "breite": 90, "hoehe": 78 },
+    "platz": { "datei": "platz.png", "sha12": "e946bd044ac8", "asset_id": "52850d99-4ea3-419c-838f-d43e52b23668", "breite": 147, "hoehe": 111 },
+    "hof": { "datei": "hof.png", "sha12": "025f401ec631", "asset_id": "965762e5-1c82-40fb-9362-43482b61e5f1", "breite": 200, "hoehe": 200 },
+    "rasen": { "datei": "rasen.png", "sha12": "7a9e2ea3ecde", "asset_id": "09401dd3-f360-40ef-a942-74356bde8a61", "breite": 204, "hoehe": 176 }
   },
   "nutzung": {
     "Straßenverkehr": "asphalt",

@@ -54,7 +54,9 @@ Nichts davon ist umgesetzt. Jede Position ist ein eigener kleiner Auftrag.
 Alle Tests liefen mit Software-Rendering. Ob das Spiel auf dem Android-Tablet flüssig läuft, ist unbekannt. Kritisch sind Boden-Shader (`TREE_LIGHT`, bis 48 Texturzugriffe pro Pixel), Jahreszeit-Shader auf allen Kacheln, Schattenkarte und der Spiel-Canvas in voller Auflösung.
 **Vorschlag:** eine Anzeige mit `?fps` (Bildrate des Spiels und der letzten Cesium-Bilder, Gerätepixelverhältnis, Auflösungsfaktor). Einmal auf Tablet und Handy ansehen: Intro, Spiel bei Sonne, Spiel im Herbst, Torkamera. Danach entscheiden, ob T12 und T13 nötig sind. Ein Qualitätsschalter (niedrig, mittel, hoch) in den Einstellungen wäre die übliche Antwort.
 
-### T5 🟠 Boni-Konstanten an acht Stellen (M)
+### T5 🟡 Boni-Konstanten an acht Stellen (M) – teilweise erledigt (2026-11-28)
+**Stand:** `locations/boni/ort.js` ist die Ortsbeschreibung. Spielfeld und Tor (`src/config.js`), Spielkamera (`src/welt/welt.js`, `baeume.js`, `anflug.js`) und Zaunlänge lesen daraus; die Ecken in `tools/ort/boni.json` werden per Test abgeglichen. Offen: `tools/intro/court_glb.py` und `shadow_casters.py` auf `tools/ort/ort.py` umstellen; die Kronenkarten-Maße im Boden-Shader.
+
 Ecken, Zaunmaß, Spielfeld, Kronenkarte, Blick und Laternen stehen verteilt in `photoreal.js`, `environment.js` (Shader), `config.js`, `flat.js`, `court_glb.py`, `shadow_casters.py` (Liste in PROJECT_AUDIT 5.1).
 **Vorschlag:** `locations/boni/ort.js` (und `ort.json` für Python) nach [WORLD_ARCHITECTURE.md](WORLD_ARCHITECTURE.md). Alle Stellen lesen daraus. Die Shader bekommen die Kartenmaße als Uniform. Keine Verhaltensänderung; mit T2 prüfen.
 

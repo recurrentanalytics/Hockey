@@ -39,6 +39,7 @@ Warm, handcrafted pixel art in the spirit of Franco-Belgian ligne claire.
 - **Shapes:** simple, readable silhouettes; large heads and hands on characters (about 3 heads tall); clear, slightly exaggerated poses.
 - **Detail:** a few telling details per object, never texture noise.
 - **View:** side-on with a slight top-down tilt, matching the rink projection (16 px per metre across, 8 px per metre in depth).
+- **Scale:** two views, two scales. The rink (2D game) is 16 px per metre across and 8 in depth. The world view (houses, ground, roof parts) is 12.5 px per metre, set once in `assets/welt/massstab.json` and enforced by `npm run assets:check`. World sprites from this library are stretched to their `worldHeight`; `node tools/assets/validate.mjs assets --massstab` lists their pixel density against the world (see `docs/art/HAEUSER.md`, Maßstab).
 
 Style block, reused word for word in every prompt:
 

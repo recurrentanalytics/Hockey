@@ -481,6 +481,10 @@ export class Match {
     if (best) {
       const dist = Math.hypot(best.pos.x - s.pos.x, best.pos.y - s.pos.y);
       speed = Math.max(PASS.min, Math.min(PASS.max, 8 + dist * 0.5));
+      // a wet, snowy or leafy court brakes the ball harder: players play it firmer to get it there
+      // (the extra loss over the distance from drag and rolling resistance, as surface.js scales them)
+      const extra = (SURF.ballDrag - 1) * p.phys.drag * dist + (SURF.ballFriction - 1) * p.phys.friction * dist / speed;
+      if (extra > 0) speed = Math.min(PASS.max * 1.35, speed + extra);
       const t = dist / speed;
       ang = Math.atan2(best.pos.y + best.vel.y * t - s.pos.y, best.pos.x + best.vel.x * t - s.pos.x);
     }

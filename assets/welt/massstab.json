@@ -1,0 +1,6 @@
+{
+  "px_je_m": 12.5,
+  "buehne_px_je_m": 23,
+  "gilt_fuer": "px_je_m (Kulisse): Fassaden, Dachziegel, Dachteile, Putz und Boden; ein Pixel ist 8 cm. buehne_px_je_m (Bühne): alles auf Augenhöhe neben den Figuren, also Spielfiguren, Straßenmöbel und Spielplatz; ein 1,4 m großes Kind ist 32 Pixel hoch. Vom Besitzer gewählt (docs/art/HAEUSER.md, Maßstab; docs/art/prompts/niedlich.md).",
+  "nicht_fuer": "Das Spielfeld des 2D-Spiels hat sein eigenes Maß (16 Pixel je Meter quer, 8 in der Tiefe, docs/art/README.md). Bäume liegen bei 9 Pixeln je Meter, weil die Zeichenmodelle nicht größer als 128 Pixel zeichnen. Die Pixeldichte aller Welt-Sprites zeigt node tools/assets/validate.mjs assets --massstab."
+}

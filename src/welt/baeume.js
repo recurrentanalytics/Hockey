@@ -1,20 +1,17 @@
 // Trees of a place: every mapped tree becomes a trunk and a canopy with a ground shadow, a size,
 // a species and a collision circle. Everything follows from the geodata and fixed rules, so the
 // same data always gives the same grove. Pure rules first (tested under Node), drawing below.
+import ORT from '../../locations/boni/ort.js';
 import { ladeBild } from './bild.js';
 
 /** One light for the whole world. Compass direction the sun shines from, and its elevation.
  *  Chosen so that in the game camera (looking 118°) light comes from the upper left, as in the art. */
 export const LICHT = { azimut: 73, hoehe: 45 };
 /** The game camera's tilt from the vertical: a canopy hides the ground this far behind its trunk. */
-export const KAMERA = { richtung: 118.2, neigung: 60 };
+export const KAMERA = { ...ORT.blick }; // the game camera of the place (locations/boni/ort.js)
 
-/** Stable pseudo-random number in [0, 1) from a string (FNV-1a): same tree, same result, every run. */
-export function streuung(text, salz = '') {
-  let h = 0x811c9dc5;
-  for (const ch of salz + text) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193); }
-  return (h >>> 0) / 4294967296;
-}
+export { streuung } from '../bau/streuung.js'; // stable pseudo-random number from a string (FNV-1a)
+import { streuung } from '../bau/streuung.js';
 
 /** Court metres of a grid position. */
 export const platzmeter = (frame, [e, n]) => {

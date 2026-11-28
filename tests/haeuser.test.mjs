@@ -1,9 +1,9 @@
-// The houses of the neighbourhood (src/welt/haeuser.js): description and mesh from the footprints alone.
+// The houses of the neighbourhood (src/bau/haus.js): description and mesh from the footprints alone.
 // Roof forms, storeys, shop fronts, gateways, party walls, colours; and the whole real dataset without a gap.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { viertel, netz, trianguliere, rechteck, flaeche, saeubere, dachhoehe, achsen, steckbrief, lichtvektor, hoehen, fuege, schichte, wandmaske, kleideViertel, packe, PUTZ, KLINKER, DURCHFAHRT, ACHSE } from '../src/welt/haeuser.js';
+import { viertel, netz, relief, RELIEF, trianguliere, rechteck, flaeche, saeubere, dachhoehe, achsen, steckbrief, lichtvektor, hoehen, fuege, schichte, wandmaske, kleideViertel, packe, PUTZ, KLINKER, DURCHFAHRT, ACHSE } from '../src/bau/haus.js';
 import { decodePng } from '../tools/assets/png.mjs';
 
 const json = (n) => JSON.parse(fs.readFileSync(`locations/boni/geo/${n}`, 'utf8'));
@@ -289,4 +289,76 @@ test('houses: triangles fill a footprint with a yard exactly; the rectangle and 
   assert.ok(Math.abs(l[0] - Math.SQRT1_2) < 1e-9 && Math.abs(l[1]) < 1e-9 && Math.abs(l[2] - Math.SQRT1_2) < 1e-9, 'sun in the east, half way up');
   assert.equal(achsen(1), 0);
   assert.equal(achsen(ACHSE * 3), 3);
+});
+
+test('houses: measured roofs (LoD2) set eaves, ridge, form and ridge direction; without them the rules estimate', () => {
+  const ring = kiste(-8, -5, 8, 5), lang = baue([haus('L1', ring)])[0]; // 16 × 10 m: the rules put the ridge along the long side (east)
+  assert.equal(lang.dach.form, 'sattel');
+  assert.ok(Math.abs(lang.dach.u[0]) > 0.99, 'estimated ridge along the long side');
+  const daecher = { haeuser: { L1: { form: 'sattel', dachform: 'Satteldach', traufe_m: 18.4, first_m: 22.9, first: [0, 1] }, W1: { form: 'walm', dachform: 'Walmdach', traufe_m: 9, first_m: 12 } } };
+  const [h, w] = viertel({ features: [haus('L1', ring), haus('W1', kiste(30, -5, 46, 5))] }, frame, { daecher });
+  assert.deepEqual([h.traufe, h.dach.form, h.hoeheQuelle], [18.4, 'sattel', 'gemessen (LoD2, LGLN)']);
+  assert.deepEqual([w.dach.form, w.dachAngabe], ['walm', 'Walmdach (LoD2)'], 'the measured form wins over OSM');
+  assert.ok(Math.abs(h.dach.u[1]) > 0.99, 'the measured ridge runs north, across the rules\' choice');
+  assert.equal(h.etagen, 5, 'storeys of an old building: 18.4 m are five, not the four of OSM');
+  assert.ok(Math.abs(h.first - 22.9) < 0.6, `ridge near the measured 22.9 m (${h.first})`);
+  const ohne = viertel({ features: [haus('L1', ring)] }, frame, { daecher: { haeuser: {} } })[0];
+  assert.equal(ohne.hoeheQuelle, lang.hoeheQuelle, 'a house without a measured roof keeps the estimate');
+});
+
+test('houses: a building the LoD2 model knows in parts is built part by part, but stays one building', () => {
+  const saetze = JSON.parse(fs.readFileSync('assets/welt/haeuser/bausaetze.json', 'utf8')), daecher = json('daecher.json');
+  const liste = kleideViertel(viertel(gebaeude, frame, { wege, daecher }), saetze);
+  const nach = new Map();
+  for (const h of liste) (nach.get(h.oid) ?? nach.set(h.oid, []).get(h.oid)).push(h);
+  let geteilt = 0, stufen = 0;
+  for (const [oid, teile] of nach) {
+    if (teile.length < 2 || !teile[0].teilVon) continue;
+    geteilt++;
+    assert.equal(new Set(teile.map((h) => h.wand.farbe)).size, 1, `${oid}: one colour`);
+    assert.equal(new Set(teile.map((h) => h.kleid.satz?.id ?? null)).size, 1, `${oid}: one kit`);
+    const tueren = teile.reduce((n, h) => n + h.kleid.laeufe.filter((l) => l.bild.spalten.includes(l.satz.mitte)).length, 0);
+    assert.ok(tueren <= 1, `${oid}: at most one door (${tueren})`);
+    const traufen = teile.map((h) => h.traufe);
+    if (Math.max(...traufen) - Math.min(...traufen) > 3) stufen++;
+  }
+  assert.ok(geteilt >= 80, `${geteilt} buildings in parts`);
+  assert.ok(stufen >= 10, `${stufen} of them with parts of clearly different height`);
+});
+
+test('houses: the façade relief lifts frames, sills and cornices out of the wall, in the façade\'s own pixels', () => {
+  const saetze = JSON.parse(fs.readFileSync('assets/welt/haeuser/bausaetze.json', 'utf8')), blatt = packe(saetze);
+  const liste = kleideViertel(viertel(gebaeude, frame, { wege, daecher: json('daecher.json') }), saetze);
+  const tiefste = Math.max(RELIEF.rahmen, RELIEF.bank, RELIEF.gesims);
+  /** Distance of a point from the footprint's outline (metres). */
+  const abstand = ([x, y], ring) => Math.min(...ring.map((a, i) => { const b = ring[(i + 1) % ring.length], dx = b[0] - a[0], dy = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(x - a[0] - t * dx, y - a[1] - t * dy); }));
+  let ecken = 0, mitRelief = 0, tiefen = new Set();
+  for (const h of liste) {
+    h.kleid.lage = blatt.lage;
+    const m = relief(h), P = m.positionen, N = m.normalen, W = m.wand, B = m.bau;
+    if (!h.kleid.satz) { assert.equal(m.indizes.length, 0, `${h.oid}: no kit, no relief`); continue; }
+    if (!m.indizes.length) continue;
+    mitRelief++; ecken += P.length / 3;
+    for (let i = 0; i < m.indizes.length; i += 3) { // every triangle faces the way its normal says
+      const [a, b, c] = [0, 1, 2].map((k) => m.indizes[i + k]), p = (j) => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]];
+      const A = p(a), u = p(b).map((x, k) => x - A[k]), v = p(c).map((x, k) => x - A[k]);
+      const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]], l = Math.hypot(...n);
+      if (l > 1e-9) assert.ok((n[0] * N[a * 3] + n[1] * N[a * 3 + 1] + n[2] * N[a * 3 + 2]) / l > 0.99, `${h.oid}: a relief face looks the way its normal says`);
+    }
+    for (let j = 0; j < P.length / 3; j++) {
+      const q = [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]], d = abstand(q, h.ring);
+      assert.ok(q[2] >= -1e-6 && q[2] <= h.traufe + 1e-6, `${h.oid}: relief between the ground and the eaves`);
+      assert.ok(d <= tiefste + 1e-6, `${h.oid}: relief at most ${tiefste} m in front of the wall (${d.toFixed(3)})`);
+      if (d > 0.01) tiefen.add(Math.round(d * 100) / 100);
+      // every face shows pixels of its own cell of the façade sheet (the flat wall's cell)
+      assert.ok(W[j * 4] >= B[j * 4] - 0.51 && W[j * 4] <= B[j * 4 + 2] + 0.51 && W[j * 4 + 1] >= B[j * 4 + 1] - 0.51 && W[j * 4 + 1] <= B[j * 4 + 3] + 0.51, `${h.oid}: relief pixels inside their cell`);
+    }
+  }
+  for (const t of [RELIEF.rahmen, RELIEF.bank, RELIEF.gesims]) assert.ok(tiefen.has(t), `parts stand out ${t} m (frames, sills, cornices)`);
+  assert.ok(mitRelief > 40, `${mitRelief} houses round the court have relief`);
+  assert.ok(ecken < 160000, `a relief a tablet can draw (${ecken} corners)`);
+  // a yard building and a house far from the court stay flat
+  const fern = liste.find((h) => h.kleid.satz && Math.hypot((h.kasten[0] + h.kasten[2]) / 2, (h.kasten[1] + h.kasten[3]) / 2) > RELIEF.umkreis + 60);
+  assert.equal(relief(fern).indizes.length, 0, 'beyond the circle round the court: no relief');
+  assert.ok(relief(fern, { umkreis: Infinity, hof: true }).indizes.length > 0, 'but it has relief when asked for');
 });

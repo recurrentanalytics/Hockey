@@ -7,6 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { decodePng } from './png.mjs';
+import { ladeSchema, pruefeSchema } from './schema.mjs';
 
 export const KINDS = { character: 'characters', equipment: 'equipment', prop: 'props', world: 'world', ui: 'ui', tile: 'tiles' };
 const SEGMENT = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -122,9 +123,89 @@ export function validate(root) {
   return { errors, warnings, checked: assets.length };
 }
 
+const ARTEN = ['fenster', 'schaufenster', 'tuer'];
+
+/**
+ * The world view's kits under `root/welt`: the house kits (haeuser/bausaetze.json) and the ground
+ * (boden/boden.json). Every picture is there, as large as its entry says and unchanged (sha12); every
+ * pixel size is the one world scale (welt/massstab.json); the façade parts (doors, windows, cornices)
+ * lie in the picture and in their storey; the house kits fit schema/bausatz.schema.json. Rules: docs/art/HAEUSER.md.
+ */
+export function validateWelt(root) {
+  const errors = [], warnings = [], dir = path.join(root, 'welt');
+  const lies = (rel) => { try { return JSON.parse(fs.readFileSync(path.join(dir, rel), 'utf8')); } catch (e) { errors.push(`welt/${rel}: ${fs.existsSync(path.join(dir, rel)) ? 'not valid JSON: ' + e.message : 'missing'}`); return null; } };
+  const massstab = lies('massstab.json'), haus = lies('haeuser/bausaetze.json'), boden = lies('boden/boden.json');
+  if (!massstab || !haus || !boden) return { errors, warnings, checked: 0 };
+  const schemaFehler = pruefeSchema(ladeSchema('bausatz.schema.json'), haus);
+  for (const e of schemaFehler) errors.push(`welt/haeuser/bausaetze.json${e} (schema/bausatz.schema.json)`);
+  if (schemaFehler.length) return { errors, warnings, checked: 0 }; // the finer checks below rely on the shape
+  const px = massstab.px_je_m, gelistet = new Set();
+  if (!(px > 0)) errors.push('welt/massstab.json: px_je_m is missing');
+  /** A picture of a kit: present, the size its entry says, the hash it was checked in with. */
+  const bild = (ordner, tag, e) => {
+    const rel = `${ordner}/${e.datei}`, voll = path.join(dir, rel), err = (m) => errors.push(`welt/${rel} (${tag}): ${m}`);
+    gelistet.add(rel);
+    if (!fs.existsSync(voll)) { err('file not found'); return null; }
+    const bytes = fs.readFileSync(voll), sha12 = crypto.createHash('sha256').update(bytes).digest('hex').slice(0, 12);
+    if (e.sha12 !== sha12) err(`sha12 is ${e.sha12 ?? 'missing'} but the file hashes to ${sha12}`);
+    let img; try { img = decodePng(bytes); } catch (x) { err(x.message); return null; }
+    if (img.width !== e.breite || img.height !== e.hoehe) err(`image is ${img.width}x${img.height}, the entry says ${e.breite}x${e.hoehe}`);
+    if (!e.asset_id) warnings.push(`welt/${rel} (${tag}): no SpriteCook asset_id recorded`);
+    return img;
+  };
+  const mass = (tag, wert) => { if (Math.abs(wert / px - 1) > 0.05) errors.push(`${tag}: ${wert.toFixed(2)} px per metre, the world scale is ${px} (welt/massstab.json)`); };
+
+  // ---- houses
+  mass('welt/haeuser ziegel', haus.ziegel.px_je_m); mass('welt/haeuser putz', haus.putz.px_je_m); mass('welt/haeuser teile', haus.teile.px_je_m);
+  bild('haeuser', 'ziegel', haus.ziegel); bild('haeuser', 'putz', haus.putz);
+  for (const [name, t] of Object.entries(haus.teile)) if (t && typeof t === 'object') bild('haeuser', name, t);
+  for (const f of haus.fassaden) {
+    const tag = `welt/haeuser ${f.id}`, err = (m) => errors.push(`${tag}: ${m}`);
+    bild('haeuser', f.id, f);
+    mass(tag, f.hoehe / haus.hoehe_m);
+    const z = f.zeilen;
+    if (z?.length !== haus.geschosse + 1 || z[0] !== 0 || z.at(-1) !== f.hoehe) err(`zeilen must run from 0 to ${f.hoehe} in ${haus.geschosse} storeys`);
+    for (const [a, b] of [f.links, ...f.achsen, ...(f.achsenRechts ?? []), f.mitte, f.rechts]) if (!(a >= 0 && b <= f.breite && b > a)) err(`piece [${a}, ${b}] does not lie in the picture`);
+    if (!f.oeffnungen) { err('no parts measured (oeffnungen): run node tools/assets/fassaden-vermessen.mjs --schreiben'); continue; }
+    const drin = ([x, y, b, h]) => x >= 0 && y >= 0 && b > 0 && h > 0 && x + b <= f.breite && y + h <= f.hoehe;
+    for (const o of f.oeffnungen) {
+      const r = haus.geschosse - 1 - o.geschoss, wo = `${o.art} at ${o.x},${o.y}`;
+      if (!ARTEN.includes(o.art)) err(`${wo}: art must be one of ${ARTEN.join(', ')}`);
+      if (!drin([o.x, o.y, o.b, o.h])) err(`${wo}: does not lie in the picture`);
+      else if (!(r >= 0 && r < haus.geschosse && o.y >= z[r] && o.y + o.h <= z[r + 1])) err(`${wo}: does not lie in storey ${o.geschoss} (rows ${z[r]}–${z[r + 1]})`);
+      if (o.glas && (!drin(o.glas) || o.glas[0] < o.x || o.glas[1] < o.y || o.glas[0] + o.glas[2] > o.x + o.b || o.glas[1] + o.glas[3] > o.y + o.h)) err(`${wo}: the glass is not inside the window`);
+    }
+    const tueren = f.oeffnungen.filter((o) => o.art === 'tuer');
+    if (tueren.length !== 1) err(`${tueren.length} doors, a kit has one`);
+    else if (tueren[0].x + tueren[0].b <= f.mitte[0] || tueren[0].x >= f.mitte[1]) err('the door is not in the middle piece (mitte)');
+    if (!f.oeffnungen.some((o) => o.art !== 'tuer')) err('no windows');
+    if ((f.gesimse ?? []).some(([a, b], i, g) => !(a >= 0 && b <= f.hoehe && b > a && (i === 0 || a >= g[i - 1][1])))) err('gesimse must be ascending bands inside the picture');
+  }
+  // ---- ground
+  mass('welt/boden', boden.px_je_m);
+  for (const [name, t] of Object.entries(boden.texturen)) bild('boden', name, t);
+
+  for (const ordner of ['haeuser', 'boden']) for (const f of listPngs(path.join(dir, ordner))) if (!gelistet.has(`${ordner}/${f}`)) errors.push(`welt/${ordner}/${f}: PNG is not listed in its kit`);
+  if (!/freigegeben am/i.test(haus.stand)) warnings.push('welt/haeuser: waiting for the owner\'s approval (stand)');
+  if (!/freigegeben am/i.test(boden.stand)) warnings.push('welt/boden: waiting for the owner\'s approval (stand)');
+  return { errors, warnings, checked: gelistet.size };
+}
+
+/** Pixels per metre of every placed sprite of the art library, against the stage scale (buehne_px_je_m). */
+export function massstabBericht(root) {
+  const mass = JSON.parse(fs.readFileSync(path.join(root, 'welt/massstab.json'), 'utf8')), px = mass.buehne_px_je_m ?? mass.px_je_m;
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
+  return manifest.assets.filter((a) => a.worldHeight && a.frame).map((a) => ({ id: a.id, pxJeM: a.frame.h / a.worldHeight, faktor: a.frame.h / a.worldHeight / px }));
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const root = path.resolve(process.argv[2] ?? 'assets');
-  const { errors, warnings, checked } = validate(root);
+  if (process.argv.includes('--massstab')) {
+    for (const z of massstabBericht(root)) console.log(`${z.id.padEnd(42)} ${z.pxJeM.toFixed(1).padStart(6)} px/m  ${z.faktor.toFixed(1)}× die Bühne`);
+    process.exit(0);
+  }
+  const bib = validate(root), welt = fs.existsSync(path.join(root, 'welt/massstab.json')) ? validateWelt(root) : { errors: [], warnings: [], checked: 0 };
+  const errors = [...bib.errors, ...welt.errors], warnings = [...bib.warnings, ...welt.warnings], checked = bib.checked + welt.checked;
   for (const w of warnings) console.log(`warning  ${w}`);
   for (const e of errors) console.log(`error    ${e}`);
   console.log(`${checked} asset${checked === 1 ? '' : 's'} checked: ${errors.length} error${errors.length === 1 ? '' : 's'}, ${warnings.length} warning${warnings.length === 1 ? '' : 's'}`);

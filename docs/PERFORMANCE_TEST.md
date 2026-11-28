@@ -122,8 +122,8 @@ E zeigt, was das Spiel ohne Cesium und Google-Kulisse kostet. Der Unterschied zu
 
 | Nr. | Adresse | Was tun | Dauer | Notieren |
 |---|---|---|---|---|
-| F1 | `welt.html?haeuser=neu&fps` | Google-3D-Kacheln an, Schrägblick, dann weit herauszoomen und drehen | 60 s | alle Werte |
-| F2 | `welt.html?haeuser=neu&fps&dunst=0` | dasselbe | 60 s | alle Werte |
+| F1 | `welt.html?fps` | Google-3D-Kacheln an, Schrägblick, dann weit herauszoomen und drehen | 60 s | alle Werte |
+| F2 | `welt.html?fps&dunst=0` | dasselbe | 60 s | alle Werte |
 
 In F1 ist der Dunst an. Er liegt nur auf den Google-Kacheln: Das gezeichnete Viertel bleibt völlig klar, ab seiner Kante wird es bis 1,5 km zunehmend dunstig, und der Himmel nimmt die Farbe des Dunsts an, und die Google-Kacheln werden ab etwa 500 m Kameraabstand gröber geladen. F2 schaltet beides aus. Der Unterschied zeigt, was der Dunst an Flüssigkeit bringt. Einstellen lässt er sich mit `?dunst=a,b,s`: klar bis a Meter hinter der Kante des Viertels, volle Stärke s (0 bis 1) ab b Metern, Standard `0,1500,0.8`.
 
