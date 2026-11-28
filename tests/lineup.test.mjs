@@ -20,11 +20,10 @@ for (const ruleset of ['worldskate', 'usars', 'ishd']) {
   });
 }
 
-// KNOWN BUG, found by the browser smoke test of test.html: with 3 per line the referee's strength cap (4)
-// lets applyStrength() fetch a fourth skater from the bench at the first face-off, so the "3 on 3" court
-// plays 4 on 4. Gameplay is not changed by the QA work; this TODO documents the intended behaviour.
+// With 3 per line the rulebook's strength (4) must not fetch a fourth skater from the bench: applyStrength()
+// caps each side at its line size (found by the browser smoke test of test.html, where the court played 4 on 4).
 for (const ruleset of ['worldskate', 'usars', 'ishd']) {
-  test(`lineup: Boni court, ${ruleset}: 3 per line means 3 on the ice`, { todo: 'applyStrength() tops up to the ruleset strength of 4 (match.js)' }, () => {
+  test(`lineup: Boni court, ${ruleset}: 3 per line means 3 on the ice`, () => {
     assert.deepEqual(lineup(3, ruleset), { roster: 6, home: 3, away: 3 });
   });
 }

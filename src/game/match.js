@@ -33,8 +33,8 @@ export class Match {
    */
   constructor({ home, away, humans, difficulty = 'normal', ai = [], rules = null, ball = null }) {
     this.sides = {
-      home: { key: 'home', team: home.team, attack: 1 },
-      away: { key: 'away', team: away.team, attack: -1 },
+      home: { key: 'home', team: home.team, attack: 1, perLine: home.skaters },
+      away: { key: 'away', team: away.team, attack: -1, perLine: away.skaters },
     };
     // Ball or puck: the player's choice, else what the rulebook says.
     this.puck = new Puck(ball ?? !!rules?.ball);
@@ -361,8 +361,9 @@ export class Match {
 
   /** Line changes at a stoppage: fit each side to the allowed strength (e.g. 3 on 3 in overtime). */
   applyStrength() {
-    const cap = this.ref.strengthCap();
     for (const side of ['home', 'away']) {
+      // never more than a line: the Boni court plays 3 on 3 although the rulebook allows 4
+      const cap = Math.min(this.ref.strengthCap(), this.sides[side].perLine);
       const boxed = this.ref.penaltiesOf(side).length;
       const want = Math.max(this.ref.r.minSkaters, cap - boxed);
       const on = this.skaters.filter((s) => s.sideKey === side);

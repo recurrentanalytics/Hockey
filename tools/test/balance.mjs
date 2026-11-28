@@ -3,7 +3,7 @@
 // It only measures; it never changes the game.
 //
 //   node tools/test/balance.mjs [--games 36] [--periods 5] [--seed 1000] [--ruleset all|worldskate|usars|ishd]
-//                               [--level all|easy|normal|hard] [--skaters 4] [--home blazers] [--away waves]
+//                               [--level all|easy|normal|hard] [--skaters 4] [--lines 1] [--home blazers] [--away waves]
 //                               [--root <dir holding src/>] [--json]
 //
 // --root points at another checkout's src/ (e.g. an old commit unpacked with `git archive`), so the same
@@ -12,7 +12,7 @@ import path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, all) => (v.startsWith('--') ? [...a, [v.slice(2), all[i + 1]?.startsWith('--') || all[i + 1] === undefined ? true : all[i + 1]]] : a), []));
-const GAMES = Number(args.games ?? 36), PERIODS = Number(args.periods ?? 5), SEED = Number(args.seed ?? 1000), SKATERS = Number(args.skaters ?? 4);
+const GAMES = Number(args.games ?? 36), PERIODS = Number(args.periods ?? 5), SEED = Number(args.seed ?? 1000), SKATERS = Number(args.skaters ?? 4), LINES = Number(args.lines ?? 1); // the real game plays 2 lines
 const HOME = args.home ?? 'blazers', AWAY = args.away ?? 'waves';
 const ALL_RULES = ['worldskate', 'usars', 'ishd'], ALL_LEVELS = ['easy', 'normal', 'hard'];
 const RULES = args.ruleset && args.ruleset !== 'all' ? [args.ruleset] : ALL_RULES;
@@ -45,7 +45,7 @@ function playGame(g) {
   const ruleset = RULES[Math.floor(g / 3) % RULES.length], level = LEVELS[g % LEVELS.length];
   rng = (SEED + g) | 0;
   const m = new Match({
-    home: { team: HOME, skaters: SKATERS }, away: { team: AWAY, skaters: SKATERS },
+    home: { team: HOME, skaters: SKATERS, lines: LINES }, away: { team: AWAY, skaters: SKATERS, lines: LINES },
     humans: [], ai: ['home', 'away'], difficulty: level, rules: resolveRules(ruleset, PERIODS),
   });
   const r = { ruleset, level, goals: 0, attempts: 0, onGoal: 0, saves: 0, passes: 0, passDone: 0, steals: 0, hits: 0, penalties: 0, whistles: {}, posts: 0,
@@ -94,7 +94,7 @@ const dist = BINS.map(([a, b]) => {
   const shots = games.flatMap((r) => r.shotDist).filter((d) => d >= a && d < b).length, goals = games.flatMap((r) => r.goalDist).filter((d) => d >= a && d < b).length;
   return { range: `${a}-${b === 99 ? '+' : b} m`, shots, goals, goalsPerShot: goals / (shots || 1) };
 });
-const report = { root: ROOT, games: GAMES, periodsMinutes: PERIODS, seedStart: SEED, skaters: SKATERS, teams: [HOME, AWAY], seconds: (Date.now() - t0) / 1000,
+const report = { root: ROOT, games: GAMES, periodsMinutes: PERIODS, seedStart: SEED, skaters: SKATERS, lines: LINES, teams: [HOME, AWAY], seconds: (Date.now() - t0) / 1000,
   overall: block(games), byRuleset: groupBy('ruleset'), byLevel: groupBy('level'), shotDistance: dist,
   endings: games.reduce((a, r) => ({ ...a, [r.how || 'regulation']: (a[r.how || 'regulation'] ?? 0) + 1 }), {}),
   whistles: games.reduce((a, r) => { for (const [k, v] of Object.entries(r.whistles)) a[k] = (a[k] ?? 0) + v; return a; }, {}) };
