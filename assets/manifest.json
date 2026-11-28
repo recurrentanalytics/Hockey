@@ -290,6 +290,192 @@
       "approved": {
         "date": "2026-11-27"
       }
+    },
+    {
+      "id": "prop.street-lamp",
+      "kind": "prop",
+      "file": "props/street-lamp.png",
+      "frame": {
+        "w": 20,
+        "h": 120
+      },
+      "frames": 1,
+      "density": 2,
+      "anchor": {
+        "x": 10,
+        "y": 119
+      },
+      "worldHeight": 4.5,
+      "place": {
+        "layer": "ausstattung",
+        "match": {
+          "highway": "street_lamp"
+        }
+      },
+      "source": {
+        "asset_id": "cb5ad196-ef74-400c-a497-e052d4cc7f69",
+        "model": "gemini-nano-banana-2.1",
+        "prompt": "docs/art/prompts/strassenmoebel.md"
+      },
+      "sha12": "2b38b7a8fc54",
+      "approved": {
+        "date": "2026-11-28"
+      }
+    },
+    {
+      "id": "prop.bicycle-stand",
+      "kind": "prop",
+      "file": "props/bicycle-stand.png",
+      "frame": {
+        "w": 50,
+        "h": 72
+      },
+      "frames": 1,
+      "density": 2,
+      "anchor": {
+        "x": 25,
+        "y": 71
+      },
+      "worldHeight": 0.85,
+      "place": {
+        "layer": "ausstattung",
+        "match": {
+          "amenity": "bicycle_parking"
+        }
+      },
+      "source": {
+        "asset_id": "b4717e3e-8283-4c5d-b51a-ed480413aab1",
+        "model": "gemini-nano-banana-2.1",
+        "prompt": "docs/art/prompts/strassenmoebel.md"
+      },
+      "sha12": "77ca1bea7e5a",
+      "approved": {
+        "date": "2026-11-28"
+      }
+    },
+    {
+      "id": "prop.waste-basket",
+      "kind": "prop",
+      "file": "props/waste-basket.png",
+      "frame": {
+        "w": 46,
+        "h": 70
+      },
+      "frames": 1,
+      "density": 2,
+      "anchor": {
+        "x": 23,
+        "y": 69
+      },
+      "worldHeight": 1,
+      "place": {
+        "layer": "ausstattung",
+        "match": {
+          "amenity": "waste_basket"
+        }
+      },
+      "source": {
+        "asset_id": "ded9d598-f6cf-46d9-8868-2a4f8b191d2d",
+        "model": "gemini-nano-banana-2.1",
+        "prompt": "docs/art/prompts/strassenmoebel.md"
+      },
+      "sha12": "ddb5886fbfff",
+      "approved": {
+        "date": "2026-11-28"
+      }
+    },
+    {
+      "id": "prop.picnic-table",
+      "kind": "prop",
+      "file": "props/picnic-table.png",
+      "frame": {
+        "w": 68,
+        "h": 42
+      },
+      "frames": 1,
+      "density": 2,
+      "anchor": {
+        "x": 34,
+        "y": 41
+      },
+      "worldHeight": 0.8,
+      "place": {
+        "layer": "ausstattung",
+        "match": {
+          "leisure": "picnic_table"
+        }
+      },
+      "source": {
+        "asset_id": "eb725956-299e-4e97-9076-bfd79d948ee5",
+        "model": "gemini-nano-banana-2.1",
+        "prompt": "docs/art/prompts/strassenmoebel.md"
+      },
+      "sha12": "bb49c0e6da47",
+      "approved": {
+        "date": "2026-11-28"
+      }
+    },
+    {
+      "id": "world.bonifatiusplatz.climbing-dome",
+      "kind": "world",
+      "file": "world/bonifatiusplatz/climbing-dome.png",
+      "frame": {
+        "w": 78,
+        "h": 66
+      },
+      "frames": 1,
+      "density": 2,
+      "anchor": {
+        "x": 39,
+        "y": 65
+      },
+      "worldHeight": 2.2,
+      "place": {
+        "layer": "ausstattung",
+        "match": {
+          "playground": "climbingframe"
+        }
+      },
+      "source": {
+        "asset_id": "cd7abbf1-178a-4018-82c9-f035d19ad0ba",
+        "model": "gemini-nano-banana-2.1",
+        "prompt": "docs/art/prompts/strassenmoebel.md"
+      },
+      "sha12": "cd3caecec7d0",
+      "approved": {
+        "date": "2026-11-28"
+      }
+    },
+    {
+      "id": "world.bonifatiusplatz.hippo",
+      "kind": "world",
+      "file": "world/bonifatiusplatz/hippo.png",
+      "frame": {
+        "w": 110,
+        "h": 68
+      },
+      "frames": 1,
+      "density": 2,
+      "anchor": {
+        "x": 55,
+        "y": 67
+      },
+      "worldHeight": 1.1,
+      "place": {
+        "layer": "ausstattung",
+        "match": {
+          "playground": "sandpit"
+        }
+      },
+      "source": {
+        "asset_id": "787774fc-9215-4bef-9edd-9f2d7a263596",
+        "model": "gemini-nano-banana-2.1",
+        "prompt": "docs/art/prompts/strassenmoebel.md"
+      },
+      "sha12": "6798d9fd3fc4",
+      "approved": {
+        "date": "2026-11-28"
+      }
     }
   ]
 }

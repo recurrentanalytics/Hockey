@@ -156,8 +156,14 @@ What the pilot showed:
 | Tree: plane tree | `world.bonifatiusplatz.plane-tree` | 80×80 | species of the grove, assigned to mapped trees by their id (see `docs/BONI_ORT.md`, trees) | approved 2026-11-27 |
 | Tree: linden | `world.bonifatiusplatz.linden` | 52×80 | second species of the grove | approved 2026-11-27 |
 | Environmental object: park bench | `prop.bench` | 70×64 | on each of the 22 benches mapped in `ausstattung.geojson` | approved 2026-11-27 |
+| Street lamp | `prop.street-lamp` | 20×120 | on each of the 56 street lamps mapped (`highway=street_lamp`), 4.5 m | approved 2026-11-28 |
+| Bicycle stand | `prop.bicycle-stand` | 50×72 | on each of the 46 bicycle parkings (`amenity=bicycle_parking`), 0.85 m | approved 2026-11-28 |
+| Waste basket | `prop.waste-basket` | 46×70 | on each of the 26 waste baskets (`amenity=waste_basket`), 1.0 m | approved 2026-11-28 |
+| Picnic table | `prop.picnic-table` | 68×42 | on the 2 picnic tables (`leisure=picnic_table`), 0.8 m | approved 2026-11-28 |
+| Climbing dome | `world.bonifatiusplatz.climbing-dome` | 78×66 | on the 2 climbing frames (`playground=climbingframe`), 2.2 m | approved 2026-11-28 |
+| Wooden hippo | `world.bonifatiusplatz.hippo` | 110×68 | in the sandpit next to the court (`playground=sandpit`), 1.1 m; sun-bleached, worn wood, open mouth | approved 2026-11-28 |
 
-Pictures: `set/bogen.png` (bench, puck, stick as generated), `set/welt-baeume.jpg`, `set/welt-platz.jpg` (in the world view with `?preview=art`). Prompts: `prompts/set.md`, `prompts/skater.md`, `prompts/pilot.md`. Bench, stick and puck were generated with the chosen skater as style reference (`gemini-nano-banana-2.1`, 12 credits each).
+Pictures: `set/bogen.png` (bench, puck, stick as generated), `set/welt-baeume.jpg`, `set/welt-platz.jpg` (in the world view with `?preview=art`). Prompts: `prompts/set.md`, `prompts/skater.md`, `prompts/pilot.md`, `prompts/strassenmoebel.md`. Bench, stick and puck were generated with the chosen skater as style reference (`gemini-nano-banana-2.1`, 12 credits each).
 
 From a downloaded picture to the world it is one command; nothing is placed by hand:
 
