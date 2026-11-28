@@ -1,0 +1,37 @@
+{
+  "stand": "Zur Begutachtung, nicht freigegeben. Alle Bilder von SpriteCook (Fassaden und Texturen gemini-nano-banana-2.1, Dachteile pixel-engine-image-v1); ziegel.png ist an den Fugen zugeschnitten und halbiert. Herkunft und Aufträge: docs/art/prompts/haus.md.",
+  "hoehe_m": 12.8,
+  "geschosse": 4,
+  "hof": "schlicht",
+  "fassaden": [
+    { "id": "stuck", "datei": "stuck.png", "asset_id": "c005e738-1f35-4a6a-bd68-2fa9c94e6123", "breite": 160, "hoehe": 160,
+      "links": [5, 30], "achsen": [[30, 50], [50, 68], [110, 130]], "mitte": [68, 110], "rechts": [130, 155], "pfeiler": 50, "zeilen": [0, 39, 76, 116, 160],
+      "wand": "#a2b3c5", "faerbbar": true, "fuer": ["wohnen"], "gewicht": 3 },
+    { "id": "jugendstil", "datei": "jugendstil.png", "asset_id": "2f65f01c-926b-4ec0-9c56-c8ca91fa1415", "breite": 160, "hoehe": 160,
+      "links": [5, 30], "achsen": [[30, 50], [50, 70], [70, 90], [110, 130]], "mitte": [90, 110], "rechts": [130, 155], "pfeiler": 50, "zeilen": [0, 39, 75, 115, 160],
+      "wand": "#a0b1c3", "faerbbar": true, "fuer": ["wohnen", "schule"], "gewicht": 3 },
+    { "id": "klinker-a", "datei": "klinker-a.png", "asset_id": "d188c287-00ec-454a-92ee-bd66c1223097", "breite": 160, "hoehe": 160,
+      "links": [5, 30], "achsen": [[30, 50], [50, 70], [70, 90], [110, 130]], "mitte": [90, 110], "rechts": [130, 155], "pfeiler": 50, "zeilen": [0, 40, 76, 116, 160],
+      "wand": "#63332a", "faerbbar": false, "klinker": true, "fuer": ["wohnen", "schule"], "gewicht": 1 },
+    { "id": "klinker-b", "datei": "klinker-b.png", "asset_id": "b7b4b2ac-f3f8-4a91-8708-fb6f4f0fc558", "breite": 160, "hoehe": 160,
+      "links": [5, 30], "achsen": [[30, 50], [50, 70], [70, 90], [110, 130]], "mitte": [90, 110], "rechts": [130, 155], "pfeiler": 50, "zeilen": [0, 39, 77, 115, 160],
+      "wand": "#512922", "faerbbar": false, "klinker": true, "fuer": ["wohnen"], "gewicht": 1 },
+    { "id": "schlicht", "datei": "schlicht.png", "asset_id": "431eeb8f-c5c1-44f4-8695-b50c585c3dcf", "breite": 160, "hoehe": 160,
+      "links": [26, 28], "achsen": [[27, 45], [45, 63], [81, 99], [99, 117], [117, 135]], "mitte": [63, 81], "rechts": [134, 137], "pfeiler": 45, "zeilen": [0, 42, 79, 115, 160],
+      "wand": "#98aabe", "faerbbar": true, "fuer": ["wohnen"], "gewicht": 1 },
+    { "id": "laden-a", "datei": "laden-a.png", "asset_id": "e383f826-f260-44b2-bd6a-0471945e0144", "breite": 162, "hoehe": 162,
+      "links": [5, 30], "achsen": [[30, 70]], "achsenRechts": [[90, 130]], "mitte": [70, 90], "rechts": [130, 155], "pfeiler": 50, "zeilen": [0, 38, 75, 115, 162],
+      "wand": "#a0b1c3", "faerbbar": true, "fuer": ["laden"], "gewicht": 1 },
+    { "id": "laden-b", "datei": "laden-b.png", "asset_id": "9ec7b0db-f834-4ed9-aaf9-049478e9ce76", "breite": 162, "hoehe": 160,
+      "links": [5, 30], "achsen": [[30, 70]], "achsenRechts": [[90, 130]], "mitte": [70, 90], "rechts": [130, 157], "pfeiler": 50, "zeilen": [0, 38, 75, 113, 160],
+      "wand": "#a0b0c2", "faerbbar": true, "fuer": ["laden"], "gewicht": 1 }
+  ],
+  "ziegel": { "datei": "ziegel.png", "asset_id": "32dccac8-3093-474c-98dc-7a886d6ee774", "breite": 68, "hoehe": 67, "px_je_m": 12.5, "farbe": "#a5452f" },
+  "putz": { "datei": "putz.png", "asset_id": "47733566-cac3-4a1d-9896-ccb95c3f6ae7", "breite": 300, "hoehe": 302, "px_je_m": 12.5, "farbe": "#b0a595" },
+  "teile": {
+    "px_je_m": 12.5,
+    "schornstein": { "datei": "schornstein.png", "asset_id": "55bd5a24-b8af-4045-bec0-378c268cbbc3", "breite": 16, "hoehe": 28 },
+    "gaube": { "datei": "gaube.png", "asset_id": "e71bc429-5b17-4f4d-8cc7-d1288233a493", "breite": 24, "hoehe": 24 },
+    "dachfenster": { "datei": "dachfenster.png", "asset_id": "6bc13ed8-6e66-4c35-82bb-d0c68348a15f", "breite": 16, "hoehe": 16 }
+  }
+}

@@ -13,6 +13,9 @@ import { pixelboden } from './pixelboden.js';
 import { baueHindernisse, davor } from './hindernisse.js';
 import { ladeLuftbild, rechteck, ausschnitt } from './luftbild.js';
 import { platzmeter } from './baeume.js';
+import { baueHaeuser } from './haeuser.js';
+import { bodenplan, bodenKacheln } from './boden.js';
+import { ladeBild } from './bild.js';
 
 const CESIUM_VERSION = '1.147.0';    // keep in step with src/intro/photoreal.js
 const GOOGLE_3D_TILES = 2275207;     // Cesium ion asset, as in the intro
@@ -20,6 +23,8 @@ const TOKEN_KEY = 'boniCesiumToken'; // stored by the intro (src/intro/main.js)
 const LGLN = 'https://opendata.lgln.niedersachsen.de/doorman/noauth/';
 const FALLBACK_HEIGHT = 10;          // metres, for footprints without any height information
 const GAME_VIEW = { heading: 118.2, tilt: 60 }; // the game camera: looking A → B, 60° from vertical
+// The houses of haeuser.js wait for the owner's approval: ?haeuser=neu shows the whole quarter dressed in the
+// SpriteCook façade kits (assets/welt/haeuser/bausaetze.json); without it every footprint stays the plain volume it was.
 
 const Q = new URLSearchParams(location.search);
 const ort = Q.get('ort') || 'boni';
@@ -78,6 +83,14 @@ async function main() {
   let grove = { baeume: baumListe, zeige() {} };
   const hindernisse = baueHindernisse({ gebaeude, einfriedungen, platz, frame });
   const haeuser = []; // drawn building volumes, so the ones hiding the player can turn see-through
+  const hausArt = Q.get('haeuser') ?? 'alt'; // 'alt' plain volumes, 'neu' every house dressed in the façade kits
+  let viertelHaeuser = null;                 // the houses of haeuser.js
+  const saetze = hausArt === 'alt' ? null : await fetch(new URL('welt/haeuser/bausaetze.json', ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  // the drawn ground belongs to the same review: streets, pavements and yards in SpriteCook textures (boden.js)
+  const bodenRegeln = hausArt === 'alt' ? null : await fetch(new URL('welt/boden/boden.json', ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  if (bodenRegeln) LAYERS.splice(LAYERS.findIndex((l) => l.id === 'pixelboden') + 1, 0, { id: 'boden', name: 'Gezeichneter Boden im Viertel (SpriteCook)', on: true });
+  let bodenLayer = null;
+  const bodenAn = () => !!bodenLayer?.show;
   let spieler = null;
   status('Lade 3D-Ansicht …');
   const Cesium = await loadCesium(Q.get('cesiumBase') || `https://cdn.jsdelivr.net/npm/cesium@${CESIUM_VERSION}/Build/Cesium/`);
@@ -134,6 +147,7 @@ async function main() {
       { magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST, minificationFilter: Cesium.TextureMinificationFilter.NEAREST });
     pixelLayer.show = LAYERS.find((l) => l.id === 'pixelboden').on;
     viewer.imageryLayers.add(pixelLayer);
+    if (bodenLayer) viewer.imageryLayers.raiseToTop(bodenLayer); // the drawn ground lies over it; only the court shows through
   }).catch((e) => status('Pixel-Boden nicht erzeugt: ' + e.message));
 
   // ---- geometry: UTM metres → positions on the globe. `ground` is the height everything stands on:
@@ -160,7 +174,12 @@ async function main() {
     }
     const blocks = layer('gebaeude');
     haeuser.length = 0;
+    if (hausArt !== 'alt' && scene.context.webgl2) {           // drawn houses: built once; ground, cover and records follow here
+      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS) });
+      viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on && !rundum ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.verzeichne(blocks);
+    }
     for (const f of gebaeude.features) {
+      if (viertelHaeuser?.hat(f.properties.oid)) continue;
       const p = f.properties, part = p.art === 'Bauteil';      // passages and arcades: open at street level
       const h = p.hoehe_m ?? (part ? 4 : FALLBACK_HEIGHT), known = p.hoehe_m != null;
       const colour = part ? '#b9a48f' : p.name ? '#a8452f' : known ? '#c8664d' : '#d9b9a8';
@@ -180,7 +199,7 @@ async function main() {
     const trees = layer('baeume');
     for (const f of baeume.features) if (f.geometry.type !== 'Point') trees.add({ polyline: { positions: f.geometry.coordinates.map((p) => pos(p, 0.3)), width: 4, material: css('#2f7d32') }, properties: { text: describe('Baumreihe (OSM)', f.properties) } });
     // on the aerial photo the real cast shadows are already in the picture: contact shadows only (see schatten())
-    pflanze({ Cesium, entities: trees, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: (lokal?.show || luftbild.show) && !google.on }).then((g) => { grove = g; });
+    pflanze({ Cesium, entities: trees, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: (lokal?.show || luftbild.show) && (!google.on || rundum) && !bodenAn() }).then((g) => { grove = g; });
     const fences = layer('einfriedungen');
     for (const f of einfriedungen.features) {
       if (f.geometry.type === 'LineString') fences.add({ wall: { positions: f.geometry.coordinates.map((p) => pos(p, 1.4)), minimumHeights: f.geometry.coordinates.map(() => ground), material: css('#7a1fa2', 0.7) }, properties: { text: describe('Einfriedung (OSM), Höhe angenommen 1,4 m', f.properties) } });
@@ -216,6 +235,7 @@ async function main() {
     .catch((e) => status('Platzmodell nicht geladen: ' + e.message));
 
   function zeigeHaeuser(ids) {
+    viertelHaeuser?.zeige(ids);
     for (const h of haeuser) { const durch = ids.has(h.id); if (durch !== h.durch) { h.durch = durch; h.haus.polygon.material = css(h.colour, durch ? 0.2 : google.on ? 0.45 : 1); } }
   }
 
@@ -224,6 +244,20 @@ async function main() {
   let tiles = null;
   let token = Q.get('token') || (() => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } })();
   google.available = !!token;
+  // With the drawn houses the quarter stays ours when the tiles are on: they are cut away over it and lowered to the
+  // aerial photo's level, and the globe (photo, pixel ground) is drawn only inside the cut. Google's city round the
+  // quarter, nothing of Google and nothing see-through inside it. Without the drawn houses it is as it was.
+  let rundum = false, googleBoden = null, schnitt = null;
+  function viertelSchnitt() {
+    // one rectangle round the data's cutout and every house that reaches beyond it: a single cut is the cheapest to draw
+    const p = [...gebaeude.features.filter((f) => viertelHaeuser.hat(f.properties.oid)).flatMap((f) => polygons(f.geometry).flatMap((poly) => poly[0])), ...(frame.ausschnitt_utm32 ? [frame.ausschnitt_utm32.slice(0, 2), frame.ausschnitt_utm32.slice(2)] : [])];
+    const w = Math.min(...p.map((q) => q[0])), s = Math.min(...p.map((q) => q[1])), e = Math.max(...p.map((q) => q[0])), n = Math.max(...p.map((q) => q[1]));
+    const ecken = [[w, s], [e, s], [e, n], [w, n]].map((q) => fromUtm32(...q)), lon = ecken.map((q) => q[0]), lat = ecken.map((q) => q[1]);
+    const rechteck = Cesium.Rectangle.fromDegrees(Math.min(...lon), Math.min(...lat), Math.max(...lon), Math.max(...lat));
+    const vieleck = new Cesium.ClippingPolygon({ positions: Cesium.Cartesian3.fromRadiansArray([rechteck.west, rechteck.south, rechteck.east, rechteck.south, rechteck.east, rechteck.north, rechteck.west, rechteck.north]) });
+    return { rechteck, vielecke: new Cesium.ClippingPolygonCollection({ polygons: [vieleck] }) };
+  }
+  function ganzerGlobus() { scene.globe.show = true; scene.globe.cartographicLimitRectangle = Cesium.Rectangle.MAX_VALUE; }
   async function showGoogle(on) {
     if (on && !tiles) {
       status('Lade Google-3D-Kacheln …');
@@ -234,13 +268,23 @@ async function main() {
       for (const a of ep.attributions ?? []) viewer.creditDisplay.addStaticCredit(new Cesium.Credit(a.html, true));
     }
     if (tiles) tiles.show = on;
+    rundum = on && !!viertelHaeuser && Cesium.ClippingPolygonCollection.isSupported(scene);
+    ganzerGlobus();
     scene.globe.show = !on; // the tiles carry their own ground; the flat globe would cut through it
     ground = 0;
-    if (on) {
+    if (on && googleBoden == null) {
       await new Promise((r) => setTimeout(r, 1500)); // let the first tiles arrive before measuring
-      try { const [c] = await scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(centre[0], centre[1])]); ground = Number.isFinite(c?.height) ? c.height : 97.9; } catch { ground = 97.9; }
+      try { const [c] = await scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(centre[0], centre[1])]); googleBoden = Number.isFinite(c?.height) ? c.height : 97.9; } catch { googleBoden = 97.9; }
     }
-    build(); view(current); status(on ? `Google-3D-Kacheln an, Boden bei ${ground.toFixed(1)} m (Ellipsoid)` : 'bereit');
+    if (rundum) {
+      schnitt ??= viertelSchnitt();
+      if (tiles.clippingPolygons !== schnitt.vielecke) tiles.clippingPolygons = schnitt.vielecke;
+      const hoch = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(pos([E0, N0], 0), new Cesium.Cartesian3());
+      tiles.modelMatrix = Cesium.Matrix4.fromTranslation(Cesium.Cartesian3.multiplyByScalar(hoch, -googleBoden, hoch));
+      scene.globe.show = true; scene.globe.cartographicLimitRectangle = schnitt.rechteck;
+    } else if (on) ground = googleBoden;
+    build(); view(current);
+    status(!on ? 'bereit' : rundum ? `Google-3D-Kacheln rund um das Viertel, um ${googleBoden.toFixed(1)} m auf die Höhe des Luftbilds gesenkt` : `Google-3D-Kacheln an, Boden bei ${ground.toFixed(1)} m (Ellipsoid)`);
   }
 
   // ---- camera: orbit round the court centre; presets as on the buttons
@@ -271,11 +315,12 @@ async function main() {
     label.querySelector('input').onchange = async (ev) => {
       l.on = ev.target.checked;
       if (l.id === 'pixelboden') { if (pixelLayer) pixelLayer.show = l.on; }
+      else if (l.id === 'boden') { if (bodenLayer) bodenLayer.show = l.on; build(); } // the trees' shadows depend on the ground
       else if (l.id === 'platz') { if (platzModell) platzModell.show = l.on; }
       else if (l.id === 'luftbild') { if (lokal) lokal.show = l.on; build(); }
       else if (l.id === 'luftbildlive') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
-      else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); scene.globe.show = true; } }
-      else sources[l.id].show = l.on;
+      else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); rundum = false; ganzerGlobus(); } }
+      else { sources[l.id].show = l.on; if (l.id === 'gebaeude') viertelHaeuser?.sichtbar(l.on); }
       scene.requestRender();
     };
     list.append(label);
@@ -411,6 +456,7 @@ async function main() {
     if (umwelt) umwelt.surfaceLabel = belag.label;
     $('surface').textContent = belag.label;
     LICHT.azimut = v.sun.az; LICHT.hoehe = Math.max(v.sun.alt, 8); LICHT.staerke = Math.min(1, v.sunlit * 1.2);
+    viertelHaeuser?.licht(LICHT); // the houses take the light at once: three numbers, nothing is rebuilt
     clearTimeout(neuZeichnen); neuZeichnen = setTimeout(() => { if (sources.baeume) build(); }, 400); // tree shadows turn with the sun
   };
   try {
@@ -423,6 +469,11 @@ async function main() {
   $('spielstart').addEventListener('click', (e) => { e.preventDefault(); betrete().catch((err) => { status('Spiel nicht geladen: ' + err.message); verlasse(); }); });
   $('verlassen').addEventListener('click', verlasse);
 
+  if (bodenRegeln) try { // the drawn ground: painted tile by tile as the view asks for it
+    const bilder = Object.fromEntries(await Promise.all(Object.entries(bodenRegeln.texturen).map(async ([name, t]) => [name, await ladeBild(new URL('welt/boden/' + t.datei, ASSETS).href)])));
+    bodenLayer = new Cesium.ImageryLayer(bodenKacheln({ Cesium, plan: bodenplan({ nutzung, flaechen, wege, platz }, bodenRegeln), frame, bilder, pxJeM: bodenRegeln.px_je_m }), { magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST });
+    viewer.imageryLayers.add(bodenLayer);
+  } catch (e) { console.error(e); bodenLayer = null; }
   build();
   if (figurBilder) {
     const eigene = new Cesium.CustomDataSource('spieler'); // kept apart from the layers build() replaces
@@ -432,7 +483,7 @@ async function main() {
   }
   view(Q.get('sicht') in VIEWS ? Q.get('sicht') : 'schraeg');
   status('bereit');
-  window.welt = { get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; } }; // for the console and tests
+  window.welt = { get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; }, get haeuser() { return viertelHaeuser; }, get boden() { return bodenLayer; } }; // for the console and tests
 }
 
 main().catch((e) => { status('Fehler: ' + e.message); console.error(e); });
