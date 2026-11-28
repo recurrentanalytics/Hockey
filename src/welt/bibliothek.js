@@ -47,8 +47,14 @@ export async function frameImages(asset, mirror = false) {
   });
 }
 
-/** Add every usable asset to `entities`; returns how many sprites stand in the world. */
-export async function placeLibrary({ Cesium, entities, manifest, geo, frame, pos, preview, skip = () => false }) {
+/** A billboard's id in the shape of an entity, so clicking it shows its text like any other object of the world view. */
+export const klickInfo = (text) => ({ properties: { text: { getValue: () => text } } });
+
+/**
+ * Add every usable asset to the world; returns how many sprites stand in it. Still sprites go into `billboards`
+ * (one BillboardCollection: drawn together, nothing evaluated per frame); animated ones stay `entities`.
+ */
+export async function placeLibrary({ Cesium, entities, billboards = null, manifest, geo, frame, pos, preview, skip = () => false }) {
   let count = 0;
   for (const asset of usable(manifest, preview)) {
     if (skip(asset)) continue; // trees and the player have systems of their own
@@ -57,7 +63,8 @@ export async function placeLibrary({ Cesium, entities, manifest, geo, frame, pos
     const image = frames.length > 1 ? new Cesium.CallbackProperty(() => frames[Math.floor(performance.now() / 110) % frames.length], false) : frames[0];
     const text = `${asset.id}\n${asset.approved ? 'freigegeben am ' + asset.approved.date : 'wartet auf Freigabe (nur mit ?preview=art sichtbar)'}\n${w.toFixed(2)} × ${h} m in der Welt`;
     for (const en of spots(asset, geo, frame)) {
-      entities.add({ position: pos(en, 0), billboard: { image, sizeInMeters: true, width: w, height: h, verticalOrigin: Cesium.VerticalOrigin.BOTTOM }, properties: { text } });
+      if (billboards && frames.length === 1) billboards.add({ position: pos(en, 0), image, sizeInMeters: true, width: w, height: h, verticalOrigin: Cesium.VerticalOrigin.BOTTOM, id: klickInfo(text) });
+      else entities.add({ position: pos(en, 0), billboard: { image, sizeInMeters: true, width: w, height: h, verticalOrigin: Cesium.VerticalOrigin.BOTTOM }, properties: { text } });
       count++;
     }
   }

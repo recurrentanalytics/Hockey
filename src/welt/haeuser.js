@@ -762,8 +762,10 @@ void main() {
   // the sprites, looked up before anything is thrown away: on façade cells and roof parts v_wand.xy is the place in the atlas in pixels
   // never a pixel of the neighbouring cell: with multisampling a fragment on a quad's edge is shaded a little beyond it
   vec2 ort = art > 6.5 && art < 7.5 ? clamp(v_wand.xy, v_bau.xy + 0.01, v_bau.zw - 0.01) : v_wand.xy;
-  vec4 bild = texture(u_atlas, vec2(ort.x, u_atlasMass.y - ort.y) / u_atlasMass);
-  vec3 ziegelbild = texture(u_ziegel, v_wand.xy / u_ziegelMass).rgb, putzbild = texture(u_putz, v_wand.xy / u_putzMass).rgb;
+  // the derivatives for the mip levels, taken here in uniform control flow; each branch below then reads only the
+  // one texture it needs (textureGrad), instead of all three for every fragment
+  vec2 auv = vec2(ort.x, u_atlasMass.y - ort.y) / u_atlasMass, zuv = v_wand.xy / u_ziegelMass, puv = v_wand.xy / u_putzMass;
+  vec2 adx = dFdx(auv), ady = dFdy(auv), zdx = dFdx(zuv), zdy = dFdy(zuv), pdx = dFdx(puv), pdy = dFdy(puv);
   if (v_ton.a * u_deckung <= raster4(gl_FragCoord.xy * 0.5)) discard;
 
   vec3 grund = v_farbe.rgb, fein = grund, grob = grund, mittel = grund;
@@ -774,10 +776,13 @@ void main() {
   if (art > 6.5) {                                         // dressed in sprites: the picture is the drawing, only the light is added
     stufe = nn.z > 0.5 ? (d > 0.72 ? 1.0 : d > 0.45 ? 0.93 : 0.84) : (d > 0.3 ? 1.0 : d > -0.15 ? 0.92 : 0.82);
     // v_farbe is the tint: the wanted colour divided by the picture's own. On a façade only the wall takes it (the atlas marks wall pixels with half alpha)
-    if (art < 7.5) grund = mix(bild.rgb, min(bild.rgb * v_farbe.rgb, vec3(1.0)), clamp((1.0 - bild.a) * 2.0, 0.0, 1.0));
-    else if (art < 8.5) { if (bild.a < 0.25) discard; grund = bild.rgb; }
-    else if (art < 10.5 && art > 9.5) grund = min(ziegelbild * v_farbe.rgb, vec3(1.0));
-    else grund = min(putzbild * v_farbe.rgb, vec3(1.0));
+    if (art < 8.5) {
+      vec4 bild = textureGrad(u_atlas, auv, adx, ady);
+      if (art < 7.5) grund = mix(bild.rgb, min(bild.rgb * v_farbe.rgb, vec3(1.0)), clamp((1.0 - bild.a) * 2.0, 0.0, 1.0));
+      else { if (bild.a < 0.25) discard; grund = bild.rgb; }
+    }
+    else if (art < 10.5 && art > 9.5) grund = min(textureGrad(u_ziegel, zuv, zdx, zdy).rgb * v_farbe.rgb, vec3(1.0));
+    else grund = min(textureGrad(u_putz, puv, pdx, pdy).rgb * v_farbe.rgb, vec3(1.0));
     fein = grund; grob = grund; mittel = grund;
     f = 0.0;                                               // the texture's own mip levels look after the distance
   } else if (art < 2.5) {                                  // a wall: street front, yard front or party wall

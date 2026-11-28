@@ -119,6 +119,7 @@ async function main() {
   let bisWann = performance.now() + 8000;
   const anstossen = (ms = 1500) => { bisWann = Math.max(bisWann, performance.now() + ms); };
   scene.preUpdate.addEventListener(() => {
+    for (const [id, c] of Object.entries(buendel)) { const an = sources[id]?.show ?? true; if (c.show !== an) { c.show = an; scene.requestRender(); } }
     const haus = viertelHaeuser?.primitive;
     if (performance.now() < bisWann || (haus && !haus.ready)) scene.requestRender();
   });
@@ -173,12 +174,16 @@ async function main() {
   const polygons = (g) => (g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : []);
   const css = (c, a = 1) => Cesium.Color.fromCssColorString(c).withAlpha(a);
   const sources = {};
+  const buendel = {}; // BillboardCollections by layer id (see build)
   const describe = (name, p) => `${name}\n` + Object.entries(p).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join('\n');
 
   function build() {
     anstossen(4000);
     for (const s of Object.values(sources)) viewer.dataSources.remove(s, true);
+    for (const c of Object.values(buendel)) scene.primitives.remove(c);
     const layer = (id) => { const s = new Cesium.CustomDataSource(id); s.show = LAYERS.find((l) => l.id === id).on; sources[id] = s; viewer.dataSources.add(s); return s.entities; };
+    // still sprites of a layer in one collection (drawn together, nothing evaluated per frame); it follows the layer's switch
+    const gebuendelt = (id) => { const c = scene.primitives.add(new Cesium.BillboardCollection({ scene })); c.show = sources[id]?.show ?? true; buendel[id] = c; return c; };
 
     const use = layer('nutzung');
     for (const f of nutzung.features) for (const poly of polygons(f.geometry)) {
@@ -212,7 +217,7 @@ async function main() {
     const trees = layer('baeume');
     for (const f of baeume.features) if (f.geometry.type !== 'Point') trees.add({ polyline: { positions: f.geometry.coordinates.map((p) => pos(p, 0.3)), width: 4, material: css('#2f7d32') }, properties: { text: describe('Baumreihe (OSM)', f.properties) } });
     // on the aerial photo the real cast shadows are already in the picture: contact shadows only (see schatten())
-    pflanze({ Cesium, entities: trees, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: (lokal?.show || luftbild.show) && (!google.on || rundum) && !bodenAn() }).then((g) => { grove = g; });
+    pflanze({ Cesium, entities: trees, billboards: gebuendelt('baeume'), scene, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: (lokal?.show || luftbild.show) && (!google.on || rundum) && !bodenAn() }).then((g) => { grove = g; });
     const fences = layer('einfriedungen');
     for (const f of einfriedungen.features) {
       if (f.geometry.type === 'LineString') fences.add({ wall: { positions: f.geometry.coordinates.map((p) => pos(p, 1.4)), minimumHeights: f.geometry.coordinates.map(() => ground), material: css('#7a1fa2', 0.7) }, properties: { text: describe('Einfriedung (OSM), Höhe angenommen 1,4 m', f.properties) } });
@@ -228,7 +233,7 @@ async function main() {
       if (p.art === 'achse') court.add({ polyline: { positions: f.geometry.coordinates.map((q) => pos(q, 0.4)), width: 3, material: new Cesium.PolylineArrowMaterialProperty(css(p.name === 'a' ? '#ffd23f' : '#3fd2ff')) } });
     }
     const library = layer('bibliothek');
-    placeLibrary({ Cesium, entities: library, manifest, geo, frame, pos, preview, skip: (a) => a.place.layer === 'baeume' || a.id === figur?.id }).then((n) => { $('bibliothek').textContent = `${n} Sprites aus der Art-Bibliothek` + (preview ? ' (mit wartenden)' : ''); });
+    placeLibrary({ Cesium, entities: library, billboards: gebuendelt('bibliothek'), manifest, geo, frame, pos, preview, skip: (a) => a.place.layer === 'baeume' || a.id === figur?.id }).then((n) => { $('bibliothek').textContent = `${n} Sprites aus der Art-Bibliothek` + (preview ? ' (mit wartenden)' : ''); });
     scene.requestRender();
   }
 
