@@ -45,3 +45,17 @@ Der Besitzer hat gesagt: „mach, wie du denkst, dass es am einheitlichsten und 
 | Nilpferd | `6a950971-3d39-47a6-b68b-6010cd8ea363` | 38×26 | 23,6 |
 
 Die Assets ersetzen die Fassung aus `einheitlich.md` unter derselben Kennung. Die Bäume aus jener Runde bleiben.
+
+## Spielerfigur in der Welt
+
+**Vorlage:** der 32er-Chibi, Variante 4 (`94403fa4-3412-479a-a5c2-6c92171fa2de`), aus der Runde `art/candidates/2026-11-28-figuren/`.
+
+Der Auftrag für diese Runde war:
+> Cute chibi kid inline hockey player, big round head with dark green helmet, small body, dark green jersey with cream trim and orange stripe, dark brown pants, inline skates, holding a hockey stick, standing, three-quarter side view. Readable, a few telling details. No ground, no shadow.
+
+Bestellt wurde mit `pixel-engine-image-v1` in 32×32 Pixeln, mit der Palette des Borstentiere-Trikots.
+
+**Animation:** `animate_game_art`, 8 Bilder, mit beiden Animationsmodellen zum Vergleich. Gewählt ist `pixel-engine-v1.5` (`17823e5b-5101-431d-bc79-c0a0f46dd8f2`), weil der Beinschritt dort deutlicher ist. Die andere Fassung ist `cf3295bb-9d02-43d8-90a9-730117b360b0` (v1.1). Bewegungsauftrag:
+> The cute chibi kid inline hockey player in the dark green helmet and green jersey with cream and orange stripes skates forward on inline skates in place: alternating long gliding strides, one skate pushing out to the side and back while the other glides, body leaning slightly forward and bobbing gently, both hands on the hockey stick with its blade low near the ground and swinging slightly with the rhythm. The head, helmet and face stay steady and friendly. Loops seamlessly.
+
+**In der Welt:** Die Figur ersetzt `character.skater.stride`. Das Bild ist 32×34 Pixel groß, das Kind darin 33 Pixel hoch. `worldHeight` beträgt 1,44 m, damit das Kind 1,4 m groß ist; das entspricht 23,6 Pixeln je Meter. Die Figur trägt die Vereinsfarben schon selbst, deshalb gibt es keine `teamColors` mehr. Gegnerfarben brauchen eine eigene Fassung.
