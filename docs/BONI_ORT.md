@@ -237,3 +237,11 @@ Bilder: `docs/ort/boni_anflug_land.jpg`, `docs/ort/boni_anflug_landung.jpg`.
 - **Entfernt:** `intro.html` mit `src/intro/main.js` und `src/intro/photoreal.js`, dazu die nur dort benutzten `assets/intro/boni_boden.glb`, `boni_schatten_luftboden.glb` und `tools/intro/record.cjs`. Abschnitte oben über `intro.html` und `photoreal.js` beschreiben diesen früheren Stand.
 - **Ohne Netz:** CesiumJS kommt vom CDN (in der Android-App aus der mitgelieferten Kopie). Lädt es nicht, startet nach kurzer Meldung die Hallen-Version.
 - **Android-App:** Startadresse und Build-Skript zeigen auf `welt.html` (mit `locations/`); der Token wird mit der App geteilt. Die App ist damit nicht neu gebaut und nicht auf einem Gerät geprüft.
+
+## Eingänge des Bolzplatzes (2026-11-28, vom Verein beschrieben)
+
+Drei Türen, je 2 m breit, in Zaunmodell (`tools/intro/court_glb.py`, `DOORS`) und Kollision (`src/welt/hindernisse.js`, `PLATZ_EINGAENGE`) gleich:
+- auf der Längsseite zum Holz-Nilpferd (A–D, b = −9) eine am rechten Ende, vom Nilpferd aus gesehen (a = +10,9);
+- auf der gegenüberliegenden Längsseite (B–C, b = +9) je eine an beiden Enden (a = ±10,9).
+
+Die genaue Lage am Ende (Abstand zur Ecke) ist geschätzt. `assets/intro/boni_platz.glb` ist dafür neu erzeugt; außer den Zaunteilen ist es mit dem vorigen Modell gleich (Tore, Netze, Texturen pixelgleich geprüft). Bild: `docs/ort/boni_platz_tueren.jpg`.

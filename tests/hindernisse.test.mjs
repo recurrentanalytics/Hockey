@@ -20,13 +20,20 @@ test('obstacles: a gate cuts an opening into a fence, nothing else does', () => 
 
 test('obstacles: the court fence holds on the long sides and lets the player out at the entrances', () => {
   assert.ok(welt.segmente.length > 1000 && welt.haeuser.length > 200);
-  const lang = gehe([6, 0], [0, 1], 4);                       // straight at a long side, away from the entrance
+  const lang = gehe([0, 0], [0, 1], 4);                       // the middle of a long side is closed
   assert.ok(lang[1] < 9 - KOERPER + 0.4, `went through the fence: b = ${lang[1]}`);
+  const hippo = gehe([0, 0], [0, -1], 4);                      // also towards the hippo
+  assert.ok(hippo[1] > -9 + KOERPER - 0.4, `went through the hippo side: b = ${hippo[1]}`);
   const kurz = gehe([0, 0], [-1, 0], 4);                      // the short sides hold the goals: closed
   assert.ok(kurz[0] > -12.6 + KOERPER - 0.4, `went through the goal end: a = ${kurz[0]}`);
   assert.ok(aufDemPlatz([0, 0]) && !aufDemPlatz([14, 0]));
-  const raus = gehe([0, 0], [0, -1], 4);                      // through the assumed entrance in the long side
-  assert.ok(raus[1] < -10.5, `stopped at the entrance: b = ${raus[1]}`);
+  // out through each real entrance: hippo side right end, opposite side both ends
+  for (const [a, richtung] of [[10.9, -1], [-10.9, 1], [10.9, 1]]) {
+    const raus = gehe([a, 0], [0, richtung], 4);
+    assert.ok(Math.abs(raus[1]) > 10.5, `stopped at the entrance at a = ${a}: b = ${raus[1]}`);
+  }
+  const zu = gehe([-10.9, 0], [0, -1], 4);                    // the hippo side's left end is closed
+  assert.ok(zu[1] > -9 + KOERPER - 0.4, `went through the closed end: b = ${zu[1]}`);
 });
 
 test('obstacles: buildings stop the player from every side', () => {

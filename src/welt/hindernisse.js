@@ -5,9 +5,12 @@ import { platzmeter } from './baeume.js';
 
 export const KOERPER = 0.3;          // the player's radius, m
 export const TORBREITE = 3;          // opening left at a mapped gate, m
-/** Entrances of the court fence. Not in any dataset and not on the intro's court model: assumed in the
- *  middle of both long sides. The short sides carry the football goals. */
-export const PLATZ_EINGAENGE = [[0, -9], [0, 9]];
+/** Entrances of the court fence, as the club describes them (2026-11-28; in no dataset): on the long side
+ *  facing the wooden hippo (A–D, b = −9) one at its right-hand end as seen from the hippo, and on the
+ *  opposite long side (B–C, b = +9) one at each end. Court metres; each opening is PLATZTUER wide.
+ *  tools/intro/court_glb.py leaves the same openings in the drawn fence. */
+export const PLATZ_EINGAENGE = [[10.9, -9], [-10.9, 9], [10.9, 9]];
+export const PLATZTUER = 2;          // width of each court entrance, m (as drawn in assets/intro/boni_platz.glb)
 const ZELLE = 8;
 
 /** Cut an opening of TORBREITE into a segment where a gate lies on it. Returns the remaining pieces. */
@@ -44,7 +47,7 @@ export function baueHindernisse({ gebaeude, einfriedungen, platz, frame }) {
     for (let i = 0; i < l.length - 1; i++) segmente.push(...oeffne([...l[i], ...l[i + 1]], tore));
   }
   const zaun = platz.features.find((f) => f.properties.art === 'zaun');
-  if (zaun) { const l = zaun.geometry.coordinates[0].map(m); for (let i = 0; i < l.length - 1; i++) segmente.push(...oeffne([...l[i], ...l[i + 1]], PLATZ_EINGAENGE)); }
+  if (zaun) { const l = zaun.geometry.coordinates[0].map(m); for (let i = 0; i < l.length - 1; i++) segmente.push(...oeffne([...l[i], ...l[i + 1]], PLATZ_EINGAENGE, PLATZTUER)); }
   const gitter = new Map();
   segmente.forEach(([ax, ay, bx, by], k) => {
     for (let gx = Math.floor(Math.min(ax, bx) / ZELLE); gx <= Math.floor(Math.max(ax, bx) / ZELLE); gx++)
