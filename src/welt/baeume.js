@@ -149,7 +149,7 @@ export async function baumbilder(asset, base) {
  * Put the grove into the scene. Returns { baeume, zeige(point) }: call zeige with the player's court
  * metres every frame and canopies between the camera and the player turn see-through.
  */
-export async function pflanze({ Cesium, entities, baeume, bilder, frame, pos, fotoBoden }) {
+export async function pflanze({ Cesium, entities, billboards = null, scene = null, baeume, bilder, frame, pos, fotoBoden }) {
   const zuGitter = ([a, b]) => [frame.ursprung_utm32[0] + a * frame.achse_a[0] + b * frame.achse_b[0], frame.ursprung_utm32[1] + a * frame.achse_a[1] + b * frame.achse_b[1]];
   const kronen = [];
   for (const t of baeume) {
@@ -160,9 +160,16 @@ export async function pflanze({ Cesium, entities, baeume, bilder, frame, pos, fo
     const b = t.art && bilder[t.art];
     if (b) {
       const seite = t.spiegeln ? 1 : 0, mass = { sizeInMeters: true, width: t.hoehe * b.seiten, height: t.hoehe, verticalOrigin: Cesium.VerticalOrigin.BOTTOM };
-      entities.add({ position: pos(t.en, 0), billboard: { image: b.stamm[seite], ...mass }, properties: { text } });
-      const krone = entities.add({ position: pos(t.en, 0), billboard: { image: b.krone[seite], ...mass, color: Cesium.Color.WHITE }, properties: { text } });
-      kronen.push([t, (durch) => { krone.billboard.color = Cesium.Color.WHITE.withAlpha(durch ? 0.3 : 1); }]);
+      if (billboards) { // trunk and crown in one collection, drawn together; the crown turns see-through by its colour
+        const id = { properties: { text: { getValue: () => text } } };
+        billboards.add({ position: pos(t.en, 0), image: b.stamm[seite], ...mass, id });
+        const krone = billboards.add({ position: pos(t.en, 0), image: b.krone[seite], ...mass, color: Cesium.Color.WHITE, id });
+        kronen.push([t, (durch) => { krone.color = Cesium.Color.WHITE.withAlpha(durch ? 0.3 : 1); scene?.requestRender(); }]);
+      } else {
+        entities.add({ position: pos(t.en, 0), billboard: { image: b.stamm[seite], ...mass }, properties: { text } });
+        const krone = entities.add({ position: pos(t.en, 0), billboard: { image: b.krone[seite], ...mass, color: Cesium.Color.WHITE }, properties: { text } });
+        kronen.push([t, (durch) => { krone.billboard.color = Cesium.Color.WHITE.withAlpha(durch ? 0.3 : 1); }]);
+      }
     } else { // no approved sprite: a plain trunk and cone of the same size, so collision, shadow and depth still hold
       entities.add({ position: pos(t.en, t.hoehe * 0.2), cylinder: { length: t.hoehe * 0.4, topRadius: t.stamm, bottomRadius: t.stamm * 1.3, material: Cesium.Color.fromCssColorString('#6b5137') }, properties: { text } });
       const krone = entities.add({ position: pos(t.en, t.hoehe * 0.68), ellipsoid: { radii: new Cesium.Cartesian3(t.krone, t.krone, t.hoehe * 0.34), material: Cesium.Color.fromCssColorString('#3f8f3a').withAlpha(0.9) }, properties: { text } });

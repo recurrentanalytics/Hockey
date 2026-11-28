@@ -48,8 +48,13 @@ export function starte({ Cesium, viewer, entities, frame, pos, bilder, hoehe, ha
     if (welt && z.folgt) zeigeHaeuser(davor(z.ab, welt, blick, KAMERA.neigung));
     const drin = z.folgt && aufDemPlatz(z.ab);
     if (drin !== z.aufPlatz) { z.aufPlatz = drin; aufPlatz(drin); }
-    if (z.folgt) {
-      viewer.camera.lookAt(pos(zuGitter(z.ab), 1), new Cesium.HeadingPitchRange(Cesium.Math.toRadians(KAMERA.richtung), Cesium.Math.toRadians(-(90 - KAMERA.neigung)), 22));
+    if (z.faehrt || z.ziel) viewer.scene.requestRender(); // the scene draws on demand: a moving figure is a change
+    // set the follow camera only when the figure has moved (or starts to be followed): setting it again every tick
+    // counts as a camera change and would keep the on-demand scene drawing while the figure stands still
+    const g = z.folgt ? zuGitter(z.ab) : null;
+    if (g && (!z.kamera || g[0] !== z.kamera[0] || g[1] !== z.kamera[1])) {
+      z.kamera = g;
+      viewer.camera.lookAt(pos(g, 1), new Cesium.HeadingPitchRange(Cesium.Math.toRadians(KAMERA.richtung), Cesium.Math.toRadians(-(90 - KAMERA.neigung)), 22));
     }
   };
   viewer.scene.preUpdate.addEventListener(() => { const jetzt = performance.now(); takt(Math.min(0.1, (jetzt - zuletzt) / 1000)); zuletzt = jetzt; });
@@ -57,7 +62,7 @@ export function starte({ Cesium, viewer, entities, frame, pos, bilder, hoehe, ha
     zustand: z, takt,
     /** The match begins or ends: hide the roaming figure and ignore its keys meanwhile. */
     spielt(an) { z.spielt = an; figur.show = !an; z.tasten = [0, 0]; z.ziel = null; gedrueckt.clear(); },
-    folge(an) { z.folgt = an; if (!an) { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); zeigeHaeuser(new Set()); z.aufPlatz = false; aufPlatz(false); } },
+    folge(an) { z.folgt = an; z.kamera = null; if (!an) { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); zeigeHaeuser(new Set()); z.aufPlatz = false; aufPlatz(false); } },
     tippe(bildpunkt) { if (!z.folgt) return false; const en = bodenpunkt(bildpunkt); if (!en) return false; const de = en[0] - frame.ursprung_utm32[0], dn = en[1] - frame.ursprung_utm32[1]; z.ziel = [de * frame.achse_a[0] + dn * frame.achse_a[1], de * frame.achse_b[0] + dn * frame.achse_b[1]]; return true; },
   };
 }

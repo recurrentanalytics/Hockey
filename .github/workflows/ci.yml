@@ -1,0 +1,65 @@
+# Quality gate for every push and pull request: asset check, offline-list check, unit tests
+# (geodata rebuild with Python included), browser smoke tests. The unit tests include the seeded AI
+# simulation at its default size (36 games; fewer games do not hold the goals-per-game corridor, see
+# docs/BALANCE_ANALYSE.md). The long run (more games, balance report) is simulation.yml.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Runners are pinned: ubuntu-latest has moved to 26.04, and the browser install should not depend on that.
+jobs:
+  checks:
+    name: Assets, unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # the geodata test rebuilds locations/boni/geo with tools/ort/geodaten.py (standard library only);
+      # CI=true makes a missing Python a failure instead of a skip
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - name: Asset validation
+        run: npm run assets:check
+      - name: Offline list (sw-files.js) is current
+        run: npm run precache:check
+      - name: Unit tests
+        run: npm test
+
+  e2e:
+    name: Browser smoke tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Playwright (hall, flat court, 3D world view)
+        run: npm run test:e2e
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore

@@ -1,0 +1,39 @@
+# The long, seeded AI-vs-AI simulation (all rulesets and difficulties, numerically sane, no dead puck,
+# goals/shots corridor). Runs every night and on demand with a game count of your choice; it is part of
+# quality assurance, just not of every push (the regular CI runs the short version).
+name: Simulation
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      games:
+        description: 'Number of seeded games (a multiple of 9 covers every ruleset x difficulty evenly)'
+        default: '180'
+        required: true
+
+jobs:
+  simulation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      SIM_GAMES: ${{ inputs.games || '180' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Seeded simulation
+        run: npm run test:sim
+      - name: Balance report (informational)
+        if: ${{ !cancelled() }}
+        run: node tools/test/balance.mjs --games 72 | tee balance-report.txt
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: balance-report
+          path: balance-report.txt
+          if-no-files-found: ignore

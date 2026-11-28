@@ -14,10 +14,13 @@ ES modules need HTTP; opening `index.html` straight from disk won't work.
 ## Tests
 
 ```sh
-npm test          # or: node --test
+npm ci && npx playwright install chromium   # once: test tools only, the game itself has no packages
+npm test                                    # unit tests and seeded AI-vs-AI matches (SIM_GAMES=180 for a longer run)
+npm run test:e2e                            # browser smoke tests: hall, flat court, 3D world view
+npm run ci                                  # everything the CI runs
 ```
 
-Needs Node 20 or newer and no packages. The tests run the game logic headless: AI pickups on the boards, the dead-puck whistle, and seeded AI-vs-AI matches (`SIM_GAMES=180 npm test` for a longer run).
+Needs Node 20 or newer; Python 3 for the geodata test (skipped with a message where it is missing, required in CI). The commands, the CI workflows and what each test covers are in [docs/TESTING.md](docs/TESTING.md).
 
 ## Status
 

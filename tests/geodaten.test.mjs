@@ -4,12 +4,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { findPython, toolsRequired } from './helpers/python.mjs';
 
 const GEO = 'locations/boni/geo';
 const read = (name) => JSON.parse(fs.readFileSync(`${GEO}/${name}`, 'utf8'));
 
-test('geodata: a rebuild from the raw data matches the checked-in files and passes its checks', () => {
-  const out = execFileSync('python3', ['tools/ort/geodaten.py', 'pruefen', 'tools/ort/boni.json'], { encoding: 'utf8' });
+// The rebuild needs Python 3 (standard library only). Without it the test is skipped with a message,
+// except in CI (or with REQUIRE_TOOLS=1), where a missing Python fails the run instead.
+const python = findPython();
+const skip = !python && !toolsRequired() && 'Python 3 not found: skipped (install Python 3, or set PYTHON=<path>; CI requires it)';
+
+test('geodata: a rebuild from the raw data matches the checked-in files and passes its checks', { skip }, () => {
+  assert.ok(python, 'Python 3 is required here (CI or REQUIRE_TOOLS=1) but none was found');
+  const out = execFileSync(python.cmd, [...python.pre, 'tools/ort/geodaten.py', 'pruefen', 'tools/ort/boni.json'],
+    { encoding: 'utf8', env: { ...process.env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' } });
   assert.match(out, /bitgleich/);
   assert.doesNotMatch(out, /FEHLER/);
   assert.equal(read('pruefung.json').bestanden, true);

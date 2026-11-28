@@ -1,0 +1,71 @@
+{
+ "feld": {
+  "laenge": 22.8,
+  "breite": 17.2,
+  "torlinie": 9.2,
+  "tor": 1.37,
+  "eckradius": 1
+ },
+ "wetter": {
+  "trocken": {
+   "ballWeg": 13.337,
+   "ballZeit": 7.183,
+   "ballDrift": 0,
+   "ballSprung": 0.169,
+   "anfahrenS": 0.467,
+   "bremswegM": 1.106,
+   "wendenS": 0.217,
+   "stuerzeVon200": 0
+  },
+  "regen": {
+   "ballWeg": 9.086,
+   "ballZeit": 4.417,
+   "ballDrift": 0,
+   "ballSprung": 0.038,
+   "anfahrenS": 0.533,
+   "bremswegM": 2.139,
+   "wendenS": 0.2,
+   "stuerzeVon200": 13
+  },
+  "schnee": {
+   "ballWeg": 5.32,
+   "ballZeit": 2.517,
+   "ballDrift": 0,
+   "ballSprung": 0.017,
+   "anfahrenS": 0.9,
+   "bremswegM": 0.958,
+   "wendenS": 0.733,
+   "stuerzeVon200": 11
+  },
+  "glaette": {
+   "ballWeg": 11.291,
+   "ballZeit": 8.867,
+   "ballDrift": 0,
+   "ballSprung": 0.263,
+   "anfahrenS": 0.45,
+   "bremswegM": 1.93,
+   "wendenS": 0.167,
+   "stuerzeVon200": 17
+  },
+  "hitze": {
+   "ballWeg": 13.79,
+   "ballZeit": 6.85,
+   "ballDrift": 0,
+   "ballSprung": 0.121,
+   "anfahrenS": 0.467,
+   "bremswegM": 1.064,
+   "wendenS": 0.183,
+   "stuerzeVon200": 0
+  },
+  "wind": {
+   "ballWeg": 12.964,
+   "ballZeit": 8.817,
+   "ballDrift": 3.039,
+   "ballSprung": 0.169,
+   "anfahrenS": 0.467,
+   "bremswegM": 1.106,
+   "wendenS": 0.217,
+   "stuerzeVon200": 0
+  }
+ }
+}
