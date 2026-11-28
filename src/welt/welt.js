@@ -14,6 +14,8 @@ import { baueHindernisse, davor } from './hindernisse.js';
 import { ladeLuftbild, rechteck, ausschnitt } from './luftbild.js';
 import { platzmeter } from './baeume.js';
 import { baueHaeuser } from './haeuser.js';
+import { bodenplan, bodenKacheln } from './boden.js';
+import { ladeBild } from './bild.js';
 
 const CESIUM_VERSION = '1.147.0';    // keep in step with src/intro/photoreal.js
 const GOOGLE_3D_TILES = 2275207;     // Cesium ion asset, as in the intro
@@ -84,6 +86,11 @@ async function main() {
   const hausArt = Q.get('haeuser') ?? 'alt'; // 'alt' plain volumes, 'neu' every house dressed in the façade kits
   let viertelHaeuser = null;                 // the houses of haeuser.js
   const saetze = hausArt === 'alt' ? null : await fetch(new URL('welt/haeuser/bausaetze.json', ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  // the drawn ground belongs to the same review: streets, pavements and yards in SpriteCook textures (boden.js)
+  const bodenRegeln = hausArt === 'alt' ? null : await fetch(new URL('welt/boden/boden.json', ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  if (bodenRegeln) LAYERS.splice(LAYERS.findIndex((l) => l.id === 'pixelboden') + 1, 0, { id: 'boden', name: 'Gezeichneter Boden im Viertel (SpriteCook)', on: true });
+  let bodenLayer = null;
+  const bodenAn = () => !!bodenLayer?.show;
   let spieler = null;
   status('Lade 3D-Ansicht …');
   const Cesium = await loadCesium(Q.get('cesiumBase') || `https://cdn.jsdelivr.net/npm/cesium@${CESIUM_VERSION}/Build/Cesium/`);
@@ -140,6 +147,7 @@ async function main() {
       { magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST, minificationFilter: Cesium.TextureMinificationFilter.NEAREST });
     pixelLayer.show = LAYERS.find((l) => l.id === 'pixelboden').on;
     viewer.imageryLayers.add(pixelLayer);
+    if (bodenLayer) viewer.imageryLayers.raiseToTop(bodenLayer); // the drawn ground lies over it; only the court shows through
   }).catch((e) => status('Pixel-Boden nicht erzeugt: ' + e.message));
 
   // ---- geometry: UTM metres → positions on the globe. `ground` is the height everything stands on:
@@ -191,7 +199,7 @@ async function main() {
     const trees = layer('baeume');
     for (const f of baeume.features) if (f.geometry.type !== 'Point') trees.add({ polyline: { positions: f.geometry.coordinates.map((p) => pos(p, 0.3)), width: 4, material: css('#2f7d32') }, properties: { text: describe('Baumreihe (OSM)', f.properties) } });
     // on the aerial photo the real cast shadows are already in the picture: contact shadows only (see schatten())
-    pflanze({ Cesium, entities: trees, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: (lokal?.show || luftbild.show) && (!google.on || rundum) }).then((g) => { grove = g; });
+    pflanze({ Cesium, entities: trees, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: (lokal?.show || luftbild.show) && (!google.on || rundum) && !bodenAn() }).then((g) => { grove = g; });
     const fences = layer('einfriedungen');
     for (const f of einfriedungen.features) {
       if (f.geometry.type === 'LineString') fences.add({ wall: { positions: f.geometry.coordinates.map((p) => pos(p, 1.4)), minimumHeights: f.geometry.coordinates.map(() => ground), material: css('#7a1fa2', 0.7) }, properties: { text: describe('Einfriedung (OSM), Höhe angenommen 1,4 m', f.properties) } });
@@ -307,6 +315,7 @@ async function main() {
     label.querySelector('input').onchange = async (ev) => {
       l.on = ev.target.checked;
       if (l.id === 'pixelboden') { if (pixelLayer) pixelLayer.show = l.on; }
+      else if (l.id === 'boden') { if (bodenLayer) bodenLayer.show = l.on; build(); } // the trees' shadows depend on the ground
       else if (l.id === 'platz') { if (platzModell) platzModell.show = l.on; }
       else if (l.id === 'luftbild') { if (lokal) lokal.show = l.on; build(); }
       else if (l.id === 'luftbildlive') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
@@ -460,6 +469,11 @@ async function main() {
   $('spielstart').addEventListener('click', (e) => { e.preventDefault(); betrete().catch((err) => { status('Spiel nicht geladen: ' + err.message); verlasse(); }); });
   $('verlassen').addEventListener('click', verlasse);
 
+  if (bodenRegeln) try { // the drawn ground: painted tile by tile as the view asks for it
+    const bilder = Object.fromEntries(await Promise.all(Object.entries(bodenRegeln.texturen).map(async ([name, t]) => [name, await ladeBild(new URL('welt/boden/' + t.datei, ASSETS).href)])));
+    bodenLayer = new Cesium.ImageryLayer(bodenKacheln({ Cesium, plan: bodenplan({ nutzung, flaechen, wege, platz }, bodenRegeln), frame, bilder, pxJeM: bodenRegeln.px_je_m }), { magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST });
+    viewer.imageryLayers.add(bodenLayer);
+  } catch (e) { console.error(e); bodenLayer = null; }
   build();
   if (figurBilder) {
     const eigene = new Cesium.CustomDataSource('spieler'); // kept apart from the layers build() replaces
@@ -469,7 +483,7 @@ async function main() {
   }
   view(Q.get('sicht') in VIEWS ? Q.get('sicht') : 'schraeg');
   status('bereit');
-  window.welt = { get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; }, get haeuser() { return viertelHaeuser; } }; // for the console and tests
+  window.welt = { get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; }, get haeuser() { return viertelHaeuser; }, get boden() { return bodenLayer; } }; // for the console and tests
 }
 
 main().catch((e) => { status('Fehler: ' + e.message); console.error(e); });
