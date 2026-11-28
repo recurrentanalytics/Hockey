@@ -168,7 +168,7 @@ async function main() {
     haeuser.length = 0;
     if (hausArt !== 'alt' && scene.context.webgl2) {           // drawn houses: built once; ground, cover and records follow here
       viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS) });
-      viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.verzeichne(blocks);
+      viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on && !rundum ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.verzeichne(blocks);
     }
     for (const f of gebaeude.features) {
       if (viertelHaeuser?.hat(f.properties.oid)) continue;
@@ -191,7 +191,7 @@ async function main() {
     const trees = layer('baeume');
     for (const f of baeume.features) if (f.geometry.type !== 'Point') trees.add({ polyline: { positions: f.geometry.coordinates.map((p) => pos(p, 0.3)), width: 4, material: css('#2f7d32') }, properties: { text: describe('Baumreihe (OSM)', f.properties) } });
     // on the aerial photo the real cast shadows are already in the picture: contact shadows only (see schatten())
-    pflanze({ Cesium, entities: trees, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: (lokal?.show || luftbild.show) && !google.on }).then((g) => { grove = g; });
+    pflanze({ Cesium, entities: trees, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: (lokal?.show || luftbild.show) && (!google.on || rundum) }).then((g) => { grove = g; });
     const fences = layer('einfriedungen');
     for (const f of einfriedungen.features) {
       if (f.geometry.type === 'LineString') fences.add({ wall: { positions: f.geometry.coordinates.map((p) => pos(p, 1.4)), minimumHeights: f.geometry.coordinates.map(() => ground), material: css('#7a1fa2', 0.7) }, properties: { text: describe('Einfriedung (OSM), Höhe angenommen 1,4 m', f.properties) } });
@@ -236,6 +236,20 @@ async function main() {
   let tiles = null;
   let token = Q.get('token') || (() => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } })();
   google.available = !!token;
+  // With the drawn houses the quarter stays ours when the tiles are on: they are cut away over it and lowered to the
+  // aerial photo's level, and the globe (photo, pixel ground) is drawn only inside the cut. Google's city round the
+  // quarter, nothing of Google and nothing see-through inside it. Without the drawn houses it is as it was.
+  let rundum = false, googleBoden = null, schnitt = null;
+  function viertelSchnitt() {
+    // one rectangle round the data's cutout and every house that reaches beyond it: a single cut is the cheapest to draw
+    const p = [...gebaeude.features.filter((f) => viertelHaeuser.hat(f.properties.oid)).flatMap((f) => polygons(f.geometry).flatMap((poly) => poly[0])), ...(frame.ausschnitt_utm32 ? [frame.ausschnitt_utm32.slice(0, 2), frame.ausschnitt_utm32.slice(2)] : [])];
+    const w = Math.min(...p.map((q) => q[0])), s = Math.min(...p.map((q) => q[1])), e = Math.max(...p.map((q) => q[0])), n = Math.max(...p.map((q) => q[1]));
+    const ecken = [[w, s], [e, s], [e, n], [w, n]].map((q) => fromUtm32(...q)), lon = ecken.map((q) => q[0]), lat = ecken.map((q) => q[1]);
+    const rechteck = Cesium.Rectangle.fromDegrees(Math.min(...lon), Math.min(...lat), Math.max(...lon), Math.max(...lat));
+    const vieleck = new Cesium.ClippingPolygon({ positions: Cesium.Cartesian3.fromRadiansArray([rechteck.west, rechteck.south, rechteck.east, rechteck.south, rechteck.east, rechteck.north, rechteck.west, rechteck.north]) });
+    return { rechteck, vielecke: new Cesium.ClippingPolygonCollection({ polygons: [vieleck] }) };
+  }
+  function ganzerGlobus() { scene.globe.show = true; scene.globe.cartographicLimitRectangle = Cesium.Rectangle.MAX_VALUE; }
   async function showGoogle(on) {
     if (on && !tiles) {
       status('Lade Google-3D-Kacheln …');
@@ -246,13 +260,23 @@ async function main() {
       for (const a of ep.attributions ?? []) viewer.creditDisplay.addStaticCredit(new Cesium.Credit(a.html, true));
     }
     if (tiles) tiles.show = on;
+    rundum = on && !!viertelHaeuser && Cesium.ClippingPolygonCollection.isSupported(scene);
+    ganzerGlobus();
     scene.globe.show = !on; // the tiles carry their own ground; the flat globe would cut through it
     ground = 0;
-    if (on) {
+    if (on && googleBoden == null) {
       await new Promise((r) => setTimeout(r, 1500)); // let the first tiles arrive before measuring
-      try { const [c] = await scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(centre[0], centre[1])]); ground = Number.isFinite(c?.height) ? c.height : 97.9; } catch { ground = 97.9; }
+      try { const [c] = await scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(centre[0], centre[1])]); googleBoden = Number.isFinite(c?.height) ? c.height : 97.9; } catch { googleBoden = 97.9; }
     }
-    build(); view(current); status(on ? `Google-3D-Kacheln an, Boden bei ${ground.toFixed(1)} m (Ellipsoid)` : 'bereit');
+    if (rundum) {
+      schnitt ??= viertelSchnitt();
+      if (tiles.clippingPolygons !== schnitt.vielecke) tiles.clippingPolygons = schnitt.vielecke;
+      const hoch = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(pos([E0, N0], 0), new Cesium.Cartesian3());
+      tiles.modelMatrix = Cesium.Matrix4.fromTranslation(Cesium.Cartesian3.multiplyByScalar(hoch, -googleBoden, hoch));
+      scene.globe.show = true; scene.globe.cartographicLimitRectangle = schnitt.rechteck;
+    } else if (on) ground = googleBoden;
+    build(); view(current);
+    status(!on ? 'bereit' : rundum ? `Google-3D-Kacheln rund um das Viertel, um ${googleBoden.toFixed(1)} m auf die Höhe des Luftbilds gesenkt` : `Google-3D-Kacheln an, Boden bei ${ground.toFixed(1)} m (Ellipsoid)`);
   }
 
   // ---- camera: orbit round the court centre; presets as on the buttons
@@ -286,7 +310,7 @@ async function main() {
       else if (l.id === 'platz') { if (platzModell) platzModell.show = l.on; }
       else if (l.id === 'luftbild') { if (lokal) lokal.show = l.on; build(); }
       else if (l.id === 'luftbildlive') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
-      else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); scene.globe.show = true; } }
+      else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); rundum = false; ganzerGlobus(); } }
       else { sources[l.id].show = l.on; if (l.id === 'gebaeude') viertelHaeuser?.sichtbar(l.on); }
       scene.requestRender();
     };
