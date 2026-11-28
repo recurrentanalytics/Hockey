@@ -12,6 +12,9 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="assets/app/icon-192.png" />
   <link rel="apple-touch-icon" href="assets/app/icon-192.png" />
+  <!-- The bare address opens the world (welt.html). Asked for by name, index.html is the hall: the offline
+       fallback, the world's own fallback without 3D, and the hall's tests. Checked by tests/startseite.test.mjs. -->
+  <script id="startseite">if (!/index\.html$/.test(location.pathname) && navigator.onLine !== false) location.replace('welt.html' + location.search + location.hash);</script>
 </head>
 <body>
   <canvas id="screen" tabindex="0"></canvas>
