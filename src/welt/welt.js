@@ -27,7 +27,10 @@ const GAME_VIEW = { heading: 118.2, tilt: 60 }; // the game camera: looking A �
 // SpriteCook façade kits (assets/welt/haeuser/bausaetze.json); without it every footprint stays the plain volume it was.
 
 const Q = new URLSearchParams(location.search);
-const DUNST = Q.get('dunst') !== '0'; // distance haze and coarser far tiles round the court (see showGoogle)
+// distance haze and coarser far tiles round the court (see showGoogle). ?dunst=0 off; ?dunst=a,b,s tunes it:
+// clear up to a metres from the court, full strength s (0–1) from b metres on
+const DUNST = Q.get('dunst') !== '0';
+const DUNST_WERTE = (() => { const v = (Q.get('dunst') ?? '').split(',').map(Number); return v.length === 3 && v.every(Number.isFinite) ? v : [180, 1600, 0.75]; })();
 const ort = Q.get('ort') || 'boni';
 const base = new URL(`../../locations/${ort}/geo/`, import.meta.url);
 const load = (name) => fetch(new URL(name, base)).then((r) => { if (!r.ok) throw new Error(`${name}: ${r.status}`); return r.json(); });
@@ -283,7 +286,7 @@ async function main() {
       }`,
     uniforms: {
       u_mitte: () => Cesium.Matrix4.multiplyByPoint(scene.camera.viewMatrix, mitteWC, mitteEC),
-      u_farbe: new Cesium.Cartesian3(0.80, 0.84, 0.86), u_weite: new Cesium.Cartesian2(300, 2600), u_staerke: 0.7,
+      u_farbe: new Cesium.Cartesian3(0.80, 0.84, 0.86), u_weite: new Cesium.Cartesian2(DUNST_WERTE[0], DUNST_WERTE[1]), u_staerke: DUNST_WERTE[2],
     },
   }));
   dunst.enabled = false;
