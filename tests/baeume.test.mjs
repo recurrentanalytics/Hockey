@@ -70,3 +70,38 @@ test('grove: crowns the survey shows without a mapped tree become derived trees,
   assert.ok(Math.hypot(neu[0].ab[0] - 20, neu[0].ab[1] - 20) < 0.5 && neu[0].hoeheQuelle === 'Oberflächenmodell' && neu[0].id.startsWith('dom/'));
   assert.deepEqual(alle, hain(features.slice(0, 1), frame, arten, karte, { bereich, sperre: (a, b) => Math.abs(a) < 13.4 && Math.abs(b) < 9.8 }));
 });
+
+test('trees: the faces that cast the shadow face the sun, keep the tree\'s size, and turn with it', async () => {
+  const { schattenflaechen, trifftPlatz } = await import('../src/welt/baeume.js');
+  const t = { hoehe: 12, krone: 4, ab: [0, 0], spiegeln: false }, bild = { seiten: 0.8, grenze: 0.6 };
+  const sonne = (azimut, hoehe) => { const a = (azimut * Math.PI) / 180, h = (hoehe * Math.PI) / 180; return [Math.sin(a) * Math.cos(h), Math.cos(a) * Math.cos(h), Math.sin(h)]; };
+  for (const [azimut, hoehe] of [[73, 45], [180, 60], [250, 20], [300, 85]]) {
+    const [stamm, krone] = schattenflaechen(t, bild, { azimut, hoehe }), L = sonne(azimut, hoehe);
+    assert.equal(stamm.teil, 'stamm'); assert.equal(krone.teil, 'krone');
+    // the crown's face is square to the rays: both its edges are at right angles to the sun's direction
+    const kante = (f, i, j) => f.ecken[j].map((v, k) => v - f.ecken[i][k]), mal = (u, v) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+    assert.ok(Math.abs(mal(kante(krone, 0, 1), L)) < 1e-9 && Math.abs(mal(kante(krone, 1, 2), L)) < 1e-9, `sun at ${azimut}°/${hoehe}°: the crown looks at it`);
+    assert.ok(Math.abs(Math.hypot(...kante(krone, 0, 1)) - 12 * 0.8) < 1e-9 && Math.abs(Math.hypot(...kante(krone, 1, 2)) - 12 * 0.6) < 1e-9, 'as wide and as high as the crown in the sprite');
+    // the trunk stands upright on its foot, turned to the sun's bearing, up to where the crown begins
+    assert.ok(stamm.ecken.every((p) => Math.abs(p[0] * L[0] + p[1] * L[1]) < 1e-9), 'the trunk is turned to the sun');
+    assert.deepEqual(stamm.ecken.map((p) => +p[2].toFixed(6)), [0, 0, 4.8, 4.8]);
+    // the crown's middle stays over the trunk, at the crown's height
+    const mitte = [0, 1, 2].map((k) => krone.ecken.reduce((s, p) => s + p[k], 0) / 4);
+    assert.ok(Math.abs(mitte[0]) < 1e-9 && Math.abs(mitte[1]) < 1e-9 && Math.abs(mitte[2] - (12 - 3.6)) < 1e-9);
+    // the sprite: the crown takes its upper part, the trunk the rest
+    assert.deepEqual(krone.st.map((s) => s[1]), [0.6, 0.6, 0, 0]); assert.deepEqual(stamm.st.map((s) => s[1]), [1, 1, 0.6, 0.6]);
+  }
+  // a mirrored tree casts a mirrored shadow
+  assert.deepEqual(schattenflaechen({ ...t, spiegeln: true }, bild)[1].st.map((s) => s[0]), [1, 0, 0, 1]);
+  // a low sun is taken as 8°, like everywhere the light is used: no face lying flat on its side, no endless shadow
+  assert.deepEqual(schattenflaechen(t, bild, { azimut: 90, hoehe: 1 }), schattenflaechen(t, bild, { azimut: 90, hoehe: 8 }));
+
+  // whose shadow reaches the court keeps the drawn one: the court's floor shades itself
+  const frame = JSON.parse(fs.readFileSync('locations/boni/geo/rahmen.json', 'utf8'));
+  const sued = { azimut: 180 + (frame.kompassrichtung_b_grad ?? 0), hoehe: 45 };
+  assert.equal(trifftPlatz({ hoehe: 12, krone: 4, ab: [0, 30] }, frame, { azimut: 0, hoehe: 80 }), false, 'a high sun: a tree 30 m away does not reach');
+  assert.equal(trifftPlatz({ hoehe: 12, krone: 4, ab: [0, 12] }, frame, sued), true, 'a tree at the fence does, whatever the sun');
+  const fern = { hoehe: 12, krone: 4, ab: [60, 60] };
+  assert.equal([0, 90, 180, 270].some((azimut) => trifftPlatz(fern, frame, { azimut, hoehe: 45 })), false, 'a tree far off never does at 45°');
+  assert.equal([0, 45, 90, 135, 180, 225, 270, 315].some((azimut) => trifftPlatz({ hoehe: 14, krone: 5, ab: [0, 40] }, frame, { azimut, hoehe: 10 })), true, 'a low sun behind a tall tree does');
+});

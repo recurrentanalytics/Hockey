@@ -104,6 +104,35 @@ export function schatten(t, frame, fotoBoden, licht = LICHT) {
   return { mitte: [t.ab[0] + richtung[0] * wurf, t.ab[1] + richtung[1] * wurf], richtung, laengs: t.krone * 1.35, quer: t.krone, deckung: 0.32 * kraft };
 }
 
+/**
+ * The two faces a tree throws its cast shadow with, for a sun at `licht`: the trunk upright and turned towards the
+ * sun's bearing, the crown square to the sun's rays (so its shadow is as long as a round crown's, at any height of
+ * the sun). Each face: four corners as offsets from the foot of the trunk (east, north, up, metres) and their places
+ * in the sprite (0 … 1 across, 0 at the top). `seiten` is the sprite's width by height, `grenze` the share of its
+ * height the crown takes (baumbilder); `konvergenz` turns the compass bearing into the grid's.
+ */
+export function schattenflaechen(t, { seiten, grenze }, licht = LICHT, konvergenz = 0) {
+  const az = ((licht.azimut - konvergenz) * Math.PI) / 180, hoch = (Math.max(licht.hoehe, 8) * Math.PI) / 180;
+  const q = [Math.cos(az), -Math.sin(az), 0], r = [-Math.sin(az) * Math.sin(hoch), -Math.cos(az) * Math.sin(hoch), Math.cos(hoch)]; // across the light; up the face that looks at the sun
+  const H = t.hoehe, halb = (H * seiten) / 2, fuss = H * (1 - grenze), mitte = [0, 0, H - (H * grenze) / 2], hk = (H * grenze) / 2;
+  const u0 = t.spiegeln ? 1 : 0, u1 = 1 - u0, ecke = (m, a, b, achse) => [m[0] + q[0] * a + achse[0] * b, m[1] + q[1] * a + achse[1] * b, m[2] + q[2] * a + achse[2] * b];
+  return [
+    { teil: 'stamm', ecken: [ecke([0, 0, 0], -halb, 0, [0, 0, 1]), ecke([0, 0, 0], halb, 0, [0, 0, 1]), ecke([0, 0, 0], halb, fuss, [0, 0, 1]), ecke([0, 0, 0], -halb, fuss, [0, 0, 1])], st: [[u0, 1], [u1, 1], [u1, grenze], [u0, grenze]] },
+    { teil: 'krone', ecken: [ecke(mitte, -halb, -hk, r), ecke(mitte, halb, -hk, r), ecke(mitte, halb, hk, r), ecke(mitte, -halb, hk, r)], st: [[u0, grenze], [u1, grenze], [u1, 0], [u0, 0]] },
+  ];
+}
+
+/**
+ * Does this tree's cast shadow reach the court? The court's floor draws the shade of the trees itself, from the
+ * canopy survey (environment.js); a second shadow on top would make it too dark. Such a tree keeps its drawn
+ * ground shadow and throws no cast shadow.
+ */
+export function trifftPlatz(t, frame, licht = LICHT, halb = [13.4, 9.8]) {
+  const s = schatten(t, frame, false, licht), weit = t.hoehe / Math.tan((Math.max(licht.hoehe, 8) * Math.PI) / 180);
+  for (let k = 0; k <= 10; k++) { const a = t.ab[0] + (s.richtung[0] * weit * k) / 10, b = t.ab[1] + (s.richtung[1] * weit * k) / 10; if (Math.abs(a) < halb[0] + t.krone && Math.abs(b) < halb[1] + t.krone) return true; }
+  return false;
+}
+
 // ------------------------------------------------------------------ drawing (browser, CesiumJS)
 
 /** Canopy heights from the place's survey raster (red = height in 0.2 m steps; 0.5 m cells in court metres). */
@@ -139,20 +168,20 @@ export async function baumbilder(asset, base) {
     g.drawImage(src, 0, y0, w, y1 - y0, 0, y0 * scale, w * scale, (y1 - y0) * scale);
     return c.toDataURL();
   };
-  return { seiten: w / h, grenze: grenze / h, krone: [teil(0, grenze, false), teil(0, grenze, true)], stamm: [teil(grenze, h, false), teil(grenze, h, true)] };
+  return { bild: img, seiten: w / h, grenze: grenze / h, krone: [teil(0, grenze, false), teil(0, grenze, true)], stamm: [teil(grenze, h, false), teil(grenze, h, true)] };
 }
 
 /**
  * Put the grove into the scene. Returns { baeume, zeige(point) }: call zeige with the player's court
  * metres every frame and canopies between the camera and the player turn see-through.
  */
-export async function pflanze({ Cesium, entities, billboards = null, scene = null, baeume, bilder, frame, pos, fotoBoden }) {
+export async function pflanze({ Cesium, entities, billboards = null, scene = null, baeume, bilder, frame, pos, fotoBoden, wirft = () => false }) {
   const zuGitter = ([a, b]) => [frame.ursprung_utm32[0] + a * frame.achse_a[0] + b * frame.achse_b[0], frame.ursprung_utm32[1] + a * frame.achse_a[1] + b * frame.achse_b[1]];
   const kronen = [];
   for (const t of baeume) {
     const s = schatten(t, frame, fotoBoden), quer = [-s.richtung[1], s.richtung[0]];
     const rand = Array.from({ length: 20 }, (_, k) => { const w = (k / 20) * 2 * Math.PI, l = Math.cos(w) * s.laengs, q = Math.sin(w) * s.quer; return pos(zuGitter([s.mitte[0] + s.richtung[0] * l + quer[0] * q, s.mitte[1] + s.richtung[1] * l + quer[1] * q]), 0.12); });
-    entities.add({ polygon: { hierarchy: rand, perPositionHeight: true, material: Cesium.Color.fromCssColorString('#10160f').withAlpha(s.deckung) } });
+    if (!wirft(t)) entities.add({ polygon: { hierarchy: rand, perPositionHeight: true, material: Cesium.Color.fromCssColorString('#10160f').withAlpha(s.deckung) } }); // a tree that casts a real shadow needs no drawn one
     const text = `Baum ${t.id} (Standort ${t.standort}${t.standort === 'abgeleitet' ? ' aus der Kronenhöhenkarte, Stamm ungefähr' : ''})\nHöhe ${t.hoehe} m (${t.hoeheQuelle}), Krone ${t.krone} m, Stamm ${t.stamm} m\nArt: ${t.art ?? 'ohne Sprite'}${t.artQuelle ? ' (' + t.artQuelle + ')' : ''}`;
     const b = t.art && bilder[t.art];
     if (b) {
@@ -180,4 +209,60 @@ export async function pflanze({ Cesium, entities, billboards = null, scene = nul
     zeigeMehrere(punkte, blick) { for (const [t, setze] of kronen) { const durch = punkte.some((p) => verdeckt(p, t, blick)); if (zustand.get(t) !== durch) { zustand.set(t, durch); setze(durch); } } },
     zeige(punkt, blick) { for (const [t, setze] of kronen) { const durch = verdeckt(punkt, t, blick); if (zustand.get(t) !== durch) { zustand.set(t, durch); setze(durch); } } },
   };
+}
+
+const WERFER_VS = `
+in vec3 position3DHigh;
+in vec3 position3DLow;
+in vec2 st;
+in float batchId;
+out vec2 v_st;
+void main() {
+  vec4 p = czm_computePosition();
+  v_st = st;
+  gl_Position = czm_modelViewProjectionRelativeToEye * p;
+}`;
+// Drawn into the shadow map only. Its camera looks along the sun's parallel rays, so its projection has no
+// perspective: that is how this shader tells the shadow pass from the view, where nothing of these faces shows.
+const WERFER_FS = `
+in vec2 v_st;
+uniform sampler2D u_bild;
+void main() {
+  if (czm_projection[3][3] < 0.5) discard;
+  if (texture(u_bild, v_st).a < 0.5) discard;
+  out_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+}`;
+
+/**
+ * Faces that only cast shadows: every tree's sprite, turned to the sun (schattenflaechen), so the trees throw
+ * their own outline on the ground, the fences and the houses, and the shadows move with the sun. One Primitive
+ * per species (it carries the species' picture). `welche(t)` picks the trees. Returns the Primitives; the caller
+ * removes them from the scene when the sun or the grove changes.
+ */
+export function schattenwerfer({ Cesium, scene, baeume, bilder, frame, pos, licht = LICHT, welche = () => true }) {
+  const konvergenz = frame.meridiankonvergenz_grad ?? 0, jeArt = new Map();
+  for (const t of baeume) { if (t.art && bilder[t.art]?.bild && welche(t)) (jeArt.get(t.art) ?? jeArt.set(t.art, []).get(t.art)).push(t); }
+  const aus = [];
+  for (const [art, liste] of jeArt) {
+    const b = bilder[art], P = [], S = [], I = [];
+    for (const t of liste) for (const f of schattenflaechen(t, b, licht, konvergenz)) {
+      const i = P.length / 3;
+      f.ecken.forEach(([e, n, z], m) => { const c = pos([t.en[0] + e, t.en[1] + n], Math.max(0.05, z)); P.push(c.x, c.y, c.z); S.push(f.st[m][0], 1 - f.st[m][1]); });
+      I.push(i, i + 1, i + 2, i, i + 2, i + 3);
+    }
+    const positionen = new Float64Array(P);
+    const geometrie = new Cesium.Geometry({
+      attributes: { position: new Cesium.GeometryAttribute({ componentDatatype: Cesium.ComponentDatatype.DOUBLE, componentsPerAttribute: 3, values: positionen }),
+        st: new Cesium.GeometryAttribute({ componentDatatype: Cesium.ComponentDatatype.FLOAT, componentsPerAttribute: 2, values: new Float32Array(S) }) },
+      indices: P.length / 3 < 65536 ? new Uint16Array(I) : new Uint32Array(I), primitiveType: Cesium.PrimitiveType.TRIANGLES, boundingSphere: Cesium.BoundingSphere.fromVertices(positionen),
+    });
+    // the species' picture, pixel for pixel; kept on the picture record, so a new sun does not load it again
+    b.textur ??= new Cesium.Texture({ context: scene.context, source: b.bild, sampler: new Cesium.Sampler({ minificationFilter: Cesium.TextureMinificationFilter.NEAREST, magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST }) });
+    const erscheinung = new Cesium.Appearance({ translucent: true, closed: false, vertexShaderSource: WERFER_VS, fragmentShaderSource: WERFER_FS,
+      renderState: { depthTest: { enabled: true }, depthMask: false, cull: { enabled: false } } });
+    erscheinung.uniforms = { u_bild: b.textur };
+    aus.push(scene.primitives.add(new Cesium.Primitive({ geometryInstances: new Cesium.GeometryInstance({ geometry: geometrie }), appearance: erscheinung, asynchronous: false, compressVertices: false,
+      shadows: Cesium.ShadowMode.CAST_ONLY, allowPicking: false })));
+  }
+  return aus;
 }

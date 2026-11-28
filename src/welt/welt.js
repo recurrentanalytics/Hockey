@@ -7,7 +7,7 @@ import ORT from '../../locations/boni/ort.js';
 import { RELIEF } from '../bau/haus.js';
 import { fromUtm32, toUtm32 } from './utm.js';
 import { placeLibrary, usable, frameImages } from './bibliothek.js';
-import { hain, kronenkarte, baumbilder, pflanze, LICHT } from './baeume.js';
+import { hain, kronenkarte, baumbilder, pflanze, schattenwerfer, trifftPlatz, LICHT } from './baeume.js';
 import { createEnvironment, weatherPanel } from '../intro/environment.js';
 import { surfaceFor, setSurface } from '../game/surface.js';
 import { starte } from './spieler.js';
@@ -116,6 +116,7 @@ async function main() {
   for (const ev of ['click', 'pointerdown']) gegnerWahl.addEventListener(ev, (e) => e.stopPropagation());
   const foto = await ladeLuftbild(ASSETS).catch(() => null); // the place's own aerial photo; the world stands on it
   let grove = { baeume: baumListe, zeige() {} };
+  let baumwerfer = []; // the faces the trees cast their shadows with (they follow the sun: rebuilt with the grove)
   let flug = null;
   const hindernisse = baueHindernisse({ gebaeude, einfriedungen, platz, frame });
   const haeuser = []; // drawn building volumes, so the ones hiding the player can turn see-through
@@ -274,7 +275,14 @@ async function main() {
     const trees = layer('baeume');
     for (const f of baeume.features) if (f.geometry.type !== 'Point') trees.add({ polyline: { positions: f.geometry.coordinates.map((p) => pos(p, 0.3)), width: 4, material: css('#2f7d32') }, properties: { text: describe('Baumreihe (OSM)', f.properties) } });
     // on the aerial photo the real cast shadows are already in the picture: contact shadows only (see schatten())
-    pflanze({ Cesium, entities: trees, billboards: gebuendelt('baeume'), scene, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden: (lokal?.show || luftbild.show) && (!google.on || rundum) && !bodenAn() }).then((g) => { grove = g; });
+    // With cast shadows on and a drawn ground, the trees throw their own outline (baeume.js, schattenwerfer) instead of
+    // the drawn ellipse; those whose shadow reaches the court keep the ellipse, because the court's floor shades itself.
+    const fotoBoden = (lokal?.show || luftbild.show) && (!google.on || rundum) && !bodenAn();
+    const baumWurf = LAYERS.find((l) => l.id === 'wurf').on && sources.baeume.show && !fotoBoden && Q.get('baumschatten') !== '0';
+    const wirft = (t) => baumWurf && !!t.art && !!baumBilder[t.art]?.bild && !trifftPlatz(t, frame, LICHT);
+    for (const p of baumwerfer) scene.primitives.remove(p);
+    baumwerfer = baumWurf ? schattenwerfer({ Cesium, scene, baeume: baumListe, bilder: baumBilder, frame, pos, licht: LICHT, welche: wirft }) : [];
+    pflanze({ Cesium, entities: trees, billboards: gebuendelt('baeume'), scene, baeume: baumListe, bilder: baumBilder, frame, pos, fotoBoden, wirft }).then((g) => { grove = g; });
     const fences = layer('einfriedungen');
     for (const f of einfriedungen.features) {
       if (f.geometry.type === 'LineString') fences.add({ wall: { positions: f.geometry.coordinates.map((p) => pos(p, 1.4)), minimumHeights: f.geometry.coordinates.map(() => ground), material: css('#7a1fa2', 0.7) }, properties: { text: describe('Einfriedung (OSM), Höhe angenommen 1,4 m', f.properties) } });
@@ -446,7 +454,7 @@ async function main() {
       else if (l.id === 'boden') { if (bodenLayer) bodenLayer.show = l.on; build(); } // the trees' shadows depend on the ground
       else if (l.id === 'platz') { if (platzModell) platzModell.show = l.on; }
       else if (l.id === 'relief') { viertelHaeuser?.relief(l.on); }
-      else if (l.id === 'wurf') { viertelHaeuser?.wurf?.(l.on); }
+      else if (l.id === 'wurf') { viertelHaeuser?.wurf?.(l.on); build(); } // the trees' shadows follow the same switch
       else if (l.id === 'luftbild') { if (lokal) lokal.show = l.on; build(); }
       else if (l.id === 'luftbildlive') { luftbild.show = l.on; build(); } // the shadow rule depends on the ground
       else if (l.id === 'google') { try { await showGoogle(l.on); } catch (e) { l.on = false; ev.target.checked = false; status('Google-3D nicht geladen: ' + e.message + (/token|401|403|invalid|Zugriff/i.test(e.message) ? ' – Token prüfen: ?token=… an die Adresse hängen oder die Website-Daten löschen und neu einfügen.' : '')); rundum = false; ganzerGlobus(); } }
@@ -635,7 +643,7 @@ async function main() {
       } else {
         stand = 'fertig';
         if (schnitt < mit * 0.8) {
-          ebene.on = false;
+          ebene.on = false; setTimeout(build, 0); // the trees' cast shadows go with the houses'
           const haken = $('ebenen').querySelectorAll('input[type=checkbox]')[LAYERS.indexOf(ebene)];
           if (haken) haken.checked = false;
           status('Schlagschatten der Häuser aus: dieses Gerät zeichnet damit zu langsam (Ebenen schaltet sie wieder ein)');

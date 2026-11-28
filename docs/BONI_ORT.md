@@ -262,3 +262,13 @@ Der Knopf ☰ klappt das Bedienfeld der Weltansicht auf seinen Knopf zusammen; d
 - **Fassaden:** Schatten der eigenen Bauteile sind in die Fassadenbilder gemalt; die Häuser werfen bei Sonne Schlagschatten auf Straße und Nachbarn. Einzelheiten, Schalter und Kosten: `docs/art/HAEUSER.md`, Abschnitt „Schatten“.
 - **Himmel:** Nach der Landung steht die Atmosphäre von CesiumJS über dem Viertel, beleuchtet von der Sonne der Uhr: blau am Mittag, warm am Abend, dunkel in der Nacht, dann mit Sternen. Unter Wolken, Regen, Schnee und Nebel ist sie grauer und dunkler. Vorher war der Himmel aus Straßenhöhe schwarz mit Sternen. Mit den Google-Kacheln und ihrem Dunst bleibt der Himmel die Dunstfarbe; im Anflug aus dem All gilt der Himmel des Anflugs.
 - **Nicht geprüft:** Google-Kacheln zusammen mit dem neuen Himmel, Handy und Tablet.
+
+## Baumschatten (2026-11-28)
+
+Bei Sonne werfen die Bäume ihren eigenen Umriss als Schlagschatten auf Boden, Zäune und Häuser. Die Schatten wandern mit der Sonne.
+
+- **Wie:** `schattenwerfer()` in `src/welt/baeume.js` stellt je Baum zwei unsichtbare Flächen mit seinem Sprite auf: den Stamm aufrecht zur Sonne gedreht, die Krone quer zu den Sonnenstrahlen. So ist der Schatten der Krone bei jedem Sonnenstand so lang wie der einer runden Krone. Die Flächen zeichnen sich nur in die Schattenkarte; in der Ansicht sieht man sie nicht. Ein Zeichenobjekt je Baumart.
+- **Wo nicht:** Auf dem Luftbild als Boden bleibt es beim Kontaktschatten, dort sind die echten Schatten schon im Bild. Ein Baum, dessen Schatten den Bolzplatz erreicht, behält die gezeichnete Ellipse (`trifftPlatz`): Der Platzboden schattiert sich selbst aus der Kronenhöhenkarte, ein zweiter Schatten darüber wäre zu dunkel.
+- **Schalter:** die Ebene „Schlagschatten der Häuser“ (sie gilt für beide), `?baumschatten=0` nur für die Bäume.
+- **Kosten:** auf einem Apple M4 nicht messbar (rund 120 Bäume, zwei Flächen je Baum).
+- **Grenzen:** Die Schattenkarte ist gröber als die Blätter: Man sieht die Form der Krone, nicht die Lücken im Laub. Bäume am Platz haben weiter runde Schatten.

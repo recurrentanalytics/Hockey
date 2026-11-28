@@ -151,7 +151,7 @@ Drei Dinge geben den Häusern Tiefe. Keines davon braucht neue Bilder.
 
 **Grenzen:**
 - Die gemalten Schatten stehen fest (Licht von links oben), sie drehen sich nicht mit der Sonne.
-- Bäume sind Bildtafeln: Sie werfen keinen Schlagschatten in die Schattenkarte und empfangen keinen. Ihre eigenen Bodenschatten bleiben.
+- Bäume sind Bildtafeln und empfangen keinen Schlagschatten. Werfen können sie ihn seit dem 2026-11-28: siehe `docs/BONI_ORT.md`, „Baumschatten“.
 - Eine Fassade im Schlagschatten eines Nachbarn ist etwas dunkler als eine, die selbst von der Sonne abgewandt ist.
 
 ## Prüfung
