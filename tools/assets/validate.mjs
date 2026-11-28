@@ -7,6 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { decodePng } from './png.mjs';
+import { ladeSchema, pruefeSchema } from './schema.mjs';
 
 export const KINDS = { character: 'characters', equipment: 'equipment', prop: 'props', world: 'world', ui: 'ui', tile: 'tiles' };
 const SEGMENT = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -128,13 +129,16 @@ const ARTEN = ['fenster', 'schaufenster', 'tuer'];
  * The world view's kits under `root/welt`: the house kits (haeuser/bausaetze.json) and the ground
  * (boden/boden.json). Every picture is there, as large as its entry says and unchanged (sha12); every
  * pixel size is the one world scale (welt/massstab.json); the façade parts (doors, windows, cornices)
- * lie in the picture and in their storey. Rules: docs/art/HAEUSER.md.
+ * lie in the picture and in their storey; the house kits fit schema/bausatz.schema.json. Rules: docs/art/HAEUSER.md.
  */
 export function validateWelt(root) {
   const errors = [], warnings = [], dir = path.join(root, 'welt');
   const lies = (rel) => { try { return JSON.parse(fs.readFileSync(path.join(dir, rel), 'utf8')); } catch (e) { errors.push(`welt/${rel}: ${fs.existsSync(path.join(dir, rel)) ? 'not valid JSON: ' + e.message : 'missing'}`); return null; } };
   const massstab = lies('massstab.json'), haus = lies('haeuser/bausaetze.json'), boden = lies('boden/boden.json');
   if (!massstab || !haus || !boden) return { errors, warnings, checked: 0 };
+  const schemaFehler = pruefeSchema(ladeSchema('bausatz.schema.json'), haus);
+  for (const e of schemaFehler) errors.push(`welt/haeuser/bausaetze.json${e} (schema/bausatz.schema.json)`);
+  if (schemaFehler.length) return { errors, warnings, checked: 0 }; // the finer checks below rely on the shape
   const px = massstab.px_je_m, gelistet = new Set();
   if (!(px > 0)) errors.push('welt/massstab.json: px_je_m is missing');
   /** A picture of a kit: present, the size its entry says, the hash it was checked in with. */

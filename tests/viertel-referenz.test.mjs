@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { baueReferenz, DATEI } from '../tools/test/viertel-referenz.mjs';
+import { ladeSchema, pruefeSchema } from '../tools/assets/schema.mjs';
 
 test('quarter: every house is built exactly as in the reference (body, roof, colours, kits, wall runs, mesh)', () => {
   const haeuser = baueReferenz();
@@ -24,4 +25,10 @@ test('quarter: the rules of a house are engine-neutral (no CesiumJS, no DOM, not
     const code = fs.readFileSync(path.join('src/bau', f), 'utf8').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
     for (const verboten of [/\bCesium\b/, /\bdocument\b/, /\bwindow\b/, /\bImageData\b/, /from ['"]\.\.\/welt\//, /from ['"]\.\.\/(scenes|world|game)\//]) assert.doesNotMatch(code, verboten, `${f} uses ${verboten}`);
   }
+});
+
+test('quarter: every built house is a valid building plan (schema/bauplan.schema.json), the hand-over to any adapter', () => {
+  const schema = ladeSchema('bauplan.schema.json');
+  for (const h of baueReferenz()) assert.deepEqual(pruefeSchema(schema, h, `/${h.schluessel}`), []);
+  assert.match(pruefeSchema(schema, { schluessel: 'x' }).join('\n'), /"dach" is missing/);
 });

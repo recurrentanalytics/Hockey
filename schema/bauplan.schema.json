@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bauplan.schema.json",
+  "title": "Bauplan eines Hauses",
+  "description": "Was die Regeln (src/bau/haus.js) aus einem Grundriss machen, unabhängig von der Darstellung: Körper, Geschosse, Dach, Farben, Bausatz, jede eingekleidete Wand mit ihren Schnittstücken und Geschossen, Dachaufbauten und ein Prüfwert des Netzes. Ein Adapter (heute CesiumJS, später glTF oder Godot) baut daraus dasselbe Haus. Beispiel: tests/referenz/viertel.json (tools/test/viertel-referenz.mjs). Längen in Metern, Schnitte in Pixeln des Bausatzbildes.",
+  "type": "object",
+  "required": ["schluessel", "oid", "art", "eg", "flaeche", "etagen", "traufe", "first", "egHoehe", "dach", "wand", "nachbarn", "durchfahrten", "satz", "laeufe", "aufbauten", "netz"],
+  "additionalProperties": false,
+  "properties": {
+    "schluessel": { "type": "string", "description": "eindeutig im Viertel (ALKIS-Kennung, bei geteilten Grundrissen mit Nummer)" },
+    "oid": { "type": "string", "description": "ALKIS-Objektkennung" },
+    "art": { "enum": ["haus", "ueberdachung"] },
+    "eg": { "enum": ["wohnen", "laden", "schule", "neben"], "description": "Nutzung des Erdgeschosses" },
+    "flaeche": { "type": "number", "minimum": 0, "description": "Grundfläche (m²)" },
+    "etagen": { "type": "integer", "minimum": 0 },
+    "traufe": { "type": "number", "minimum": 0 },
+    "first": { "type": "number", "minimum": 0 },
+    "egHoehe": { "type": "number", "minimum": 0 },
+    "dach": {
+      "type": "object", "required": ["form", "hoehe", "farbe"], "additionalProperties": false,
+      "properties": { "form": { "enum": ["sattel", "walm", "flach"] }, "hoehe": { "type": "number", "minimum": 0 }, "farbe": { "type": ["string", "null"] } }
+    },
+    "wand": {
+      "type": "object", "required": ["name", "farbe", "material"], "additionalProperties": false,
+      "properties": { "name": { "type": "string" }, "farbe": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }, "material": { "enum": ["putz", "klinker"] }, "hofFarbe": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "eigene Farbe der Hofseite, wenn sie von der Straßenseite abweicht" } }
+    },
+    "nachbarn": { "type": "integer", "minimum": 0, "description": "Häuser, mit denen es eine Brandwand teilt" },
+    "durchfahrten": { "type": "integer", "minimum": 0 },
+    "satz": { "type": ["string", "null"], "description": "Kennung der Fassade an der Straße; null bei Hof- und Nebengebäuden (Putz)" },
+    "laeufe": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["art", "laenge", "satz", "spalten", "zeilen", "gestreckt"], "additionalProperties": false,
+        "properties": {
+          "art": { "enum": ["strasse", "hof"] },
+          "laenge": { "type": "number", "minimum": 0 },
+          "satz": { "type": ["string", "null"] },
+          "spalten": { "type": ["array", "null"], "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": 0 } }, "description": "Schnittstücke von links nach rechts" },
+          "zeilen": { "type": "array", "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": 0 } }, "description": "Geschossstücke von unten nach oben" },
+          "gestreckt": { "type": ["boolean", "null"], "description": "nur der Pfeiler, weil keine ganze Achse passt" }
+        }
+      }
+    },
+    "aufbauten": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["art", "mitte"], "additionalProperties": false,
+        "properties": { "art": { "enum": ["schornstein", "gaube", "dachfenster"] }, "mitte": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } } }
+      }
+    },
+    "netz": {
+      "type": "object", "required": ["ecken", "dreiecke", "hash"], "additionalProperties": false,
+      "properties": { "ecken": { "type": "integer", "minimum": 0 }, "dreiecke": { "type": "integer", "minimum": 0 }, "hash": { "type": "string", "pattern": "^[0-9a-f]{16}$" } }
+    }
+  }
+}

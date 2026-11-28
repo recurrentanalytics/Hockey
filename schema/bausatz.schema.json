@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bausatz.schema.json",
+  "title": "Bausätze der Häuser",
+  "description": "Die gezeichneten Fassaden, Dachziegel, Putz und Dachteile, aus denen die Regeln (src/bau/haus.js) die Häuser einkleiden. Beispiel: assets/welt/haeuser/bausaetze.json. Maße in Pixeln des Bildes; Erklärung in docs/art/HAEUSER.md.",
+  "type": "object",
+  "required": ["stand", "hoehe_m", "geschosse", "hof", "fassaden", "ziegel", "putz", "teile"],
+  "additionalProperties": false,
+  "properties": {
+    "stand": { "type": "string", "description": "Freigabestand und Herkunft der Bilder" },
+    "hoehe_m": { "type": "number", "minimum": 1, "description": "Traufhöhe, für die die Fassaden gezeichnet sind (m)" },
+    "geschosse": { "type": "integer", "minimum": 1, "description": "Geschosse je Fassadenbild" },
+    "hof": { "type": "string", "description": "Kennung der Fassade für jede Hofseite" },
+    "fassaden": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/fassade" } },
+    "ziegel": { "$ref": "#/$defs/textur" },
+    "putz": { "$ref": "#/$defs/textur" },
+    "teile": {
+      "type": "object",
+      "required": ["px_je_m", "schornstein", "gaube", "dachfenster"],
+      "additionalProperties": false,
+      "properties": {
+        "px_je_m": { "type": "number", "minimum": 1 },
+        "schornstein": { "$ref": "#/$defs/bild" },
+        "gaube": { "$ref": "#/$defs/bild" },
+        "dachfenster": { "$ref": "#/$defs/bild" }
+      }
+    }
+  },
+  "$defs": {
+    "pixel": { "type": "integer", "minimum": 0 },
+    "spanne": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "$ref": "#/$defs/pixel" }, "description": "von, bis (Pixel; bis ausschließlich)" },
+    "farbe": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "bild": {
+      "type": "object",
+      "required": ["datei", "sha12", "breite", "hoehe"],
+      "properties": {
+        "datei": { "type": "string", "pattern": "\\.png$" },
+        "sha12": { "type": "string", "pattern": "^[0-9a-f]{12}$" },
+        "asset_id": { "type": "string", "description": "SpriteCook-Asset, aus dem das Bild stammt" },
+        "breite": { "type": "integer", "minimum": 1 },
+        "hoehe": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "textur": {
+      "type": "object",
+      "required": ["datei", "sha12", "breite", "hoehe", "px_je_m", "farbe"],
+      "additionalProperties": false,
+      "properties": {
+        "datei": { "type": "string", "pattern": "\\.png$" },
+        "sha12": { "type": "string", "pattern": "^[0-9a-f]{12}$" },
+        "asset_id": { "type": "string" },
+        "breite": { "type": "integer", "minimum": 1 },
+        "hoehe": { "type": "integer", "minimum": 1 },
+        "px_je_m": { "type": "number", "minimum": 1 },
+        "farbe": { "$ref": "#/$defs/farbe", "description": "Grundton, auf den die Farbe des Hauses getönt wird" }
+      }
+    },
+    "oeffnung": {
+      "type": "object",
+      "required": ["art", "geschoss", "x", "y", "b", "h"],
+      "additionalProperties": false,
+      "properties": {
+        "art": { "enum": ["fenster", "schaufenster", "tuer"] },
+        "geschoss": { "type": "integer", "minimum": 0, "description": "0 = Erdgeschoss" },
+        "x": { "$ref": "#/$defs/pixel" }, "y": { "$ref": "#/$defs/pixel" },
+        "b": { "type": "integer", "minimum": 1 }, "h": { "type": "integer", "minimum": 1 },
+        "glas": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "$ref": "#/$defs/pixel" }, "description": "Glasfläche x, y, b, h" }
+      }
+    },
+    "fassade": {
+      "type": "object",
+      "required": ["id", "datei", "sha12", "breite", "hoehe", "links", "achsen", "mitte", "rechts", "pfeiler", "zeilen", "wand", "faerbbar", "fuer", "gewicht", "oeffnungen", "gesimse"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "datei": { "type": "string", "pattern": "\\.png$" },
+        "sha12": { "type": "string", "pattern": "^[0-9a-f]{12}$" },
+        "asset_id": { "type": "string" },
+        "breite": { "type": "integer", "minimum": 1 },
+        "hoehe": { "type": "integer", "minimum": 1 },
+        "links": { "$ref": "#/$defs/spanne", "description": "linkes Randstück" },
+        "achsen": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/spanne" }, "description": "schlichte Fensterachsen" },
+        "achsenRechts": { "type": "array", "items": { "$ref": "#/$defs/spanne" }, "description": "Fensterachsen rechts der Mitte, wenn sie anders sind" },
+        "mitte": { "$ref": "#/$defs/spanne", "description": "Mittelstück mit der Haustür" },
+        "rechts": { "$ref": "#/$defs/spanne", "description": "rechtes Randstück" },
+        "pfeiler": { "$ref": "#/$defs/pixel", "description": "Spalte eines Pfeilers zwischen zwei Fenstern" },
+        "zeilen": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/pixel" }, "description": "Geschossgrenzen von oben nach unten" },
+        "wand": { "$ref": "#/$defs/farbe", "description": "gezeichnete Wandfarbe" },
+        "faerbbar": { "type": "boolean", "description": "nimmt die Wand die Farbe des Hauses an" },
+        "klinker": { "type": "boolean" },
+        "fuer": { "type": "array", "minItems": 1, "items": { "enum": ["wohnen", "schule", "laden"] }, "description": "welche Erdgeschoss-Nutzungen den Bausatz tragen" },
+        "gewicht": { "type": "number", "minimum": 0, "description": "relative Häufigkeit in der Auswahl" },
+        "gesimse": { "type": "array", "items": { "$ref": "#/$defs/spanne" }, "description": "waagerechte Zierbänder (Zeilen)" },
+        "oeffnungen": { "type": "array", "items": { "$ref": "#/$defs/oeffnung" } }
+      }
+    }
+  }
+}

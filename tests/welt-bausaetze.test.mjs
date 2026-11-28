@@ -54,3 +54,9 @@ test('world kits: the house shader draws edges, corners and ridges on the scener
   const PX = Number(fs.readFileSync('src/welt/haeuser.js', 'utf8').match(/export const PX = ([\d.]+)/)[1]);
   assert.equal(PX, JSON.parse(fs.readFileSync('assets/welt/massstab.json', 'utf8')).px_je_m);
 });
+
+test('world kits: the house kits follow schema/bausatz.schema.json, and the check names what breaks it', () => {
+  assert.match(geaendert((w) => json(path.join(w, 'haeuser/bausaetze.json'), (d) => { delete d.fassaden[2].zeilen; })).join('\n'), /fassaden\/2: "zeilen" is missing \(schema\/bausatz\.schema\.json\)/);
+  assert.match(geaendert((w) => json(path.join(w, 'haeuser/bausaetze.json'), (d) => { d.fassaden[0].oeffnungen[0].art = 'erker'; })).join('\n'), /oeffnungen\/0\/art: "erker" is not one of fenster, schaufenster, tuer/);
+  assert.match(geaendert((w) => json(path.join(w, 'haeuser/bausaetze.json'), (d) => { d.fassaden[3].fenster = 7; })).join('\n'), /"fenster" is not part of the schema/);
+});

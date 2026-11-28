@@ -94,6 +94,21 @@ Genutzt werden die Bauteile noch nicht. Sie sind die Grundlage für:
 
 Nach einem Bildwechsel den `sha12` neu eintragen und die Bauteile neu messen.
 
+## Datenmodell
+
+Zwei JSON-Schemas in `schema/` beschreiben, was zwischen Daten, Regeln und Darstellung ausgetauscht wird:
+
+| Schema | Beschreibt | Beispiel | Geprüft von |
+|---|---|---|---|
+| `bausatz.schema.json` | die Bausätze: Fassaden mit Schnitten und Bauteilen, Ziegel, Putz, Dachteile | `assets/welt/haeuser/bausaetze.json` | `npm run assets:check` |
+| `bauplan.schema.json` | ein gebautes Haus: Körper, Dach, Farben, Bausatz, Wandläufe mit Schnitten und Geschossen, Aufbauten, Netz-Prüfwert | jedes Haus in `tests/referenz/viertel.json` | `tests/viertel-referenz.test.mjs` |
+
+Der Bauplan ist die Übergabe an jede Darstellung. Heute baut der CesiumJS-Adapter daraus das Viertel, später ebenso ein glTF- oder Godot-Adapter.
+
+Geprüft wird mit `tools/assets/schema.mjs`, einem kleinen eigenen Prüfer ohne Abhängigkeit. Er kennt die Teile von JSON Schema, die die beiden Schemas nutzen.
+
+Schemas für einzelne 3D-Module und Material-Sets folgen erst mit dem 3D-Pilot. Vorher würden sie Bauteile beschreiben, die es nicht gibt.
+
 ## Licht
 
 Die Sprites tragen ihr eigenes Licht von links oben. Dazu kommen drei Stufen je nach Seite zur Sonne (100 / 92 / 82 %, Dächer 100 / 93 / 84 %), damit Vorder- und Rückseite auseinanderzuhalten sind. Die Stärke folgt dem Umweltmodul; ein Wechsel von Uhrzeit oder Wetter ändert drei Zahlen und baut nichts neu.
