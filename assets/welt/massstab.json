@@ -1,0 +1,5 @@
+{
+  "px_je_m": 12.5,
+  "gilt_fuer": "Weltansicht: Fassaden, Dachziegel, Dachteile, Putz und Boden. Ein Pixel ist 8 cm. Vom Besitzer gewählt (docs/art/HAEUSER.md, Maßstab).",
+  "nicht_fuer": "Das Spielfeld des 2D-Spiels hat sein eigenes Maß (16 Pixel je Meter quer, 8 in der Tiefe, docs/art/README.md). Sprites der Art-Bibliothek tragen ihre Größe in Metern (worldHeight) und werden in der Welt darauf gestreckt; ihre Pixeldichte zeigt node tools/assets/validate.mjs assets --massstab."
+}

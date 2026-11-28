@@ -39,9 +39,57 @@ Hofgebäude und Überdachungen bekommen getönten Putz ohne Fenster.
 
 ## Maßstab
 
-**12,5 Pixel je Meter** für Fassaden, Dachziegel und Dachteile (160 Pixel für 12,8 m Traufhöhe). Das ist die vom Besitzer gewählte grobe Pixelgröße; sie liegt nah an den Bäumen und am vereinbarten Umgebungsmaß von 16.
+**12,5 Pixel je Meter** für die ganze Weltansicht: Fassaden, Dachziegel, Dachteile, Putz und Boden (160 Pixel für 12,8 m Traufhöhe; ein Pixel ist 8 cm). Das ist die vom Besitzer gewählte grobe Pixelgröße.
+
+Der Wert steht an einer Stelle: `assets/welt/massstab.json`. Die Asset-Prüfung (`npm run assets:check`) meldet einen Fehler, wenn ein Bausatz oder der Boden davon um mehr als 5 % abweicht.
+
+Das Spielfeld des 2D-Spiels hat ein eigenes Maß (16 Pixel je Meter quer, 8 in der Tiefe). Das ist eine andere Ansicht und bleibt getrennt.
+
+Die Sprites der Art-Bibliothek (Laternen, Bänke, Bäume, Nilpferd …) tragen ihre Größe in Metern (`worldHeight`) und werden in der Welt darauf gestreckt. Ihre Pixeldichte weicht heute stark ab:
+
+| | Pixel je Meter | gegenüber den Häusern |
+|---|---|---|
+| Bäume (Platane, Linde) | 5,7 | halb so fein |
+| Laterne, Klettergerüst | 27–30 | gut doppelt so fein |
+| Bank, Mülleimer, Fahrradständer, Picknicktisch, Nilpferd | 53–85 | vier- bis siebenmal so fein |
+
+Die Tabelle zeigt `node tools/assets/validate.mjs assets --massstab`. Das ist eine Entscheidung des Besitzers: ob neue Welt-Sprites auf 12,5 Pixel je Meter bestellt werden und ob die vorhandenen neu bestellt werden. Bis dahin bleibt alles, wie es ist.
 
 SpriteCook hält die Größe ein, wenn man quadratisch und in der Größe der Stilreferenz bestellt (160 × 160). Kleine Dachteile kommen aus dem Exakt-Größen-Modell.
+
+## Bauteile
+
+Jede Fassade weiß, wo ihre Teile liegen. In `bausaetze.json` stehen sie je Fassade, in Pixeln des Bildes:
+
+- **`oeffnungen`**: Fenster, Schaufenster und die Tür, jeweils mit Geschoss (0 = Erdgeschoss), Rahmen (`x`, `y`, `b`, `h`) und bei Fenstern der Glasfläche (`glas`).
+- **`gesimse`**: waagerechte Zierbänder über die ganze Front, als Zeilenbereiche. Dazu zählen auch Sockelbänder.
+
+Gemessen werden sie mit `node tools/assets/fassaden-vermessen.mjs`:
+- `--schreiben` trägt sie ein.
+- `--bild datei.png` zeichnet sie zur Kontrolle über die Fassaden.
+
+Das Werkzeug arbeitet mit dem Fensterraster einer Fassade, der Fensterhöhe je Geschoss und dem hellen Fensterrahmen. So stören Vorhänge, helle Scheiben und Balkone nicht. Der Test `tests/welt-bausaetze.test.mjs` misst jede Fassade neu und vergleicht mit dem Eingetragenen. Ein geändertes Bild fällt damit sofort auf.
+
+**Grenzen:**
+- Die Rahmen sind auf etwa 1–2 Pixel genau.
+- Bei Fenstern mit Vorhang deckt der Rahmen manchmal nur die Glasfläche ab, nicht die ganze Fensterbreite.
+- Die schmalen Seitentüren der Läden werden nicht erkannt.
+- Gesimse bei Klinker sind nur dort erfasst, wo sie hell sind.
+
+Genutzt werden die Bauteile noch nicht. Sie sind die Grundlage für:
+- nachts beleuchtete Fenster,
+- echte Fensterlaibungen,
+- andere Darstellungen als Cesium.
+
+## Prüfung
+
+`npm run assets:check` prüft neben der Art-Bibliothek auch die Bausätze der Welt (`validateWelt` in `tools/assets/validate.mjs`):
+- **Bilder:** Jedes Bild ist vorhanden, so groß wie eingetragen und unverändert (`sha12`). Jedes PNG in den Ordnern steht in seinem Bausatz.
+- **Maßstab:** Jede Pixelgröße ist der Weltmaßstab.
+- **Schnitte:** Schnittstücke und Geschosszeilen liegen im Bild.
+- **Bauteile:** Jedes liegt in seinem Geschoss. Jede Fassade hat genau eine Tür, und zwar im Mittelstück.
+
+Nach einem Bildwechsel den `sha12` neu eintragen und die Bauteile neu messen.
 
 ## Licht
 
@@ -52,10 +100,10 @@ Die Sprites tragen ihr eigenes Licht von links oben. Dazu kommen drei Stufen je 
 - **Durchfahrten:** Die Tunnelwände sind noch einfarbig (aus der ersten Fassung) und wirken von der Straße wie ein dunkles Rechteck in der Wand.
 - **Leistung:** rund 199 000 Ecken und 98 000 Dreiecke in einem Zeichenobjekt; auf einem Tablet nicht gemessen, nur im Headless-Lauf (SwiftShader) geprüft.
 - **Nähte zwischen Achsen:** Der Shader liest nie über den Rand eines Wandfelds hinaus. An der Stelle, an der zuvor eine gepunktete Linie auffiel, ist das nicht hochaufgelöst nachgeprüft.
-- **Freigabe:** Die Bilder liegen neben der Art-Bibliothek; `tools/assets/validate.mjs` kennt ihr Format nicht.
+- **Freigabe:** Die Bausätze warten auf die Freigabe des Besitzers. Die Asset-Prüfung kennt sie inzwischen (siehe „Prüfung“) und meldet bis dahin eine Warnung.
 
 ## Für weitere Bausätze
 
 - Auftrag wie in `docs/art/prompts/haus.md`: strikte Frontansicht, nur die Wand von Sockel bis Traufe, vier Geschosse, sieben Achsen, 160 × 160, `stuck` als erste Stilreferenz.
 - Wand in Taubenblau bestellen, wenn der Bausatz färbbar sein soll: Die Farbe hebt sich klar von Stuck und Glas ab.
-- Nach der Erzeugung die Schnittlinien am Bild prüfen (Pfeilermitten, Geschossgrenzen), dann den Eintrag in `bausaetze.json` schreiben. Der Test `tests/haeuser.test.mjs` prüft jeden Bausatz.
+- Nach der Erzeugung die Schnittlinien am Bild prüfen (Pfeilermitten, Geschossgrenzen), dann den Eintrag in `bausaetze.json` schreiben, mit `sha12`. Danach die Bauteile messen (`fassaden-vermessen.mjs --schreiben`) und mit `--bild` ansehen. `tests/haeuser.test.mjs` und `npm run assets:check` prüfen jeden Bausatz.
