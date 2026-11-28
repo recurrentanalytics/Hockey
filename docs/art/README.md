@@ -200,4 +200,14 @@ Im SpriteCook-Projekt „BORSTENBOOM“ gibt es zwei Sammlungen:
 
 Alles außerhalb dieser beiden Sammlungen sind verworfene Kandidaten und Versuche. Die Anbindung kann Assets sortieren, aber nicht löschen und zeigt nur die 100 neuesten; löschen muss der Besitzer in der SpriteCook-App selbst.
 
-**Jahreszeiten im Manifest:** Ein Baum-Asset kann unter `jahreszeiten` eigene Bilder nennen (`fruehling`, `herbst`, `winter`, je mit `file`); `jahreszeit()` in `src/welt/baeume.js` wählt nach dem Jahreslauf des Umweltmoduls. Die Kandidaten sind mit dem Sommerbaum als Vorlage erzeugt (`edit_asset_id`, Modell `gemini-nano-banana-2.1`), damit Stamm und Raster gleich bleiben. Bei der Linde (Hochformat) hält das Modell das Raster nur mit `aspect_ratio: 9:16`.
+**Jahreszeiten im Manifest:** Ein Baum-Asset nennt unter `jahreszeiten` seine Bilder für `fruehling`, `herbst` und `winter` (je `file`, `sha12`, `source`); sein eigenes Bild ist der Sommer. `npm run assets:check` prüft sie: gleicher Rahmen, gleicher Stammfuß, keine halbtransparenten Pixel. Auftrag und Auswahl: `docs/art/prompts/jahreszeiten.md`.
+
+## Bäume durchs Jahr (2026-11-28)
+
+- **Vier Bilder je Art:** Winter (kahl), Frühling (helles, lichtes Grün), Sommer, Herbst (Platane goldorange, Linde gelb).
+- **Weiche Übergänge:** Zwischen zwei Jahreszeiten gibt es drei Zwischenstufen. `baumbilder()` mischt dafür die beiden Bilder fleckenweise (Zellen von 3 × 3 Sprite-Pixeln): Bei einem Viertel ist jeder vierte Fleck schon im neuen Kleid, was gewechselt hat, bleibt gewechselt. So färbt sich eine Krone in Büscheln, und im Spätherbst lichtet sie sich Büschel um Büschel.
+- **Jeder Baum für sich:** `baumstand()` verschiebt den Kalender je Baum um bis zu zwei Wochen (nach seiner Kennung). Im Oktober stehen grüne, halb gefärbte und goldene Bäume nebeneinander, Ende April kahle neben frisch belaubten.
+- **Kalender:** `jahreslauf()` in `src/welt/baeume.js`, mit den Daten des Umweltmoduls: Austrieb ab Mitte April, Maigrün bis Ende Juni, Färbung ab Mitte September, Laubfall ab Ende Oktober. Er gilt für Live-Wetter, „Wählen“ (Jahreszeit-Knöpfe) und „Damals“ (Datum).
+- **Schatten:** Der Schlagschatten eines Baums kommt aus demselben Bild. Ein kahler Baum wirft den Schatten seiner Äste, ein halb entlaubter einen lückigen.
+- **Kosten:** Ein Bildsatz je Art und Stufe wird beim ersten Bedarf einmal gebaut (höchstens 16 je Art). Der Hain wird nur neu gesetzt, wenn ein Baum sein Kleid wechselt.
+- **Grenzen:** Die Stufen sind Mischungen, keine eigenen Zeichnungen: Aus der Nähe sieht man in einer Zwischenstufe die Kanten der Flecken. Fallendes Laub in der Luft gibt es nicht.

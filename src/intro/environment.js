@@ -56,6 +56,7 @@ export function season(date) {
     autumn: smooth(255, 292, doy) * (1 - smooth(318, 334, doy)),          // yellow, orange, brown
     bare: 1 - foliage,
     fresh: out * (1 - smooth(140, 175, doy)),                               // light May green
+    tag: doy,                                                               // day of the year, for whoever keeps a calendar of its own (the trees' pictures: baeume.js)
   };
 }
 

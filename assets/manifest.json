@@ -206,7 +206,48 @@
       "approved": {
         "date": "2026-11-28"
       },
-      "density": 1
+      "density": 1,
+      "jahreszeiten": {
+        "fruehling": {
+          "file": "world/bonifatiusplatz/plane-tree-fruehling.png",
+          "sha12": "b77e61733986",
+          "approved": {
+            "date": "2026-11-28"
+          },
+          "source": {
+            "asset_id": "3335e7b7-375f-4925-8d6a-0b791a419fd3",
+            "model": "gemini-nano-banana-2.1",
+            "prompt": "docs/art/prompts/jahreszeiten.md",
+            "edit_of": "ceeefc64-1a47-4214-992b-704ee6303e4a"
+          }
+        },
+        "herbst": {
+          "file": "world/bonifatiusplatz/plane-tree-herbst.png",
+          "sha12": "529bf4ca5d85",
+          "approved": {
+            "date": "2026-11-28"
+          },
+          "source": {
+            "asset_id": "10fdf7d5-910d-46bd-b94a-b07cf6a2f1e8",
+            "model": "gemini-nano-banana-2.1",
+            "prompt": "docs/art/prompts/jahreszeiten.md",
+            "edit_of": "ceeefc64-1a47-4214-992b-704ee6303e4a"
+          }
+        },
+        "winter": {
+          "file": "world/bonifatiusplatz/plane-tree-winter.png",
+          "sha12": "bfad2c5457bd",
+          "approved": {
+            "date": "2026-11-28"
+          },
+          "source": {
+            "asset_id": "558494a6-fe2c-4d8c-82c8-b8939df6ece8",
+            "model": "gemini-nano-banana-2.1",
+            "prompt": "docs/art/prompts/jahreszeiten.md",
+            "edit_of": "ceeefc64-1a47-4214-992b-704ee6303e4a"
+          }
+        }
+      }
     },
     {
       "id": "prop.bench",
@@ -268,6 +309,47 @@
       "sha12": "442ffb0433af",
       "approved": {
         "date": "2026-11-28"
+      },
+      "jahreszeiten": {
+        "fruehling": {
+          "file": "world/bonifatiusplatz/linden-fruehling.png",
+          "sha12": "2f38707c300f",
+          "approved": {
+            "date": "2026-11-28"
+          },
+          "source": {
+            "asset_id": "3ba7fc00-855a-4849-9f57-f16a1a22b0a3",
+            "model": "gemini-nano-banana-2.1",
+            "prompt": "docs/art/prompts/jahreszeiten.md",
+            "edit_of": "7fe44e2c-0cfb-4311-b273-59cd83f3f475"
+          }
+        },
+        "herbst": {
+          "file": "world/bonifatiusplatz/linden-herbst.png",
+          "sha12": "7830db635560",
+          "approved": {
+            "date": "2026-11-28"
+          },
+          "source": {
+            "asset_id": "e0590cd5-db1e-4380-b950-5f7587dee9a6",
+            "model": "gemini-nano-banana-2.1",
+            "prompt": "docs/art/prompts/jahreszeiten.md",
+            "edit_of": "7fe44e2c-0cfb-4311-b273-59cd83f3f475"
+          }
+        },
+        "winter": {
+          "file": "world/bonifatiusplatz/linden-winter.png",
+          "sha12": "e5adf0bd723d",
+          "approved": {
+            "date": "2026-11-28"
+          },
+          "source": {
+            "asset_id": "e10039d4-91cf-47f9-be32-87fd9cf2e1be",
+            "model": "gemini-nano-banana-2.1",
+            "prompt": "docs/art/prompts/jahreszeiten.md",
+            "edit_of": "7fe44e2c-0cfb-4311-b273-59cd83f3f475"
+          }
+        }
       }
     },
     {

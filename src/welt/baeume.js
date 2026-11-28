@@ -190,7 +190,8 @@ export function schattenflaechen(t, { seiten, grenze }, licht = LICHT, konvergen
  */
 export const WIEGE = { ruhe: 0.008, jeWind: 0.0022, hoechstens: 0.05 };
 export const wiegeMass = (wind = 3) => Math.min(WIEGE.hoechstens, WIEGE.ruhe + WIEGE.jeWind * Math.max(0, wind));
-export const wiegeTakt = (id) => ({ takt: 0.7 + 0.6 * streuung(id, 'takt'), phase: 2 * Math.PI * streuung(id, 'wiege') });
+// (the id goes first and the purpose last: FNV-1a spreads a difference well only when more characters follow it, and neighbouring trees often differ in their id's last digit)
+export const wiegeTakt = (id) => ({ takt: 0.7 + 0.6 * streuung(`${id}|takt`), phase: 2 * Math.PI * streuung(`${id}|wiege`) });
 export function wiegeWinkel(id, zeit, wind = 3) { const { takt, phase } = wiegeTakt(id); return wiegeMass(wind) * (Math.sin(zeit * takt + phase) + 0.35 * Math.sin(zeit * takt * 2.3 + phase * 1.7)); }
 
 // ------------------------------------------------------------------ drawing (browser, CesiumJS)
@@ -209,19 +210,45 @@ export async function kronenkarte(url, a0 = -46, b0 = -41.4, zelle = 0.5) {
   } catch { const leer = () => null; leer.roh = () => 0; return leer; }
 }
 
-/**
- * Which picture of a tree shows at this time of the year, from the environment's own measure of the trees
- * (environment.js, season: leaf cover, autumn colour, fresh May green): bare in winter, light green while the
- * leaves come out, coloured in autumn, else the summer tree. An asset names its season pictures under
- * `jahreszeiten` in the manifest; a season without one shows the summer tree.
- */
-export function jahreszeit({ foliage = 1, autumn = 0, fresh = 0 } = {}) {
-  return foliage < 0.3 ? 'winter' : autumn > 0.3 ? 'herbst' : fresh > 0.25 ? 'fruehling' : 'sommer';
-}
+/** The year as a tree wears it, in this order; a tree asset names its pictures of the other seasons under `jahreszeiten` (its own file is the summer). */
+export const JAHR = ['winter', 'fruehling', 'sommer', 'herbst'];
+const weich = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-/** Split a tree sprite into trunk and canopy pictures of the full frame: the canopy starts where the outline widens. `zeit`: the season whose picture to take (jahreszeit). */
-export async function baumbilder(asset, base, zeit = 'sommer') {
-  const img = await ladeBild(new URL(asset.jahreszeiten?.[zeit]?.file ?? asset.file, base).href);
+/**
+ * Where the trees stand in their year on day `tag` (1 … 365): 0 winter, 1 spring, 2 summer, 3 autumn, and on to 4,
+ * which is winter again. Whole numbers are the four pictures; in between the tree is on its way from one to the
+ * next. The dates are the environment's own (environment.js, season): leaves out from mid April, the light May
+ * green gone by late June, colour from mid September, leaves down from late October.
+ */
+export const jahreslauf = (tag) => weich(100, 130, tag) + weich(140, 175, tag) + weich(255, 292, tag) + weich(296, 326, tag);
+
+/**
+ * The dress of one tree on day `tag`: the picture it comes from, the one it is turning into, and how far it is
+ * (`anteil`, in `stufen` steps; 0: wholly `von`). Every tree is up to `streuung` days early or late by its id,
+ * so a grove never turns all at once: in October some trees are still green while others are gold.
+ */
+export function baumstand(id, tag, stufen = 4, tage = 14) {
+  const lauf = jahreslauf(tag + (streuung(`${id}|jahr`) - 0.5) * 2 * tage), k = Math.min(3, Math.floor(lauf)), schritt = Math.min(stufen - 1, Math.floor((lauf - k) * stufen + 1e-9));
+  const fertig = lauf >= 4; // late November on: winter
+  return fertig ? { von: 'winter', nach: 'winter', anteil: 0 } : { von: JAHR[k], nach: JAHR[(k + 1) % 4], anteil: schritt / stufen };
+}
+export const standName = (st) => (st.anteil ? `${st.von}>${st.nach}:${st.anteil}` : st.von);
+
+/** Is this cell of a tree's picture already in its next dress at `anteil`? Leaves turn in small patches (3 x 3 sprite pixels), the same patches for every tree of a species. */
+export const schonGewechselt = (x, y, anteil) => { const n = Math.sin((Math.floor(x / 3) * 12.9898 + Math.floor(y / 3) * 78.233)) * 43758.5453; return n - Math.floor(n) < anteil; };
+
+/** Split a tree sprite into trunk and canopy pictures of the full frame: the canopy starts where the outline widens. `stand`: the dress to show (baumstand); between two seasons the two pictures are mixed patch by patch. */
+export async function baumbilder(asset, base, stand = { von: 'sommer', nach: 'sommer', anteil: 0 }) {
+  const datei = (zeit) => new URL(asset.jahreszeiten?.[zeit]?.file ?? asset.file, base).href;
+  let img = await ladeBild(datei(stand.von));
+  if (stand.anteil > 0 && datei(stand.nach) !== datei(stand.von)) {
+    const ziel = await ladeBild(datei(stand.nach)), { w: bw, h: bh } = asset.frame;
+    const lese = (bild) => { const c = Object.assign(document.createElement('canvas'), { width: bw, height: bh }), g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(bild, 0, 0); return [c, g, g.getImageData(0, 0, bw, bh)]; };
+    const [c, g, a] = lese(img), b = lese(ziel)[2];
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) if (schonGewechselt(x, y, stand.anteil)) { const i = (y * bw + x) * 4; for (let k = 0; k < 4; k++) a.data[i + k] = b.data[i + k]; }
+    g.putImageData(a, 0, 0);
+    img = c;
+  }
   const { w, h } = asset.frame, scale = Math.max(1, Math.round(256 / h));
   const src = Object.assign(document.createElement('canvas'), { width: w, height: h });
   const sg = src.getContext('2d', { willReadFrequently: true }); sg.drawImage(img, 0, 0);
@@ -245,7 +272,7 @@ export async function baumbilder(asset, base, zeit = 'sommer') {
  * Put the grove into the scene. Returns { baeume, zeige(point) }: call zeige with the player's court
  * metres every frame and canopies between the camera and the player turn see-through.
  */
-export async function pflanze({ Cesium, entities, billboards = null, scene = null, baeume, bilder, frame, pos, fotoBoden, wirft = () => false }) {
+export async function pflanze({ Cesium, entities, billboards = null, scene = null, baeume, bilder, bildVon = (t) => t.art && bilder[t.art], frame, pos, fotoBoden, wirft = () => false }) {
   const zuGitter = ([a, b]) => [frame.ursprung_utm32[0] + a * frame.achse_a[0] + b * frame.achse_b[0], frame.ursprung_utm32[1] + a * frame.achse_a[1] + b * frame.achse_b[1]];
   const kronen = [], tafeln = [];
   for (const t of baeume) {
@@ -253,7 +280,7 @@ export async function pflanze({ Cesium, entities, billboards = null, scene = nul
     const rand = Array.from({ length: 20 }, (_, k) => { const w = (k / 20) * 2 * Math.PI, l = Math.cos(w) * s.laengs, q = Math.sin(w) * s.quer; return pos(zuGitter([s.mitte[0] + s.richtung[0] * l + quer[0] * q, s.mitte[1] + s.richtung[1] * l + quer[1] * q]), 0.12); });
     if (!wirft(t)) entities.add({ polygon: { hierarchy: rand, perPositionHeight: true, material: Cesium.Color.fromCssColorString('#10160f').withAlpha(s.deckung) } }); // a tree that casts a real shadow needs no drawn one
     const text = `Baum ${t.id} (Standort ${t.standort}${t.standort === 'abgeleitet' ? ' aus der Kronenhöhenkarte, Stamm ungefähr' : ''})\nHöhe ${t.hoehe} m (${t.hoeheQuelle}), Krone ${t.krone} m, Stamm ${t.stamm} m\nArt: ${t.art ?? 'ohne Sprite'}${t.artQuelle ? ' (' + t.artQuelle + ')' : ''}`;
-    const b = t.art && bilder[t.art];
+    const b = bildVon(t); // its picture of the season (welt.js)
     if (b) {
       const seite = t.spiegeln ? 1 : 0, mass = { sizeInMeters: true, width: t.hoehe * b.seiten, height: t.hoehe, verticalOrigin: Cesium.VerticalOrigin.BOTTOM };
       if (billboards) { // trunk and crown in one collection, drawn together; the crown turns see-through by its colour
@@ -328,15 +355,15 @@ void main() {
 /**
  * Faces that only cast shadows: every tree's sprite, turned to the sun (schattenflaechen), so the trees throw
  * their own outline on the ground, the fences and the houses, and the shadows move with the sun. One Primitive
- * per species (it carries the species' picture). `welche(t)` picks the trees. Returns the Primitives; the caller
+ * per picture (a species in one dress of the year). `welche(t)` picks the trees. Returns the Primitives; the caller
  * removes them from the scene when the sun or the grove changes.
  */
-export function schattenwerfer({ Cesium, scene, baeume, bilder, frame, pos, licht = LICHT, welche = () => true }) {
-  const konvergenz = frame.meridiankonvergenz_grad ?? 0, jeArt = new Map();
-  for (const t of baeume) { if (t.art && bilder[t.art]?.bild && welche(t)) (jeArt.get(t.art) ?? jeArt.set(t.art, []).get(t.art)).push(t); }
+export function schattenwerfer({ Cesium, scene, baeume, bilder, bildVon = (t) => t.art && bilder[t.art], frame, pos, licht = LICHT, welche = () => true }) {
+  const konvergenz = frame.meridiankonvergenz_grad ?? 0, jeArt = new Map(); // one Primitive per picture: a species in one dress
+  for (const t of baeume) { const b = bildVon(t); if (b?.bild && welche(t)) (jeArt.get(b) ?? jeArt.set(b, []).get(b)).push(t); }
   const aus = [];
-  for (const [art, liste] of jeArt) {
-    const b = bilder[art], P = [], S = [], I = [], Wg = [], Tk = [];
+  for (const [b, liste] of jeArt) {
+    const P = [], S = [], I = [], Wg = [], Tk = [];
     const az = ((licht.azimut - konvergenz) * Math.PI) / 180, quer = [Math.cos(az), -Math.sin(az)]; // across the light: the way the crown's face sways
     for (const t of liste) {
       const { takt, phase } = wiegeTakt(t.id), fuss = pos(t.en, 0), seit = pos([t.en[0] + quer[0], t.en[1] + quer[1]], 0), q = [seit.x - fuss.x, seit.y - fuss.y, seit.z - fuss.z];

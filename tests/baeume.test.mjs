@@ -146,15 +146,29 @@ test('trees: crowns sway a little, more in wind, each tree on its own beat, and 
   assert.ok(wechsel >= 10 && wechsel <= 40, `to and fro ${wechsel} times a minute`);
 });
 
-test('trees: the picture of the season follows the environment\'s year: bare, fresh, summer, coloured, bare', async () => {
-  const { jahreszeit } = await import('../src/welt/baeume.js');
+test('trees: through the year in soft steps: bare, fresh, summer, coloured, bare; every tree a little early or late', async () => {
+  const { jahreslauf, baumstand, standName, schonGewechselt, JAHR } = await import('../src/welt/baeume.js');
   const { season } = await import('../src/intro/environment.js');
-  const am = (monat, tag) => jahreszeit(season(new Date(2026, monat - 1, tag, 12)));
-  assert.deepEqual([am(1, 15), am(3, 1), am(5, 5), am(7, 15), am(8, 30), am(10, 20), am(11, 28), am(12, 24)],
-    ['winter', 'winter', 'fruehling', 'sommer', 'sommer', 'herbst', 'winter', 'winter']);
-  // through the whole year the order never jumps back, and every season comes once
+  const tag = (monat, t) => season(new Date(2026, monat - 1, t, 12)).tag;
+  assert.deepEqual(JAHR, ['winter', 'fruehling', 'sommer', 'herbst']);
+  // the calendar: whole numbers are the four pictures, and the year never runs backwards
+  assert.deepEqual([[1, 15], [5, 12], [7, 15], [10, 22], [12, 24]].map(([m, t]) => Math.round(jahreslauf(tag(m, t)))), [0, 1, 2, 3, 4]);
+  let vorher = 0;
+  for (let t = 1; t <= 365; t++) { const l = jahreslauf(t); assert.ok(l >= vorher - 1e-12 && l >= 0 && l <= 4, `day ${t}`); vorher = l; }
+  // one tree through the year: every dress in order, each change in steps, never a jump of more than one step
   const folge = [];
-  for (let t = 1; t <= 365; t++) { const z = jahreszeit(season(new Date(2026, 0, t, 12))); if (folge.at(-1) !== z) folge.push(z); }
-  assert.deepEqual(folge, ['winter', 'fruehling', 'sommer', 'herbst', 'winter']);
-  assert.equal(jahreszeit(), 'sommer', 'without a measure: the summer tree');
+  for (let t = 1; t <= 365; t++) { const n = standName(baumstand('node/1', t)); if (folge.at(-1) !== n) folge.push(n); }
+  assert.deepEqual(folge, ['winter', 'winter>fruehling:0.25', 'winter>fruehling:0.5', 'winter>fruehling:0.75', 'fruehling', 'fruehling>sommer:0.25', 'fruehling>sommer:0.5', 'fruehling>sommer:0.75',
+    'sommer', 'sommer>herbst:0.25', 'sommer>herbst:0.5', 'sommer>herbst:0.75', 'herbst', 'herbst>winter:0.25', 'herbst>winter:0.5', 'herbst>winter:0.75', 'winter']);
+  // a grove does not turn at once: on a day in October several dresses stand side by side; in July and January only one
+  const kleider = (t) => new Set(Array.from({ length: 60 }, (_, i) => standName(baumstand(`node/${i}`, t))));
+  assert.ok(kleider(tag(10, 8)).size >= 3, `${[...kleider(tag(10, 8))].join(', ')} on 8 October`);
+  assert.deepEqual([...kleider(tag(7, 20))], ['sommer']); assert.deepEqual([...kleider(tag(1, 20))], ['winter']);
+  assert.deepEqual(baumstand('node/7', 200), baumstand('node/7', 200), 'the same tree, the same day, the same dress');
+  // the patches: none changed at 0, all at 1, and about the stated share in between, in cells of 3 x 3 pixels
+  let n = 0; const alle = 128 * 128;
+  for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) { assert.equal(schonGewechselt(x, y, 0), false); assert.equal(schonGewechselt(x, y, 1), true); if (schonGewechselt(x, y, 0.5)) n++; }
+  assert.ok(Math.abs(n / alle - 0.5) < 0.06, `${(n / alle * 100).toFixed(0)} % changed at one half`);
+  assert.equal(schonGewechselt(3, 3, 0.4), schonGewechselt(5, 5, 0.4), 'a whole cell turns together');
+  for (let y = 0; y < 30; y++) for (let x = 0; x < 30; x++) if (schonGewechselt(x, y, 0.25)) assert.ok(schonGewechselt(x, y, 0.5), 'what has turned stays turned');
 });

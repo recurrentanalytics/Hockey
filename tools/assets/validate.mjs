@@ -112,6 +112,26 @@ export function validate(root) {
     }
     if (a.anchor && stats[0].count > 0 && Math.abs(stats[0].bottom - a.anchor.y) > 2) warn(`anchor row ${a.anchor.y} is not at the sprite's lowest row ${stats[0].bottom}`);
     if (a.density !== undefined && a.density !== 1 && a.density !== 2) err('density must be 1 or 2');
+    // ---- a tree's pictures of the other seasons: the same frame, the same foot, each with its hash
+    for (const [zeit, j] of Object.entries(a.jahreszeiten ?? {})) {
+      if (!['fruehling', 'herbst', 'winter'].includes(zeit)) { err(`jahreszeiten: unknown season "${zeit}" (fruehling, herbst, winter; the asset's own file is the summer)`); continue; }
+      if (frames !== 1) { err('jahreszeiten: only for still sprites'); continue; }
+      if (typeof j?.file !== 'string') { err(`jahreszeiten.${zeit}: needs a file`); continue; }
+      files.add(j.file);
+      const voll = path.join(root, j.file);
+      if (!fs.existsSync(voll)) { err(`jahreszeiten.${zeit}: file not found: ${j.file}`); continue; }
+      const roh = fs.readFileSync(voll), hash = crypto.createHash('sha256').update(roh).digest('hex').slice(0, 12);
+      if (j.sha12 !== hash) err(`jahreszeiten.${zeit}: sha12 is ${j.sha12 ?? 'missing'} but the file hashes to ${hash}`);
+      let bild;
+      try { bild = decodePng(roh); } catch (e) { err(`jahreszeiten.${zeit}: ${e.message}`); continue; }
+      if (bild.width !== fw || bild.height !== fh) { err(`jahreszeiten.${zeit}: image is ${bild.width}x${bild.height}, the asset's frame is ${fw}x${fh}`); continue; }
+      const st = frameStats(bild, fw, fh, 1)[0];
+      if (st.count === 0) err(`jahreszeiten.${zeit}: the picture is empty`);
+      else if (Math.abs(st.bottom - stats[0].bottom) > 1) err(`jahreszeiten.${zeit}: stands on row ${st.bottom}, the summer picture on row ${stats[0].bottom}: the tree would jump`);
+      let halb = 0; for (let i = 3; i < bild.data.length; i += 4) if (bild.data[i] > 0 && bild.data[i] < 255) halb++;
+      if (halb) err(`jahreszeiten.${zeit}: ${halb} half-transparent pixels (pixel art has none)`);
+      if (!j.source) warn(`jahreszeiten.${zeit}: no "source" recorded`);
+    }
     if (!a.approved) warn('waiting for the owner\'s approval: the game does not use it yet');
     else if (typeof a.approved.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(a.approved.date)) err('approved needs a date (YYYY-MM-DD)');
     if (!a.source) warn('no "source" recorded (SpriteCook asset_id, model and prompt id, or "hand-drawn")');
