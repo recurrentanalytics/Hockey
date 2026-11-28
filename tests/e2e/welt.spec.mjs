@@ -78,7 +78,8 @@ test('loads the essential geodata and art', async () => {
   const count = (id) => page.evaluate((i) => window.welt.sources[i].entities.values.length, id);
   expect(await count('gebaeude'), 'ALKIS building volumes').toBeGreaterThan(20);
   expect(await count('einfriedungen'), 'fences and walls').toBeGreaterThan(0);
-  await wait(() => count('baeume'), 'the tree grove is placed (mapped and derived trees)').toBeGreaterThan(10);
+  // every tree is a trunk and a crown sprite; their drawn ground shadows are gone where the trees cast real ones
+  await wait(() => page.evaluate(() => window.welt.baumtafeln), 'the tree grove is placed (mapped and derived trees)').toBeGreaterThan(60);
   await expect(page.locator('#bibliothek')).toHaveText(/^\d+ Sprites aus der Art-Bibliothek/, { timeout: 120_000 });
   const n = Number((await page.locator('#bibliothek').textContent()).match(/^\d+/)[0]);
   expect(n, 'benches and trees from the art library').toBeGreaterThan(20);

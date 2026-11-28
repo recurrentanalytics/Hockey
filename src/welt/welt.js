@@ -717,7 +717,8 @@ async function main() {
     $('losSpiel').onclick = () => los(true);
   }
   status('bereit');
-  window.welt = { get flug() { return flug; }, get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; }, get haeuser() { return viertelHaeuser; }, get boden() { return bodenLayer; } }; // for the console and tests
+  window.welt = { get flug() { return flug; }, get baumtafeln() { return buendel.baeume?.length ?? 0; }, // sprites of the grove in the scene: trunk and crown per tree
+    get umwelt() { return umwelt; }, viewer, Cesium, frame, view, LAYERS, sources, pos, fromUtm32, toUtm32, betrete, verlasse, toCss, get imSpiel() { return imSpiel; }, get spieler() { return spieler; }, get hain() { return grove; }, get haeuser() { return viertelHaeuser; }, get boden() { return bodenLayer; } }; // for the console and tests
 }
 
 main().catch((e) => {
