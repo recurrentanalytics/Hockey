@@ -97,5 +97,7 @@
   <button id="verlassen" type="button">◀ Platz verlassen</button>
   <script src="src/native/pads.js"></script>
   <script type="module" src="src/welt/welt.js?v=15"></script>
+  <!-- Leistungsanzeige nur mit ?fps in der Adresse (docs/PERFORMANCE_TEST.md) -->
+  <script type="module">if (new URLSearchParams(location.search).has('fps')) import('./src/diag/fps.js');</script>
 </body>
 </html>

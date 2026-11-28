@@ -108,9 +108,21 @@ async function main() {
   const viewer = new Cesium.Viewer('cesium', {
     baseLayer: false, animation: false, timeline: false, baseLayerPicker: false, geocoder: false, homeButton: false,
     sceneModePicker: false, navigationHelpButton: false, fullscreenButton: false, infoBox: false, selectionIndicator: false,
-    scene3DOnly: true, // renders every frame: with request-render mode the volumes built in the background never appeared until the camera moved
+    scene3DOnly: true,
+    // draw only when something changes (camera, figure, weather, loading): a still view costs nothing.
+    // Things that change without the camera moving ask for a frame themselves (anstossen, spieler.js, haeuser.js).
+    requestRenderMode: true, maximumRenderTimeChange: Infinity,
+    msaaSamples: 1, // pixel art needs no smoothed edges
   });
   const { scene, camera } = viewer;
+  // a short burst of frames after loading or any input, and until the houses are built in the background
+  let bisWann = performance.now() + 8000;
+  const anstossen = (ms = 1500) => { bisWann = Math.max(bisWann, performance.now() + ms); };
+  scene.preUpdate.addEventListener(() => {
+    const haus = viertelHaeuser?.primitive;
+    if (performance.now() < bisWann || (haus && !haus.ready)) scene.requestRender();
+  });
+  for (const ev of ['pointerdown', 'pointermove', 'wheel', 'keydown', 'change']) addEventListener(ev, () => anstossen(ev === 'pointermove' ? 300 : 1500), { passive: true });
   // ground: the own copy first, the live service on top while it answers (sharper); it switches itself off when it fails
   let lokal = null;
   if (foto) {
@@ -164,6 +176,7 @@ async function main() {
   const describe = (name, p) => `${name}\n` + Object.entries(p).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join('\n');
 
   function build() {
+    anstossen(4000);
     for (const s of Object.values(sources)) viewer.dataSources.remove(s, true);
     const layer = (id) => { const s = new Cesium.CustomDataSource(id); s.show = LAYERS.find((l) => l.id === id).on; sources[id] = s; viewer.dataSources.add(s); return s.entities; };
 
@@ -263,7 +276,12 @@ async function main() {
       status('Lade Google-3D-Kacheln …');
       const ep = await (await fetch(`https://api.cesium.com/v1/assets/${GOOGLE_3D_TILES}/endpoint?access_token=${encodeURIComponent(token)}`)).json();
       if (!ep.options?.url) throw new Error(ep.message || 'Cesium ion: kein Zugriff');
-      tiles = await Cesium.Cesium3DTileset.fromUrl(ep.options.url, { showCreditsOnScreen: true });
+      // the photoreal surroundings stay, but thriftier: a little coarser detail (most of it is far away
+      // round the drawn quarter), even less at the horizon, and a bounded memory cache
+      tiles = await Cesium.Cesium3DTileset.fromUrl(ep.options.url, {
+        showCreditsOnScreen: true, maximumScreenSpaceError: 20, dynamicScreenSpaceError: true,
+        foveatedScreenSpaceError: true, cullRequestsWhileMoving: true, cacheBytes: 256 * 1024 * 1024,
+      });
       scene.primitives.add(tiles);
       for (const a of ep.attributions ?? []) viewer.creditDisplay.addStaticCredit(new Cesium.Credit(a.html, true));
     }

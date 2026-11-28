@@ -982,9 +982,11 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, frame, pos, 
   const zeige = (ids) => {
     if (!primitive) return;
     if (!primitive.ready) { wunsch = ids; return; }
-    for (const oid of durch) if (!ids.has(oid)) setze(oid, 1);
-    for (const oid of ids) if (!durch.has(oid)) setze(oid, DURCHSICHT);
+    let geaendert = false;
+    for (const oid of durch) if (!ids.has(oid)) { setze(oid, 1); geaendert = true; }
+    for (const oid of ids) if (!durch.has(oid) && nachOid.has(oid)) { setze(oid, DURCHSICHT); geaendert = true; }
     durch = new Set([...ids].filter((oid) => nachOid.has(oid)));
+    if (geaendert) scene.requestRender(); // see-through houses are a change the camera does not report
   };
   if (primitive) { const fertig = scene.postRender.addEventListener(() => { if (primitive.ready) { fertig(); if (wunsch) zeige(wunsch); } }); }
 
