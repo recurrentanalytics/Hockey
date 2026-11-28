@@ -48,3 +48,9 @@ test('world kits: the check finds a wrong scale, a changed picture, a stray pict
   assert.match(geaendert((w) => json(path.join(w, 'haeuser/bausaetze.json'), (d) => { d.fassaden[0].oeffnungen[0].y = 60; })).join('\n'), /stuck: fenster at .*does not lie in storey 3/);
   assert.match(geaendert((w) => json(path.join(w, 'haeuser/bausaetze.json'), (d) => { d.fassaden[1].oeffnungen = d.fassaden[1].oeffnungen.filter((o) => o.art !== 'tuer'); })).join('\n'), /jugendstil: 0 doors/);
 });
+
+test('world kits: the house shader draws edges, corners and ridges on the scenery scale', async () => {
+  // src/welt/haeuser.js needs a browser to draw, but its scale is a plain constant: read it from the source
+  const PX = Number(fs.readFileSync('src/welt/haeuser.js', 'utf8').match(/export const PX = ([\d.]+)/)[1]);
+  assert.equal(PX, JSON.parse(fs.readFileSync('assets/welt/massstab.json', 'utf8')).px_je_m);
+});

@@ -8,7 +8,7 @@ import { ladeBild } from './bild.js';
 import { viertel, kleideViertel, packe, netz, steckbrief, wandmaske, lichtvektor, rgb, ACHSE, DURCHFAHRT, KONTUR } from '../bau/haus.js';
 export * from '../bau/haus.js'; // the rules stay importable from here, as before
 
-export const PX = 16;                          // art pixels per metre on walls and roofs
+export const PX = 12.5; // art pixels per metre on walls and roofs: the scenery scale, = assets/welt/massstab.json px_je_m (tested)
 // ------------------------------------------------------------------ drawing (browser, CesiumJS)
 
 /** How much of a house stays when it stands between the camera and the player: a screen of pixels, not glass. */
