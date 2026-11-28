@@ -1,9 +1,9 @@
-// The houses of the neighbourhood (src/welt/haeuser.js): description and mesh from the footprints alone.
+// The houses of the neighbourhood (src/bau/haus.js): description and mesh from the footprints alone.
 // Roof forms, storeys, shop fronts, gateways, party walls, colours; and the whole real dataset without a gap.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { viertel, netz, trianguliere, rechteck, flaeche, saeubere, dachhoehe, achsen, steckbrief, lichtvektor, hoehen, fuege, schichte, wandmaske, kleideViertel, packe, PUTZ, KLINKER, DURCHFAHRT, ACHSE } from '../src/welt/haeuser.js';
+import { viertel, netz, trianguliere, rechteck, flaeche, saeubere, dachhoehe, achsen, steckbrief, lichtvektor, hoehen, fuege, schichte, wandmaske, kleideViertel, packe, PUTZ, KLINKER, DURCHFAHRT, ACHSE } from '../src/bau/haus.js';
 import { decodePng } from '../tools/assets/png.mjs';
 
 const json = (n) => JSON.parse(fs.readFileSync(`locations/boni/geo/${n}`, 'utf8'));

@@ -8,8 +8,11 @@ Ein Haus hat zwei Schichten, und sie kommen aus verschiedenen Quellen:
 
 | Schicht | Quelle | Wo |
 |---|---|---|
-| **Form:** Grundriss, Traufe, Geschosse, Dachform, First, Brandwände, Durchfahrten, Straßen- und Hofseite | Geodaten (ALKIS, OSM), feste Regeln | `src/welt/haeuser.js`, oberer Teil |
+| **Form:** Grundriss, Traufe, Geschosse, Dachform, First, Brandwände, Durchfahrten, Straßen- und Hofseite; welcher Bausatz an welche Wand kommt; das Netz | Geodaten (ALKIS, OSM), feste Regeln | `src/bau/haus.js`, engine-neutral (kein CesiumJS, kein DOM) |
 | **Zeichnung:** Fassaden, Fenster, Türen, Läden, Dachziegel, Schornsteine, Gauben, Putz | **SpriteCook-Sprites** | `assets/welt/haeuser/`, beschrieben in `bausaetze.json` |
+| **Darstellung:** Shader, Bildbogen der Bausätze, ein Zeichenobjekt für das Viertel | CesiumJS | `src/welt/haeuser.js` (Adapter) |
+
+Was die Regeln aus dem echten Viertel machen, steht je Haus in `tests/referenz/viertel.json`: Körper, Dach, Farben, Bausatz, jede Wand mit Schnittstücken und Geschossen, Dachaufbauten, ein Prüfwert des Netzes. `tests/viertel-referenz.test.mjs` vergleicht bei jedem Lauf. Eine gewollte Änderung schreibt die Datei mit `UPDATE_REFERENZ=1` neu. Dieselbe Datei ist der Prüfstein für jeden späteren Generator (glTF, Godot): Er muss dieselben Häuser bauen.
 
 Die erste Fassung von H1 zeichnete Fenster, Türen und Ziegel im Shader. Das war klotzig und beliebig und ist als Zielstil **verworfen**. Der Code dafür steckt noch in `haeuser.js`, wird in der Welt aber nicht mehr gezeigt. Neue sichtbare Gestaltung entsteht nicht im Shader.
 

@@ -9,12 +9,8 @@ export const LICHT = { azimut: 73, hoehe: 45 };
 /** The game camera's tilt from the vertical: a canopy hides the ground this far behind its trunk. */
 export const KAMERA = { richtung: 118.2, neigung: 60 };
 
-/** Stable pseudo-random number in [0, 1) from a string (FNV-1a): same tree, same result, every run. */
-export function streuung(text, salz = '') {
-  let h = 0x811c9dc5;
-  for (const ch of salz + text) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193); }
-  return (h >>> 0) / 4294967296;
-}
+export { streuung } from '../bau/streuung.js'; // stable pseudo-random number from a string (FNV-1a)
+import { streuung } from '../bau/streuung.js';
 
 /** Court metres of a grid position. */
 export const platzmeter = (frame, [e, n]) => {
