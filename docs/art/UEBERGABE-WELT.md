@@ -17,3 +17,10 @@ Branch `work/world-h1-haeuser`, Worktree `Hockey-API-welt`, nichts gepusht. Alle
 
 ## Werkzeuge (nicht im Repo)
 `C:\Users\krawalker\AppData\Local\Temp\opencode\h1\`: `bild.mjs` (Screenshots; `PLAN=1` schreibt den Bodenplan als Bild), `funktion.mjs`, `google.mjs` (Google-Attrappe), `diag.mjs` (warum wird die Welt nicht bereit), `relief.mjs` (Fensteröffnungen je Bausatz), `server.mjs` (Port 4180, Galerie unter `/review/`). Node: `C:\Program Files\nodejs\node.exe`, Playwright und Cesium aus `Hockey-API\node_modules`.
+
+## Nachtrag 2026-11-28 (Cloud-Sitzung)
+
+- Branch als `work/fassaden-welt` gepusht und in `claude/inline-hockey-game-v0a0yo` zusammengeführt, ohne Konflikte. Alle Tests grün (103, davon 4 bekannte TODOs), Art-Bibliothek ohne Fehler.
+- **Gezeichneter Boden in der Welt gesehen:** Die Welt wird bereit, der Boden liegt über Luftbild und Pixelboden, der Bolzplatz bleibt frei, Straßen, Gehwege und der Sandplatz stimmen im Maßstab (`welt.html?haeuser=neu`, Software-Rendering).
+- **Straßenmöbel erledigt:** Laternen, Fahrradbügel, Mülleimer, Picknicktische, Klettergerüste und das Holz-Nilpferd stehen an ihren OSM-Standorten (Art-Bibliothek, `docs/art/prompts/strassenmoebel.md`).
+- Weiter offen: Google-Schnitt mit echten Kacheln prüfen, Fassaden-Relief, Durchfahrten, parkende Autos, Winter, Tablet-Leistung.
