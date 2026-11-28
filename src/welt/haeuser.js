@@ -5,7 +5,7 @@
 // The shader draws edges, corners and ridges on a grid of PX art pixels per metre of wall or roof: the
 // coarse scale of the scenery, the same as the façade kits and the ground (assets/welt/massstab.json, px_je_m).
 import { ladeBild } from './bild.js';
-import { viertel, kleideViertel, packe, netz, relief, steckbrief, wandmaske, schattenkarte, lichtvektor, rgb, ACHSE, DURCHFAHRT, KONTUR } from '../bau/haus.js';
+import { viertel, kleideViertel, packe, netz, relief, anbauten, steckbrief, wandmaske, schattenkarte, lichtvektor, rgb, ACHSE, DURCHFAHRT, KONTUR } from '../bau/haus.js';
 export * from '../bau/haus.js'; // the rules stay importable from here, as before
 
 export const PX = 12.5; // art pixels per metre on walls and roofs: the scenery scale, = assets/welt/massstab.json px_je_m (tested)
@@ -118,6 +118,12 @@ void main() {
       vec4 bild = textureGrad(u_atlas, auv, adx, ady);
       if (art < 7.5) grund = mix(bild.rgb, min(bild.rgb * v_farbe.rgb, vec3(1.0)), clamp((1.0 - bild.a) * 2.0, 0.0, 1.0));
       else { if (bild.a < 0.25) discard; grund = bild.rgb; }
+    }
+    else if (art > 11.5) {                                 // a railing: iron bars with a rail at the top and the foot, open between them
+      float hoch = floor(v_wand.z * PX);
+      bool stab = t.y < 1.0 || t.y >= hoch - 1.0 || mod(t.x, 2.0) < 1.0;
+      if (f > 1.3 ? raster2(gl_FragCoord.xy) < 0.5 : !stab) discard; // far away the bars become an even screen, so nothing flickers
+      grund = v_farbe.rgb;
     }
     else if (art < 10.5 && art > 9.5) grund = min(textureGrad(u_ziegel, zuv, zdx, zdy).rgb * v_farbe.rgb, vec3(1.0));
     else grund = min(textureGrad(u_putz, puv, pdx, pdy).rgb * v_farbe.rgb, vec3(1.0));
@@ -251,7 +257,7 @@ void main() {
  * `nur(haus)` limits it to some houses; `saetze` (the façade kits, with `basis` as the folder of their pictures) dresses
  * them in sprites. Returns the handle the world view works with; nothing in it rebuilds geometry.
  */
-export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = null, frame, pos, nur = null, saetze = null, basis = null, mitRelief = true, schatten = 1, wurf = true }) {
+export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = null, frame, pos, nur = null, saetze = null, basis = null, mitRelief = true, mitAnbauten = true, schatten = 1, wurf = true }) {
   const liste = viertel(gebaeude, frame, { wege, daecher }).filter((h) => !nur || nur(h));
   // with façade kits every house is dressed in sprites; where each picture lies on the sheet is known before one of them has loaded
   const blatt = saetze ? packe(saetze) : null;
@@ -263,8 +269,16 @@ export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = nu
     attributes: { position: attribut(m.positionen, 3, Cesium.ComponentDatatype.DOUBLE), normal: attribut(m.normalen, 3), wand: attribut(m.wand, 4), bau: attribut(m.bau, 4), farbe: attribut(m.farbe, 4) },
     indices: m.indizes, primitiveType: Cesium.PrimitiveType.TRIANGLES, boundingSphere: Cesium.BoundingSphere.fromVertices(m.positionen),
   });
+  // a house's additions (eaves, balconies, bay windows: haus.js, anbauten) join its own mesh: one instance per house
+  const verbinde = (a, b) => {
+    if (!b?.indizes.length) return a;
+    const na = a.positionen.length / 3, nb = b.positionen.length / 3, zusammen = (x, y, Art) => { const z = new Art(x.length + y.length); z.set(x); z.set(y, x.length); return z; };
+    const indizes = new (na + nb < 65536 ? Uint16Array : Uint32Array)(a.indizes.length + b.indizes.length);
+    indizes.set(a.indizes); for (let i = 0; i < b.indizes.length; i++) indizes[a.indizes.length + i] = b.indizes[i] + na;
+    return { positionen: zusammen(a.positionen, b.positionen, Float64Array), normalen: zusammen(a.normalen, b.normalen, Float32Array), wand: zusammen(a.wand, b.wand, Float32Array), bau: zusammen(a.bau, b.bau, Float32Array), farbe: zusammen(a.farbe, b.farbe, Float32Array), indizes };
+  };
   for (const h of liste) {
-    const m = netz(h);
+    const m = verbinde(netz(h), mitAnbauten && h.kleid ? anbauten(h) : null);
     if (!m.indizes.length) continue;
     // the record of a house: what a click shows, and the id the picked instance carries
     const eintrag = new Cesium.Entity({ id: `haus/${h.schluessel}`, name: h.name ?? h.adresse ?? h.funktion, properties: { text: steckbrief(h), oid: h.oid } });

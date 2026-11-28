@@ -4,7 +4,7 @@
   "title": "Bauplan eines Hauses",
   "description": "Was die Regeln (src/bau/haus.js) aus einem Grundriss machen, unabhängig von der Darstellung: Körper, Geschosse, Dach, Farben, Bausatz, jede eingekleidete Wand mit ihren Schnittstücken und Geschossen, Dachaufbauten und ein Prüfwert des Netzes. Ein Adapter (heute CesiumJS, später glTF oder Godot) baut daraus dasselbe Haus. Beispiel: tests/referenz/viertel.json (tools/test/viertel-referenz.mjs). Längen in Metern, Schnitte in Pixeln des Bausatzbildes.",
   "type": "object",
-  "required": ["schluessel", "oid", "art", "eg", "flaeche", "etagen", "traufe", "first", "egHoehe", "dach", "wand", "nachbarn", "durchfahrten", "satz", "laeufe", "aufbauten", "netz", "relief"],
+  "required": ["schluessel", "oid", "art", "eg", "flaeche", "etagen", "traufe", "first", "egHoehe", "dach", "wand", "nachbarn", "durchfahrten", "satz", "laeufe", "aufbauten", "netz", "relief", "anbau"],
   "additionalProperties": false,
   "properties": {
     "schluessel": { "type": "string", "description": "eindeutig im Viertel (ALKIS-Kennung, bei geteilten Grundrissen mit Nummer)" },
@@ -50,6 +50,10 @@
     },
     "relief": {
       "type": "object", "required": ["ecken", "dreiecke", "hash"], "additionalProperties": false, "description": "das Fassaden-Relief (Rahmen, Bänke, Gesimse), Prüfwert wie beim Netz",
+      "properties": { "ecken": { "type": "integer", "minimum": 0 }, "dreiecke": { "type": "integer", "minimum": 0 }, "hash": { "type": "string", "pattern": "^[0-9a-f]{16}$" } }
+    },
+    "anbau": {
+      "type": "object", "required": ["ecken", "dreiecke", "hash"], "additionalProperties": false, "description": "die Anbauten (Dachüberstand, Balkone, Erker), Prüfwert wie beim Netz; Balkone und Erker sind nach Regeln gesetzt, nicht vermessen",
       "properties": { "ecken": { "type": "integer", "minimum": 0 }, "dreiecke": { "type": "integer", "minimum": 0 }, "hash": { "type": "string", "pattern": "^[0-9a-f]{16}$" } }
     },
     "netz": {

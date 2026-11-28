@@ -250,7 +250,7 @@ async function main() {
     const blocks = layer('gebaeude');
     haeuser.length = 0;
     if (hausArt !== 'alt' && scene.context.webgl2) {           // drawn houses: built once; ground, cover and records follow here
-      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, daecher, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS), schatten: FASSADENSCHATTEN, wurf: LAYERS.find((l) => l.id === 'wurf').on });
+      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, daecher, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS), schatten: FASSADENSCHATTEN, wurf: LAYERS.find((l) => l.id === 'wurf').on, mitAnbauten: Q.get('anbauten') !== '0' }); // ?anbauten=0: the plain bodies, without eaves, balconies and bay windows
       viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on && !rundum ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.relief(LAYERS.find((l) => l.id === 'relief').on); viertelHaeuser.verzeichne(blocks);
     }
     for (const f of gebaeude.features) {

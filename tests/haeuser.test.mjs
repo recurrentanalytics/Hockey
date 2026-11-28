@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { viertel, netz, relief, RELIEF, trianguliere, rechteck, flaeche, saeubere, dachhoehe, achsen, steckbrief, lichtvektor, hoehen, fuege, schichte, wandmaske, kleideViertel, packe, PUTZ, KLINKER, DURCHFAHRT, ACHSE } from '../src/bau/haus.js';
+import { viertel, netz, relief, anbauten, ANBAU, RELIEF, trianguliere, rechteck, flaeche, saeubere, dachhoehe, achsen, steckbrief, lichtvektor, hoehen, fuege, schichte, wandmaske, kleideViertel, packe, PUTZ, KLINKER, DURCHFAHRT, ACHSE } from '../src/bau/haus.js';
 import { decodePng } from '../tools/assets/png.mjs';
 
 const json = (n) => JSON.parse(fs.readFileSync(`locations/boni/geo/${n}`, 'utf8'));
@@ -361,4 +361,41 @@ test('houses: the façade relief lifts frames, sills and cornices out of the wal
   const fern = liste.find((h) => h.kleid.satz && Math.hypot((h.kasten[0] + h.kasten[2]) / 2, (h.kasten[1] + h.kasten[3]) / 2) > RELIEF.umkreis + 60);
   assert.equal(relief(fern).indizes.length, 0, 'beyond the circle round the court: no relief');
   assert.ok(relief(fern, { umkreis: Infinity, hof: true }).indizes.length > 0, 'but it has relief when asked for');
+});
+
+test('houses: eaves on every pitched roof; balconies and bay windows by rule on street fronts round the court', () => {
+  const saetze = JSON.parse(fs.readFileSync('assets/welt/haeuser/bausaetze.json', 'utf8')), blatt = packe(saetze);
+  const liste = kleideViertel(viertel(gebaeude, frame, { wege, daecher: json('daecher.json') }), saetze);
+  const abstand = ([x, y], ring) => Math.min(...ring.map((a, i) => { const b = ring[(i + 1) % ring.length], dx = b[0] - a[0], dy = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(x - a[0] - dx * t, y - a[1] - dy * t); }));
+  const weitest = Math.max(ANBAU.balkon.tiefe, ANBAU.erker.tiefe, ANBAU.ueberstand * Math.SQRT2) + 0.01;
+  let ecken = 0; const mit = { traufe: 0, erker: 0, balkon: 0 };
+  for (const h of liste) {
+    h.kleid.lage = blatt.lage;
+    const m = anbauten(h), P = m.positionen, N = m.normalen;
+    ecken += P.length / 3;
+    assert.equal(m.wand.length / 4, P.length / 3); assert.equal(m.bau.length / 4, P.length / 3); assert.equal(m.farbe.length / 4, P.length / 3);
+    for (let i = 0; i < m.indizes.length; i += 3) { // every face looks the way its normal says
+      const [a, b, c] = [m.indizes[i], m.indizes[i + 1], m.indizes[i + 2]].map((j) => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]]), j = m.indizes[i];
+      const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]], n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]], l = Math.hypot(...n);
+      if (l > 1e-9) assert.ok((n[0] * N[j * 3] + n[1] * N[j * 3 + 1] + n[2] * N[j * 3 + 2]) / l > 0.99, `${h.oid}: an added face looks the way its normal says`);
+    }
+    for (let j = 0; j < P.length / 3; j++) {
+      const q = [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]];
+      assert.ok(q.every(Number.isFinite), `${h.oid}: a real place`);
+      assert.ok(q[2] > 2.2 && q[2] <= h.traufe + ANBAU.erker.dach + 0.1, `${h.oid}: additions above head height, up to the eaves (${q[2].toFixed(2)})`);
+      assert.ok(abstand(q, h.ring) <= weitest || h.loecher.some((r) => abstand(q, r) <= weitest), `${h.oid}: at most ${weitest.toFixed(2)} m from the wall`);
+    }
+    for (const was of Object.keys(mit)) if (anbauten(h, { nur: [was] }).indizes.length) mit[was]++;
+    // a house never has both nothing and a bay on a plain front
+    if (anbauten(h, { nur: ['erker'] }).indizes.length) assert.ok(h.kleid.satz.gesimse.length > 3 && h.etagen >= 3, `${h.oid}: a bay only on a front with mouldings`);
+  }
+  assert.ok(mit.traufe > 150, `${mit.traufe} houses with eaves or copings`);
+  assert.ok(mit.erker >= 8 && mit.erker <= 40, `${mit.erker} houses with a bay window`);
+  assert.ok(mit.balkon >= 25 && mit.balkon <= 90, `${mit.balkon} houses with balconies`);
+  assert.ok(ecken < 45000, `additions a tablet can draw (${ecken} corners)`);
+  // set by the house's id: the same every time, and none far from the court
+  const mitErker = liste.find((h) => anbauten(h, { nur: ['erker'] }).indizes.length);
+  assert.deepEqual(Array.from(anbauten(mitErker).positionen), Array.from(anbauten(mitErker).positionen));
+  const fern = liste.filter((h) => Math.hypot((h.kasten[0] + h.kasten[2]) / 2, (h.kasten[1] + h.kasten[3]) / 2) > ANBAU.umkreis + 80);
+  assert.ok(fern.length > 20 && fern.every((h) => !anbauten(h, { nur: ['erker', 'balkon'] }).indizes.length), 'far from the court: eaves only');
 });

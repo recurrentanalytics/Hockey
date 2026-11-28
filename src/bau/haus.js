@@ -20,8 +20,9 @@ export const NEBENBAU = [['Graubraun', '#b9a48f'], ['Putzgrau', '#c4bdb0'], ['Ba
 export const ZIEGEL = [['Ziegelrot', '#b9553a'], ['Ziegel dunkel', '#a24a35'], ['Ziegel hell', '#c46544'], ['Braun', '#8f5b45'], ['Schiefer', '#5a5a60']];
 export const FLACHDACH = [['Bitumen', '#5d5a57'], ['Kies', '#8f8b86']];
 
-// what a surface is; 0 to 6 are drawn by rule, 7 to 11 show sprites: a façade picture, a cut-out part, plaster, roof tiles, a flat roof
-const ARTEN = { strasse: 0, hof: 1, brandwand: 2, tunnel: 3, ziegel: 4, flachdach: 5, untersicht: 6, bild: 7, teil: 8, putz: 9, ziegelbild: 10, flachbild: 11 };
+// what a surface is; 0 to 6 are drawn by rule, 7 to 11 show sprites: a façade picture, a cut-out part, plaster, roof tiles, a flat roof;
+// 12 is a railing of iron bars, drawn by rule and open between the bars
+const ARTEN = { strasse: 0, hof: 1, brandwand: 2, tunnel: 3, ziegel: 4, flachdach: 5, untersicht: 6, bild: 7, teil: 8, putz: 9, ziegelbild: 10, flachbild: 11, gelaender: 12 };
 const ECKE_L = 16, ECKE_R = 32, KLINKER_BIT = 64, OFFEN = 128;
 const EG = { wohnen: 0, laden: 1, schule: 2, neben: 3 };
 const DACHFORM = { gabled: 'sattel', hipped: 'walm', quadruple_saltbox: 'walm', flat: 'flach' };
@@ -423,6 +424,7 @@ export function steckbrief(h) {
   return [`${h.art === 'ueberdachung' ? 'Überdachung' : 'Gebäude'} (ALKIS)${h.name ? ' – ' + h.name : ''}`, `oid: ${h.oid}`, h.adresse && `adresse: ${h.adresse}`, `funktion: ${h.funktion}`, `flaeche_m2: ${h.flaeche}`,
     `Traufe ${h.traufe} m, First ${Math.round(h.first * 10) / 10} m (${h.hoeheQuelle})`, `${h.etagen} Geschoss${h.etagen > 1 ? 'e' : ''}, Erdgeschoss: ${eg}`, `Dach: ${dach}, ${h.dach.name}`, `Wand: ${h.wand.name}${h.wand.material === 'klinker' && h.wand.name !== 'Klinker' ? ' (Klinker)' : ''}`,
     h.kleid && `Gezeichnet: ${h.kleid.satz ? `SpriteCook-Bausatz „${h.kleid.satz.id}“` : 'Putz (SpriteCook)'}, nicht freigegeben`,
+    h.kleid?.lage && (() => { const was = [['erker', 'Erker'], ['balkon', 'Balkone']].filter(([art]) => anbauten(h, { nur: [art] }).indizes.length).map((x) => x[1]); return was.length ? `Angebaut nach Regel, nicht vermessen: ${was.join(', ')}` : null; })(),
     h.durchfahrten.length && `Durchfahrten: ${h.durchfahrten.length}`, h.nachbarn.size && `Brandwände zu ${h.nachbarn.size} Nachbarn`].filter(Boolean).join('\n');
 }
 
@@ -559,6 +561,152 @@ export function netz(h) {
     for (const [a, b] of df.waende) { const l = Math.hypot(b[0] - a[0], b[1] - a[1]); wand(a, b, 0, hoch, hoch, (b[1] - a[1]) / l, -(b[0] - a[0]) / l, 0, l, [l, T, bauZ, EG.neben], ARTEN.tunnel, dunkel); }
   }
   return { positionen: new Float64Array(P), normalen: new Float32Array(N), wand: new Float32Array(W), bau: new Float32Array(B), farbe: new Float32Array(F), indizes: n < 65536 ? new Uint16Array(I) : new Uint32Array(I) };
+}
+
+// ------------------------------------------------------------------ additions: eaves, balconies, bay windows
+
+/**
+ * What is added to a house's plain body, in metres. The eaves are a fact of every pitched roof; balconies and bay
+ * windows are in no geodata (ALKIS, LoD2 and OSM know footprints, heights and roofs): they are set by rule and by
+ * the house's id, on the street fronts of the houses within `umkreis` metres of the court, as such houses have them.
+ */
+export const ANBAU = { ueberstand: 0.45, dicke: 0.12, attika: { vor: 0.18, hoch: 0.28 }, balkon: { tiefe: 1.05, platte: 0.16, gelaender: 1.0, rand: 0.15 },
+  erker: { tiefe: 0.9, rand: 0.12, dach: 0.5 }, umkreis: 130, eisen: '#2b2d33', stein: '#d8d2c4' };
+
+/**
+ * The additions of a dressed house: a third mesh in the format of `netz`.
+ * - Eaves: along every wall the roof slopes down to, the roof runs on over the wall by ANBAU.ueberstand, with a soffit
+ *   and a gutter board; a flat roof gets a small coping instead. This is on every house.
+ * - A bay window on some street fronts: one column of the front stands out over the upper storeys (not the top one),
+ *   showing that column of the façade picture, with pier strips on its sides and a small pent roof.
+ * - Balconies on others: a slab and an iron railing in front of one or two window columns of the upper storeys.
+ * `nur` limits it to some of the three (for looking at one alone).
+ */
+export function anbauten(h, { umkreis = ANBAU.umkreis, nur = null } = {}) {
+  const P = [], N = [], W = [], B = [], F = [], I = [];
+  let n = 0;
+  const fertig = () => ({ positionen: new Float64Array(P), normalen: new Float32Array(N), wand: new Float32Array(W), bau: new Float32Array(B), farbe: new Float32Array(F), indizes: n < 65536 ? new Uint16Array(I) : new Uint32Array(I) });
+  const K = h.kleid;
+  if (!K?.lage || h.art !== 'haus') return fertig();
+  const T = h.traufe, d = h.dach, ohne = [0, T, 0, 0], will = (was) => !nur || nur.includes(was);
+  // a flat polygon of three or four corners with their places (texture or atlas), turned so that it faces `nrm`
+  const flach = (p, wo, nrm, art, ton, w = 0, box = ohne) => {
+    const u = [p[1][0] - p[0][0], p[1][1] - p[0][1], p[1][2] - p[0][2]], v = [p[2][0] - p[0][0], p[2][1] - p[0][1], p[2][2] - p[0][2]];
+    const c = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    if (Math.hypot(...c) < 1e-9) return;
+    const reihe = p.map((_, m) => m), i = n;
+    if (c[0] * nrm[0] + c[1] * nrm[1] + c[2] * nrm[2] < 0) reihe.reverse();
+    for (const m of reihe) { P.push(...p[m]); N.push(...nrm); W.push(wo[m][0], wo[m][1], typeof w === 'function' ? w(p[m]) : w, art); B.push(...box); F.push(...ton); n++; }
+    for (let m = 1; m + 1 < p.length; m++) I.push(i, i + m, i + m + 1);
+  };
+  const einheit = (v) => { const l = Math.hypot(...v) || 1; return v.map((x) => x / l); };
+  const wandton = K.ton.wand, dunkel = [...rgb(h.wand.farbe), h.saat];
+  // a plain colour on plaster: the tint is the wanted colour divided by the plaster picture's own, as everywhere on a dressed house
+  const tonFuer = (hex) => { const a = rgb(hex), w = rgb(h.wand.farbe); return [(a[0] / w[0]) * wandton[0], (a[1] / w[1]) * wandton[1], (a[2] / w[2]) * wandton[2], h.saat]; };
+
+  // ---- eaves and copings
+  if (will('traufe')) {
+    const U = ANBAU.ueberstand, D = ANBAU.dicke;
+    let start = 0;
+    for (const anzahl of h.kantenRinge) {
+      for (let i = 0; i < anzahl; i++) {
+        const k = h.kanten[start + i], vor = h.kanten[start + (i + anzahl - 1) % anzahl], nach = h.kanten[start + (i + 1) % anzahl];
+        k.stuecke.forEach((st, nr) => {
+          if (st.art === 'brandwand' || st.t1 - st.t0 < 0.6) return;
+          const a = auf(k, st.t0), b = auf(k, st.t1), m = auf(k, (st.t0 + st.t1) / 2), innen = (t) => dachhoehe(d, [m[0] - k.n[0] * t, m[1] - k.n[1] * t]);
+          if (dachhoehe(d, a) > 0.05 || dachhoehe(d, b) > 0.05) return; // a gable: no eaves along it
+          const h1 = innen(0.6), h2 = innen(1.2);
+          // the overhang goes on round a real corner of the house, but not across to a neighbour that shares the next wall
+          const frei = (andere, erstes) => { const s = erstes ? andere.stuecke[0] : andere.stuecke.at(-1); return s && s.art !== 'brandwand'; };
+          const la = nr === 0 && st.eckeL && kreuz(vor.d, k.d) > 0 && frei(vor, false) ? 1 : 0, lb = nr === k.stuecke.length - 1 && st.eckeR && kreuz(k.d, nach.d) > 0 && frei(nach, true) ? 1 : 0;
+          if (h1 > 0.08) { // the roof slopes down to this wall: it runs on over it
+            const steil = Math.min(1.2, Math.max(0.25, (h2 - h1) / 0.6, h1 / 0.6)), nrm = einheit([k.n[0] * steil, k.n[1] * steil, 1]), hang = Math.hypot(nrm[0], nrm[1]);
+            const ort = (q, t, z) => [q[0] + k.n[0] * t, q[1] + k.n[1] * t, z], a0 = [a[0] - k.d[0] * U * la, a[1] - k.d[1] * U * la], b0 = [b[0] + k.d[0] * U * lb, b[1] + k.d[1] * U * lb], zu = T - U * steil;
+            const oben = [ort(a0, 0, T), ort(a0, U, zu), ort(b0, U, zu), ort(b0, 0, T)];
+            const ziegel = (q) => [(-q[0] * nrm[1] + q[1] * nrm[0]) / hang, (q[2] - T) / hang];
+            flach(oben, oben.map(ziegel), nrm, ARTEN.ziegelbild, K.ton.dach, (q) => (T + d.gipfel - q[2]) / hang);
+            const unten = oben.map((q) => [q[0], q[1], q[2] - D]);
+            flach(unten, unten.map((q) => [q[0], q[1]]), [-nrm[0], -nrm[1], -nrm[2]], ARTEN.untersicht, dunkel, 99);
+            const brett = [ort(a0, U, zu - D), ort(b0, U, zu - D), ort(b0, U, zu), ort(a0, U, zu)], lang = Math.hypot(b0[0] - a0[0], b0[1] - a0[1]);
+            flach(brett, [[0, 0], [lang, 0], [lang, D], [0, D]], [k.n[0], k.n[1], 0], ARTEN.putz, K.ton.gaube);
+          } else if (h.eg !== 'neben' && st.t1 - st.t0 >= 1.5) { // a flat roof: a coping that stands a little proud of the wall
+            const { vor: V, hoch: H } = ANBAU.attika, ort = (q, t, z) => [q[0] + k.n[0] * t, q[1] + k.n[1] * t, z], lang = st.t1 - st.t0, hell = tonFuer(ANBAU.stein);
+            flach([ort(a, V, T - H), ort(b, V, T - H), ort(b, V, T + 0.04), ort(a, V, T + 0.04)], [[0, 0], [lang, 0], [lang, H], [0, H]], [k.n[0], k.n[1], 0], ARTEN.putz, hell);
+            flach([ort(a, 0, T + 0.04), ort(a, V, T + 0.04), ort(b, V, T + 0.04), ort(b, 0, T + 0.04)], [[0, 0], [0, V], [lang, V], [lang, 0]], [0, 0, 1], ARTEN.putz, hell);
+            const u = [ort(a, 0, T - H), ort(a, V, T - H), ort(b, V, T - H), ort(b, 0, T - H)];
+            flach(u, u.map((q) => [q[0], q[1]]), [0, 0, -1], ARTEN.untersicht, dunkel, 99);
+          }
+        });
+      }
+      start += anzahl;
+    }
+  }
+
+  // ---- bay windows and balconies: on the street fronts round the court
+  const [x0k, y0k, x1k, y1k] = h.kasten;
+  const nah = Math.hypot(Math.max(0, Math.abs((x0k + x1k) / 2) - (x1k - x0k) / 2), Math.max(0, Math.abs((y0k + y1k) / 2) - (y1k - y0k) / 2)) <= umkreis;
+  if (K.satz && nah && h.etagen >= 3 && (h.eg === 'wohnen' || h.eg === 'laden')) {
+    const stock = geschosslinien(h), stuecke = new Map();
+    for (const k of h.kanten) for (const st of k.stuecke) if (st.lauf != null) (stuecke.get(st.lauf) ?? stuecke.set(st.lauf, []).get(st.lauf)).push({ k, st });
+    const wahl = streuung(h.oid, 'anbau'), eisen = [...rgb(ANBAU.eisen), h.saat], stein = tonFuer(ANBAU.stein);
+    const front = K.laeufe.map((l, nr) => ({ l, nr })).filter(({ l }) => l.art === 'strasse' && !l.bild.gestreckt && l.bild.spalten.length >= 4).sort((p, q) => q.l.laenge - p.l.laenge || p.nr - q.nr)[0];
+    if (front) {
+      const { l: lauf, nr } = front, satz = lauf.satz, [ox, oy] = K.lage[satz.id], g = lauf.grenzen, sp = lauf.bild.spalten, teile = stuecke.get(nr) ?? [];
+      const stueckBei = (u) => teile.find(({ st }) => u >= st.u0 - 1e-6 && u <= st.u0 + (st.t1 - st.t0) + 1e-6);
+      const innere = sp.map((_, c) => c).slice(1, -1), mitte = sp.findIndex((x) => x === satz.mitte), oberstes = h.etagen >= 4 ? h.etagen - 2 : h.etagen - 1;
+      // the wall behind a column, if the column lies on one straight piece: a point at `u` along the run, `t` in front of the wall, height z
+      const stelle = (c) => { const A = stueckBei(g[c] + 0.01), Bs = stueckBei(g[c + 1] - 0.01); if (!A || A !== Bs || A.st.muendung) return null; const { k, st } = A; return { k, ort: (u, t, z) => { const q = auf(k, st.t0 + u - st.u0); return [q[0] + k.n[0] * t, q[1] + k.n[1] * t, z]; } }; };
+      // a bay belongs to a front with mouldings; a plain post-war front (hardly a cornice) has none
+      const erker = wahl < 0.4 && innere.length >= 3 && (satz.gesimse ?? []).length > 3 ? (mitte > 0 ? mitte : innere[Math.floor(innere.length / 2)]) : -1;
+      if (erker >= 0 && will('erker')) {
+        const w = stelle(erker);
+        if (w) {
+          const { k, ort } = w, E = ANBAU.erker, ua = g[erker] + E.rand, ub = g[erker + 1] - E.rand, [sx0, sx1] = sp[erker], nrm = [k.n[0], k.n[1], 0], px = ox + satz.pfeiler + 0.5;
+          for (let e = 1; e <= oberstes; e++) {
+            const zu = stock[e], zo = stock[e + 1], [y0, y1] = lauf.zeilen[e], box = [ox + sx0, oy + y0, ox + sx1, oy + y1];
+            // the front shows the column's own cell of the picture; the sides the pier between two windows
+            flach([ort(ua, E.tiefe, zu), ort(ub, E.tiefe, zu), ort(ub, E.tiefe, zo), ort(ua, E.tiefe, zo)], [[ox + sx0 + 0.02, oy + y1 - 0.02], [ox + sx1 - 0.02, oy + y1 - 0.02], [ox + sx1 - 0.02, oy + y0 + 0.02], [ox + sx0 + 0.02, oy + y0 + 0.02]], nrm, ARTEN.bild, lauf.ton, 0, box);
+            const pbox = [ox + satz.pfeiler, oy + y0, ox + satz.pfeiler + 1, oy + y1], seite = (u, s) => flach([ort(u, 0, zu), ort(u, E.tiefe, zu), ort(u, E.tiefe, zo), ort(u, 0, zo)], [[px, oy + y1 - 0.02], [px, oy + y1 - 0.02], [px, oy + y0 + 0.02], [px, oy + y0 + 0.02]], [k.d[0] * s, k.d[1] * s, 0], ARTEN.bild, lauf.ton, 0, pbox);
+            seite(ua, -1); seite(ub, 1);
+          }
+          const zb = stock[1], zt = stock[oberstes + 1], boden = [ort(ua, 0, zb), ort(ua, E.tiefe, zb), ort(ub, E.tiefe, zb), ort(ub, 0, zb)];
+          flach(boden, boden.map((q) => [q[0], q[1]]), [0, 0, -1], ARTEN.untersicht, dunkel, 99);
+          // a small pent roof in the roof's tiles, closed at its sides
+          const steil = E.dach / E.tiefe, dn = einheit([k.n[0] * steil, k.n[1] * steil, 1]), hang = Math.hypot(dn[0], dn[1]), dach = [ort(ua, E.tiefe, zt), ort(ub, E.tiefe, zt), ort(ub, 0, zt + E.dach), ort(ua, 0, zt + E.dach)];
+          flach(dach, dach.map((q) => [(-q[0] * dn[1] + q[1] * dn[0]) / hang, (q[2] - zt) / hang]), dn, ARTEN.ziegelbild, K.ton.dach, 5);
+          for (const [u, s] of [[ua, -1], [ub, 1]]) flach([ort(u, 0, zt), ort(u, E.tiefe, zt), ort(u, 0, zt + E.dach)], [[0, 0], [E.tiefe, 0], [0, E.dach]], [k.d[0] * s, k.d[1] * s, 0], ARTEN.putz, K.ton.gaube);
+        }
+      }
+      if (will('balkon') && wahl < 0.85 && innere.length >= 2) {
+        // beside a bay window on both sides; else one column, or a pair on a wide front (never the door's column)
+        const frei = innere.filter((c) => c !== mitte && c !== erker);
+        const spalten = erker >= 0 ? [erker - 1, erker + 1].filter((c) => frei.includes(c)) : frei.length >= 4 ? [frei[1], frei[frei.length - 2]] : frei.length ? [frei[Math.floor(frei.length / 2)]] : [];
+        const bis = streuung(h.oid, 'balkon oben') < 0.5 ? oberstes : h.etagen - 1, Bk = ANBAU.balkon;
+        for (const c of spalten) {
+          const w = stelle(c);
+          if (!w) continue;
+          const { k, ort } = w, ua = g[c] + Bk.rand, ub = g[c + 1] - Bk.rand, breit = ub - ua, nrm = [k.n[0], k.n[1], 0];
+          if (breit < 1) continue;
+          for (let e = 1; e <= bis; e++) {
+            const zo = stock[e] + 0.02, zu = zo - Bk.platte, zg = zo + Bk.gelaender;
+            // the slab: front, two sides, top, underside
+            flach([ort(ua, Bk.tiefe, zu), ort(ub, Bk.tiefe, zu), ort(ub, Bk.tiefe, zo), ort(ua, Bk.tiefe, zo)], [[0, 0], [breit, 0], [breit, Bk.platte], [0, Bk.platte]], nrm, ARTEN.putz, stein);
+            for (const [u, s] of [[ua, -1], [ub, 1]]) flach([ort(u, 0, zu), ort(u, Bk.tiefe, zu), ort(u, Bk.tiefe, zo), ort(u, 0, zo)], [[0, 0], [Bk.tiefe, 0], [Bk.tiefe, Bk.platte], [0, Bk.platte]], [k.d[0] * s, k.d[1] * s, 0], ARTEN.putz, stein);
+            const deckel = [ort(ua, 0, zo), ort(ua, Bk.tiefe, zo), ort(ub, Bk.tiefe, zo), ort(ub, 0, zo)];
+            flach(deckel, [[0, 0], [0, Bk.tiefe], [breit, Bk.tiefe], [breit, 0]], [0, 0, 1], ARTEN.putz, stein);
+            flach(deckel.map((q) => [q[0], q[1], zu]), deckel.map((q) => [q[0], q[1]]), [0, 0, -1], ARTEN.untersicht, dunkel, 99);
+            // the railing: iron bars, seen from outside and from the balcony (u along it, v above the slab; w is its height)
+            const gitter = (p0, p1, lang, aussen) => { for (const s of [1, -1]) flach([[...p0.slice(0, 2), zo], [...p1.slice(0, 2), zo], [...p1.slice(0, 2), zg], [...p0.slice(0, 2), zg]], [[0, 0], [lang, 0], [lang, Bk.gelaender], [0, Bk.gelaender]], aussen.map((x) => x * s), ARTEN.gelaender, eisen, Bk.gelaender); };
+            const t = Bk.tiefe - 0.04;
+            gitter(ort(ua, t, 0), ort(ub, t, 0), breit, nrm);
+            gitter(ort(ua, 0, 0), ort(ua, t, 0), t, [-k.d[0], -k.d[1], 0]);
+            gitter(ort(ub, 0, 0), ort(ub, t, 0), t, [k.d[0], k.d[1], 0]);
+          }
+        }
+      }
+    }
+  }
+  return fertig();
 }
 
 // ------------------------------------------------------------------ relief: the façade's parts stand out of the wall

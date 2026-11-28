@@ -107,6 +107,34 @@ Die Fassaden der Häuser rund um den Platz sind nicht mehr flach. `relief()` in 
 - Die schmalen Außenseiten der Rahmen fehlen, sie wären die meisten Flächen und kaum zu sehen.
 - Die Referenz `tests/referenz/viertel.json` hält je Haus einen Prüfwert des Reliefs fest.
 
+## Anbauten: Dachüberstand, Balkone, Erker
+
+`anbauten()` in `src/bau/haus.js` baut ein drittes Netz je Haus. Die Weltansicht hängt es an das Netz des Hauses (ein Zeichenobjekt, ein Klick, eine Durchsicht). `?anbauten=0` zeigt die Häuser ohne.
+
+| Anbau | Woher | Wo |
+|---|---|---|
+| **Dachüberstand** (0,45 m, mit Untersicht und Rinnenbrett) | folgt aus dem gemessenen Dach: Wo das Dach zu einer Wand hin abfällt, läuft es über sie hinaus | alle Häuser |
+| **Attika** (kleiner Wandabschluss) | folgt aus dem flachen Dach | Flachdächer und flache Hofflügel |
+| **Erker** (0,9 m tief, mit Pultdach in den Ziegeln des Hauses) | **nach Regel gesetzt, nicht vermessen** | 15 Häuser am Platz |
+| **Balkone** (Platte 1,05 m, Eisengeländer 1 m) | **nach Regel gesetzt, nicht vermessen** | 49 Häuser am Platz |
+
+**Erfunden, nicht echt:** Balkone und Erker stehen in keinen Geodaten (ALKIS, LoD2 und OSM kennen Grundriss, Höhen und Dach). Sie sind die ersten Bauteile, die nicht vom echten Haus kommen. Der Besitzer hat das am 2026-11-28 so entschieden („mach alles“). Der Steckbrief eines Hauses und die Referenz führen sie getrennt.
+
+**Die Regeln:**
+- Nur Straßenfronten von Wohn- und Ladenhäusern mit mindestens drei Geschossen, im Umkreis von 130 m um den Platz (`ANBAU.umkreis`), an der längsten Straßenfront.
+- Die Kennung des Hauses entscheidet: 40 % bekommen einen Erker, wenn die Front mindestens drei Fensterachsen und Gesimse hat (ein schlichter Nachkriegsbau bekommt keinen). Er sitzt über der Tür, sonst in der Mitte, vom ersten Obergeschoss bis unter das oberste.
+- 85 % bekommen Balkone: neben dem Erker beidseitig, sonst an einer Achse oder bei breiten Fronten an zwei. Nie an der Türachse.
+- Ein Erker zeigt vorn die Achse des Fassadenbilds, an der er steht, an den Seiten den Pfeiler zwischen zwei Fenstern.
+- Das Geländer ist Bildart 12: Stäbe im Raster der Kulisse, dazwischen offen. In der Ferne wird daraus ein gleichmäßiges Raster, damit nichts flimmert.
+
+**Größe:** rund 29 000 Ecken (Dachüberstand 15 000, Balkone 13 400, Erker 750).
+
+**Grenzen:**
+- Der Überstand hat keine Stirnseiten und ist an Hausecken nicht auf Gehrung geschnitten.
+- Die Fenster hinter einem Balkon sind Fenster geblieben, keine Balkontüren.
+- Ein Erker hat vorn kein Relief (das Fassadenbild liegt flach auf seiner Front) und keine Konsole darunter.
+- Der Schlagschatten eines Geländers ist eine geschlossene Fläche, nicht der seiner Stäbe.
+
 ## Schatten
 
 Drei Dinge geben den Häusern Tiefe. Keines davon braucht neue Bilder.
