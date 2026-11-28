@@ -8,7 +8,7 @@ Ein Haus hat zwei Schichten, und sie kommen aus verschiedenen Quellen:
 
 | Schicht | Quelle | Wo |
 |---|---|---|
-| **Form:** Grundriss, Traufe, Geschosse, Dachform, First, Brandwände, Durchfahrten, Straßen- und Hofseite; welcher Bausatz an welche Wand kommt; das Netz | Geodaten (ALKIS, OSM), feste Regeln | `src/bau/haus.js`, engine-neutral (kein CesiumJS, kein DOM) |
+| **Form:** Grundriss, Traufe, Geschosse, Dachform, First, Brandwände, Durchfahrten, Straßen- und Hofseite; welcher Bausatz an welche Wand kommt; das Netz | Geodaten (ALKIS, OSM; Dachform, Trauf- und Firsthöhe und Firstrichtung gemessen aus dem LoD2-Modell des LGLN, `locations/boni/geo/daecher.json`), feste Regeln | `src/bau/haus.js`, engine-neutral (kein CesiumJS, kein DOM) |
 | **Zeichnung:** Fassaden, Fenster, Türen, Läden, Dachziegel, Schornsteine, Gauben, Putz | **SpriteCook-Sprites** | `assets/welt/haeuser/`, beschrieben in `bausaetze.json` |
 | **Darstellung:** Shader, Bildbogen der Bausätze, ein Zeichenobjekt für das Viertel | CesiumJS | `src/welt/haeuser.js` (Adapter) |
 

@@ -92,6 +92,8 @@ async function main() {
   const hausArt = Q.get('haeuser') ?? 'neu'; // every house dressed in the façade kits; ?haeuser=alt shows plain volumes
   let viertelHaeuser = null;                 // the houses of haeuser.js
   const saetze = hausArt === 'alt' ? null : await fetch(new URL('welt/haeuser/bausaetze.json', ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  // measured roofs and heights (LoD2 of the LGLN, tools/ort/lod2.py); without them the rules estimate from OSM
+  const daecher = hausArt === 'alt' ? null : await load('daecher.json').catch(() => null);
   // the drawn ground belongs to the same review: streets, pavements and yards in SpriteCook textures (boden.js)
   const bodenRegeln = hausArt === 'alt' ? null : await fetch(new URL('welt/boden/boden.json', ASSETS)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   if (bodenRegeln) LAYERS.splice(LAYERS.findIndex((l) => l.id === 'pixelboden') + 1, 0, { id: 'boden', name: 'Gezeichneter Boden im Viertel (SpriteCook)', on: true });
@@ -153,6 +155,7 @@ async function main() {
   scene.globe.depthTestAgainstTerrain = false;
   scene.skyAtmosphere.show = false; scene.fog.enabled = false;
   viewer.creditDisplay.addStaticCredit(new Cesium.Credit('Wege, Bäume, Höhen © OpenStreetMap-Mitwirkende, ODbL', true));
+  if (daecher) viewer.creditDisplay.addStaticCredit(new Cesium.Credit(`Dächer und Gebäudehöhen ${daecher.quelle.split(':')[0]}`, true)); // © GeoBasis-DE / LGLN (Jahr), dl-de/by-2-0
 
   // ---- the pixel ground: the aerial photo round the court as pixel art, dissolving into the real photo (pixelboden.js)
   const inMetern = (ring) => ring.map((p) => platzmeter(frame, p));
@@ -202,7 +205,7 @@ async function main() {
     const blocks = layer('gebaeude');
     haeuser.length = 0;
     if (hausArt !== 'alt' && scene.context.webgl2) {           // drawn houses: built once; ground, cover and records follow here
-      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS) });
+      viertelHaeuser ??= baueHaeuser({ Cesium, scene, gebaeude, wege, daecher, frame, pos, saetze, basis: new URL('welt/haeuser/', ASSETS) });
       viertelHaeuser.stelle(); viertelHaeuser.licht(LICHT); viertelHaeuser.deckung(google.on && !rundum ? 0.45 : 1); viertelHaeuser.sichtbar(LAYERS.find((l) => l.id === 'gebaeude').on); viertelHaeuser.verzeichne(blocks);
     }
     for (const f of gebaeude.features) {

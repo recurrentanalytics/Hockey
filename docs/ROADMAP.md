@@ -124,6 +124,20 @@ T5 (Ortsbeschreibung) ist nach Phase 0 vorgezogen: Es ändert nichts am Verhalte
 | Eishockey: Profil Kufen, Eisfläche; Ausgangspunkt ist die Halle (60 × 30 m, Bodycheck-Regeln) | GAME_DESIGN 9 |
 | Fortschritt als Netz gleichwertiger Wege (Verein, Eis, Freizeit, Tricks, Entdecken); die NHL ist eine mögliche Geschichte, kein Endziel | GAME_DESIGN 3, 10 |
 
+### Nebenstrang – Architektur-Bibliothek (Häuser)
+
+Grundlage ist die Architektur-Analyse vom 2026-11-28 (Roadmap-Schritte 0–9). Entscheidung des Besitzers am selben Tag: Was dem Spiel nützt, wird hier gemacht. Alles, was nur anderen Projekten nützt, ruht, bis es ein zweites Projekt gibt; dann zieht `src/bau/` mit `schema/` und dem Referenztest in ein eigenes Repository.
+
+| Schritt | Inhalt | Stand |
+|---|---|---|
+| 0 | Neue Häuser als Standard | ✅ `f3505c1` |
+| 1 | Ein Weltmaßstab (Kulisse 12,5, Bühne 23 Pixel je Meter), Bausätze in der Asset-Prüfung, Fenster, Türen und Gesimse je Fassade vermessen | ✅ `5bc26c1`, `f2acd26`, `d74d9de` |
+| 2 | Hausregeln engine-neutral in `src/bau/haus.js`, Cesium nur noch Adapter, Referenz des gebauten Viertels | ✅ `3a6b937` |
+| 3 | Datenmodell: `schema/bausatz.schema.json`, `schema/bauplan.schema.json` | ✅ `235befc` |
+| 5 | Echte Dächer und Höhen aus dem LoD2-Gebäudemodell des LGLN (`tools/ort/lod2.py`, `locations/boni/geo/daecher.json`) | ✅ 2026-11-28 |
+| 4 | 3D-Pilot: Fensterachse und Gesims als 3D-Modul in Blender, als Relief an einigen Häusern | ruht: kostet Leistung, bei der Pixel-Optik wenig sichtbar; braucht Blender |
+| 6–9 | Zweiter Grafikstil, Godot-Adapter, zweite Architekturfamilie, eigenes Repository | ruht bis zu einem zweiten Projekt; nützt dem Spiel nicht |
+
 ---
 
 ## 3. Was bewusst nicht geplant ist

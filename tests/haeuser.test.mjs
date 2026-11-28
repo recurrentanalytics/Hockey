@@ -290,3 +290,18 @@ test('houses: triangles fill a footprint with a yard exactly; the rectangle and 
   assert.equal(achsen(1), 0);
   assert.equal(achsen(ACHSE * 3), 3);
 });
+
+test('houses: measured roofs (LoD2) set eaves, ridge, form and ridge direction; without them the rules estimate', () => {
+  const ring = kiste(-8, -5, 8, 5), lang = baue([haus('L1', ring)])[0]; // 16 × 10 m: the rules put the ridge along the long side (east)
+  assert.equal(lang.dach.form, 'sattel');
+  assert.ok(Math.abs(lang.dach.u[0]) > 0.99, 'estimated ridge along the long side');
+  const daecher = { haeuser: { L1: { form: 'sattel', dachform: 'Satteldach', traufe_m: 18.4, first_m: 22.9, first: [0, 1] }, W1: { form: 'walm', dachform: 'Walmdach', traufe_m: 9, first_m: 12 } } };
+  const [h, w] = viertel({ features: [haus('L1', ring), haus('W1', kiste(30, -5, 46, 5))] }, frame, { daecher });
+  assert.deepEqual([h.traufe, h.dach.form, h.hoeheQuelle], [18.4, 'sattel', 'gemessen (LoD2, LGLN)']);
+  assert.deepEqual([w.dach.form, w.dachAngabe], ['walm', 'Walmdach (LoD2)'], 'the measured form wins over OSM');
+  assert.ok(Math.abs(h.dach.u[1]) > 0.99, 'the measured ridge runs north, across the rules\' choice');
+  assert.equal(h.etagen, 5, 'storeys of an old building: 18.4 m are five, not the four of OSM');
+  assert.ok(Math.abs(h.first - 22.9) < 0.6, `ridge near the measured 22.9 m (${h.first})`);
+  const ohne = viertel({ features: [haus('L1', ring)] }, frame, { daecher: { haeuser: {} } })[0];
+  assert.equal(ohne.hoeheQuelle, lang.hoeheQuelle, 'a house without a measured roof keeps the estimate');
+});

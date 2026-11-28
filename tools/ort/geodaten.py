@@ -534,6 +534,7 @@ Ansicht: `python3 serve.py`, dann http://localhost:8000/tools/ort/ansicht.html
 | `einfriedungen.geojson` | Zäune, Mauern, Hecken, Tore, Poller | {zahl['einfriedungen']} | OSM |
 | `ausstattung.geojson` | Spielgeräte, Bänke, Laternen, Läden | {zahl['ausstattung']} | OSM |
 | `osm_gebaeude.geojson` | OSM-Gebäude und Gebäudeteile, nur zum Abgleich | {zahl['gebaeude_osm']} | OSM |
+| `daecher.json` | Gemessene Dachform, Trauf- und Firsthöhe über Gelände, Dachneigung, Firstrichtung je Gebäude (für die Häuser der Weltansicht) | je Gebäude mit LoD2-Eintrag | LoD2 (amtlich), eigener Schritt: `tools/ort/lod2.py` |
 
 Amtliche Nutzung: {', '.join(f'{k} ({v})' for k, v in sorted(nutz.items()))}.
 Wege aus OSM: {', '.join(f'{k} ({v})' for k, v in sorted(wege.items(), key=lambda kv: str(kv[0])))}.
@@ -545,6 +546,7 @@ Wege aus OSM: {', '.join(f'{k} ({v})' for k, v in sorted(wege.items(), key=lambd
 {q}
 
 - **ALKIS:** offener WFS »ALKIS vereinfacht« des LGLN, `{ALKIS_WFS}`.
+- **LoD2:** 3D-Gebäudemodell des LGLN, 1-km-Kacheln `https://lod2.opengeodata.lgln.niedersachsen.de/LoD2_32_<E>_<N>_1_ni.gml`, © GeoBasis-DE / LGLN, Datenlizenz Deutschland – Namensnennung 2.0 (dl-de/by-2-0). `tools/ort/lod2.py` liest daraus `daecher.json`; Quelle und Stand stehen in der Datei.
 - **OSM:** Overpass-Abfrage, Wortlaut in `roh/abruf.json`. Die ODbL verlangt Namensnennung und Weitergabe unter gleichen Bedingungen für die aus OSM abgeleiteten Ebenen; ALKIS-Ebenen und OSM-Ebenen liegen deshalb in getrennten Dateien. In `gebaeude.geojson` stammen nur die Felder `hoehe_m`, `hoehe_quelle` und `osm*` aus OSM.
 
 ## Prüfung ({'alles bestanden' if pr['bestanden'] else 'NICHT alles bestanden'})
@@ -566,7 +568,7 @@ Wege aus OSM: {', '.join(f'{k} ({v})' for k, v in sorted(wege.items(), key=lambd
 - **Bäume:** OSM kennt im Ausschnitt {zahl['baeume']} Bäume und Baumreihen, davon {baeume_nah} Einzelbäume im Umkreis von 60 m um die Platzmitte. Es sind Punkte{baum_merkmale}; Art, Stamm- und Kronenmaß fehlen, und ob jeder Baum des Platzes erfasst ist, ist nicht geprüft. Kronenhöhen gibt es nur als Raster aus dem amtlichen Oberflächenmodell (`assets/intro/boni_schatten_hoehen.png`, ±46 m um den Platz). Ein Baumkataster der Stadt habe ich nicht geprüft.
 - **Zäune und Mauern:** OSM hat {sum(zaun.values())} Einträge ({', '.join(f'{k} {v}' for k, v in sorted(zaun.items(), key=lambda kv: str(kv[0])))}), davon {zaun_nah} Linien näher als 30 m am Platz. Der Zaun des Bolzplatzes selbst und die Klinker-Einfassung des Sandspielplatzes sind nicht kartiert.
 - **Spielgeräte:** als Punkte ohne Form und Größe ({', '.join(spiel) or 'keine'}). Nilpferd, Edelstahl-Schale und Spielhaus sind nicht einzeln erkennbar benannt.
-- **Gebäudehöhen:** {mit_hoehe} von {zahl['gebaeude']} amtlichen Grundrissen haben eine Höhe, davon {gemessen} als in OSM eingetragene Höhe; der Rest ist aus Geschosszahlen geschätzt (3,2 m je Geschoss, 2,8 m je Dachgeschoss, grob ±2 m). Das amtliche 3D-Gebäudemodell (LoD2) und das Höhenmodell als Zahlen sind noch nicht eingebunden.
+- **Gebäudehöhen:** {mit_hoehe} von {zahl['gebaeude']} amtlichen Grundrissen haben eine Höhe, davon {gemessen} als in OSM eingetragene Höhe; der Rest ist aus Geschosszahlen geschätzt (3,2 m je Geschoss, 2,8 m je Dachgeschoss, grob ±2 m). Die Häuser der Weltansicht nehmen, wo vorhanden, die gemessenen Werte des amtlichen 3D-Gebäudemodells (LoD2, `daecher.json`) statt dieser Schätzung; das Höhenmodell als Zahlen ist noch nicht eingebunden.
 - **Gelände:** nicht enthalten und hier nicht ausgewertet. Geländehöhen gibt es bisher nur als Farbskala aus dem LGLN-Kartendienst (`tools/ort/abrufen.py`), nicht als Zahlen.
 - **Höfe und Durchfahrten:** ALKIS führt Durchfahrten und Arkaden als eigene Bauteile (`art` = Bauteil). Innenhöfe ergeben sich als Lücken zwischen den Grundrissen, nicht als eigene Flächen.
 - **Aktualität:** ALKIS-Objekte tragen ihr Fortführungsdatum im Feld `stand`. Der OSM-Stand hängt vom antwortenden Spiegelserver ab und steht oben in der Quellentabelle.

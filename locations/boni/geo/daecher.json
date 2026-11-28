@@ -1,0 +1,2955 @@
+{
+"quelle": "© GeoBasis-DE / LGLN (2024), dl-de/by-2-0: 3D-Gebäudemodell LoD2, Kacheln 550/5804",
+"stand": "2024-06-12",
+"erklaerung": "Je ALKIS-Gebäude (oid): gemessene Dachform (AdV-Schlüssel), Trauf- und Firsthöhe über Gelände (m), Dachneigung, Firstrichtung als Einheitsvektor (Ost, Nord). Erzeugt von tools/ort/lod2.py.",
+"haeuser": {
+"DENIAL43000052A2BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.82,
+"first_m": 24.13,
+"neigung_grad": 44.14,
+"dachflaeche_m2": 180.518,
+"gelaende_m": 53.36,
+"first": [
+0.423,
+0.9061
+],
+"firstlaenge_m": 12.52,
+"teile": 5
+},
+"DENIAL43000052A6BL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 17.21,
+"first_m": 22.58,
+"neigung_grad": 45.419,
+"dachflaeche_m2": 310.994,
+"gelaende_m": 53.74,
+"teile": 1
+},
+"DENIAL43000052AWBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 5.15,
+"first_m": 5.15,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 62.301,
+"gelaende_m": 53.78,
+"teile": 1
+},
+"DENIAL43000052AcBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 17.72,
+"first_m": 17.72,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 397.507,
+"gelaende_m": 53.85,
+"teile": 1
+},
+"DENIAL43000052AzBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 22.7,
+"first_m": 22.7,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 516.753,
+"gelaende_m": 55.44,
+"teile": 3
+},
+"DENIAL43000052BaBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 14.9,
+"first_m": 18.86,
+"neigung_grad": 49.213,
+"dachflaeche_m2": 364.501,
+"gelaende_m": 54.02,
+"teile": 2
+},
+"DENIAL43000052BqBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 6.18,
+"first_m": 7.52,
+"neigung_grad": 64.351,
+"dachflaeche_m2": 60.893,
+"gelaende_m": 54.1,
+"first": [
+0.3447,
+-0.9387
+],
+"firstlaenge_m": 6.96,
+"teile": 1
+},
+"DENIAL43000052ByBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.47,
+"first_m": 20.47,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 276.384,
+"gelaende_m": 53.75,
+"teile": 1
+},
+"DENIAL43000052C3BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.52,
+"first_m": 23.77,
+"neigung_grad": 46.808,
+"dachflaeche_m2": 239.648,
+"gelaende_m": 53.86,
+"first": [
+0.3403,
+-0.9403
+],
+"firstlaenge_m": 13.55,
+"teile": 1
+},
+"DENIAL43000052D4BL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 19.89,
+"first_m": 19.89,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 165.118,
+"gelaende_m": 53.67,
+"teile": 3
+},
+"DENIAL43000052F6BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.2,
+"first_m": 20.73,
+"neigung_grad": 51.691,
+"dachflaeche_m2": 291.107,
+"gelaende_m": 54.04,
+"first": [
+0.8977,
+-0.4406
+],
+"firstlaenge_m": 20.45,
+"teile": 2
+},
+"DENIAL43000052FsBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 2.57,
+"first_m": 2.57,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 45.602,
+"gelaende_m": 53.77,
+"teile": 1
+},
+"DENIAL43000052GfBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 16.53,
+"first_m": 19.05,
+"neigung_grad": 58.956,
+"dachflaeche_m2": 171.892,
+"gelaende_m": 53.41,
+"first": [
+0.4933,
+0.8699
+],
+"firstlaenge_m": 13.36,
+"teile": 3
+},
+"DENIAL43000052GhBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.52,
+"first_m": 20.52,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 322.897,
+"gelaende_m": 53.48,
+"teile": 1
+},
+"DENIAL43000052GyBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 16.02,
+"first_m": 18.89,
+"neigung_grad": 57.327,
+"dachflaeche_m2": 222.858,
+"gelaende_m": 53.39,
+"first": [
+0.8967,
+-0.4426
+],
+"firstlaenge_m": 18.64,
+"teile": 2
+},
+"DENIAL43000052HHBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.92,
+"first_m": 23.94,
+"neigung_grad": 45.757,
+"dachflaeche_m2": 261.187,
+"gelaende_m": 53.31,
+"first": [
+0.4057,
+0.914
+],
+"firstlaenge_m": 15.3,
+"teile": 5
+},
+"DENIAL43000052HMBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 21.83,
+"first_m": 21.83,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 239.332,
+"gelaende_m": 53.67,
+"teile": 1
+},
+"DENIAL43000052HbBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 20.06,
+"first_m": 24.08,
+"neigung_grad": 52.128,
+"dachflaeche_m2": 268.562,
+"gelaende_m": 53.64,
+"first": [
+0.4465,
+0.8948
+],
+"firstlaenge_m": 17.53,
+"teile": 3
+},
+"DENIAL43000052J5BL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.39,
+"first_m": 20.39,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 167.264,
+"gelaende_m": 53.53,
+"teile": 1
+},
+"DENIAL43000052J8BL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 13.07,
+"first_m": 17.56,
+"neigung_grad": 50.221,
+"dachflaeche_m2": 143.179,
+"gelaende_m": 53.83,
+"teile": 5
+},
+"DENIAL43000052JEBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 14.28,
+"first_m": 17.34,
+"neigung_grad": 51.061,
+"dachflaeche_m2": 191.314,
+"gelaende_m": 53.95,
+"first": [
+0.604,
+0.797
+],
+"firstlaenge_m": 12.93,
+"teile": 2
+},
+"DENIAL43000052JqBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 19.02,
+"first_m": 19.02,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 254.117,
+"gelaende_m": 54.09,
+"teile": 1
+},
+"DENIAL43000052JwBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.46,
+"first_m": 22.83,
+"neigung_grad": 44.138,
+"dachflaeche_m2": 244.698,
+"gelaende_m": 53.94,
+"first": [
+0.6842,
+0.7293
+],
+"firstlaenge_m": 15.5,
+"teile": 2
+},
+"DENIAL43000052KmBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 15.93,
+"first_m": 22.25,
+"neigung_grad": 39.786,
+"dachflaeche_m2": 157.682,
+"gelaende_m": 53.58,
+"first": [
+0.3447,
+0.9387
+],
+"firstlaenge_m": 9.59,
+"teile": 5
+},
+"DENIAL43000052LwBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 13.26,
+"first_m": 13.26,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 8.049,
+"gelaende_m": 55.32,
+"teile": 1
+},
+"DENIAL43000052MIBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 20.34,
+"first_m": 20.34,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 738.693,
+"gelaende_m": 53.28,
+"teile": 1
+},
+"DENIAL43000052MJBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 18.99,
+"first_m": 18.99,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 355.153,
+"gelaende_m": 53.95,
+"teile": 1
+},
+"DENIAL43000052MpBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.73,
+"first_m": 20.73,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 284.096,
+"gelaende_m": 53.68,
+"teile": 1
+},
+"DENIAL43000052NHBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 21.11,
+"first_m": 24.47,
+"neigung_grad": 50.74,
+"dachflaeche_m2": 335.984,
+"gelaende_m": 53.47,
+"first": [
+0.8974,
+-0.4412
+],
+"firstlaenge_m": 20.79,
+"teile": 1
+},
+"DENIAL43000052NJBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 16.05,
+"first_m": 16.05,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 244.688,
+"gelaende_m": 53.93,
+"teile": 1
+},
+"DENIAL43000052NeBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.87,
+"first_m": 20.87,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 281.114,
+"gelaende_m": 53.2,
+"teile": 1
+},
+"DENIAL43000052NlBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.76,
+"first_m": 22.72,
+"neigung_grad": 44.505,
+"dachflaeche_m2": 245.082,
+"gelaende_m": 53.98,
+"first": [
+0.681,
+0.7323
+],
+"firstlaenge_m": 14.68,
+"teile": 2
+},
+"DENIAL43000052OMBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 3.38,
+"first_m": 3.38,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 33.463,
+"gelaende_m": 54.01,
+"teile": 1
+},
+"DENIAL43000052OVBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.34,
+"first_m": 21.14,
+"neigung_grad": 51.421,
+"dachflaeche_m2": 270.061,
+"gelaende_m": 53.69,
+"first": [
+0.8429,
+0.538
+],
+"firstlaenge_m": 18.49,
+"teile": 2
+},
+"DENIAL43000052PTBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 21.32,
+"first_m": 21.32,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 382.992,
+"gelaende_m": 53.42,
+"teile": 1
+},
+"DENIAL43000052PZBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.73,
+"first_m": 20.73,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 318.155,
+"gelaende_m": 53.39,
+"teile": 1
+},
+"DENIAL43000052PuBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 17.07,
+"first_m": 20.73,
+"neigung_grad": 51.926,
+"dachflaeche_m2": 211.684,
+"gelaende_m": 54.03,
+"teile": 4
+},
+"DENIAL43000052Q7BL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 6.19,
+"first_m": 6.19,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 65.929,
+"gelaende_m": 53.43,
+"teile": 1
+},
+"DENIAL43000052QEBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 21.11,
+"first_m": 21.11,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 515.872,
+"gelaende_m": 53.8,
+"teile": 1
+},
+"DENIAL43000052QRBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 3.55,
+"first_m": 3.55,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 73.128,
+"gelaende_m": 53.74,
+"teile": 1
+},
+"DENIAL43000052R9BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 12.91,
+"first_m": 17.49,
+"neigung_grad": 50.309,
+"dachflaeche_m2": 213.078,
+"gelaende_m": 53.87,
+"first": [
+0.8573,
+-0.5149
+],
+"firstlaenge_m": 14.86,
+"teile": 1
+},
+"DENIAL43000052RLBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.78,
+"first_m": 20.78,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 285.23,
+"gelaende_m": 53.41,
+"teile": 1
+},
+"DENIAL43000052RZBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.4,
+"first_m": 20.4,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 201.782,
+"gelaende_m": 53.68,
+"teile": 6
+},
+"DENIAL43000052SeBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 16.13,
+"first_m": 18.91,
+"neigung_grad": 59.495,
+"dachflaeche_m2": 167.212,
+"gelaende_m": 53.33,
+"first": [
+0.458,
+0.889
+],
+"firstlaenge_m": 12.44,
+"teile": 1
+},
+"DENIAL43000052SnBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 2.14,
+"first_m": 2.14,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 76.615,
+"gelaende_m": 53.85,
+"teile": 1
+},
+"DENIAL43000052TABL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 9.67,
+"first_m": 11.31,
+"neigung_grad": 55.52,
+"dachflaeche_m2": 40.087,
+"gelaende_m": 53.55,
+"teile": 2
+},
+"DENIAL43000052TuBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 5.41,
+"first_m": 5.41,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 108.091,
+"gelaende_m": 53.47,
+"teile": 1
+},
+"DENIAL43000052UIBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 18.1,
+"first_m": 18.1,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 517.658,
+"gelaende_m": 54.05,
+"teile": 3
+},
+"DENIAL43000052UUBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.49,
+"first_m": 22.67,
+"neigung_grad": 45.407,
+"dachflaeche_m2": 318.312,
+"gelaende_m": 53.55,
+"first": [
+0.7962,
+-0.605
+],
+"firstlaenge_m": 20.05,
+"teile": 3
+},
+"DENIAL43000052WiBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 13.34,
+"first_m": 13.34,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 518.081,
+"gelaende_m": 55.45,
+"teile": 3
+},
+"DENIAL43000052Z9BL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 21.55,
+"first_m": 21.55,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 316.486,
+"gelaende_m": 53.49,
+"teile": 1
+},
+"DENIAL43000052ZPBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 6.2,
+"first_m": 6.2,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 21.495,
+"gelaende_m": 53.42,
+"teile": 1
+},
+"DENIAL43000052ZtBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 20.07,
+"first_m": 20.07,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 224.305,
+"gelaende_m": 53.69,
+"teile": 1
+},
+"DENIAL43000052meBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 13.18,
+"first_m": 13.18,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 7.142,
+"gelaende_m": 55.42,
+"teile": 1
+},
+"DENIAL43000052mwBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 16.21,
+"first_m": 17.36,
+"neigung_grad": 75.957,
+"dachflaeche_m2": 181.536,
+"gelaende_m": 53.74,
+"first": [
+0.384,
+0.9234
+],
+"firstlaenge_m": 11.19,
+"teile": 3
+},
+"DENIAL43000052nFBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.79,
+"first_m": 20.79,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 304.073,
+"gelaende_m": 53.4,
+"teile": 1
+},
+"DENIAL43000052nlBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 18.03,
+"first_m": 23.15,
+"neigung_grad": 44.005,
+"dachflaeche_m2": 312.833,
+"gelaende_m": 53.77,
+"teile": 3
+},
+"DENIAL43000052npBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.52,
+"first_m": 20.52,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 242.58,
+"gelaende_m": 53.7,
+"teile": 1
+},
+"DENIAL43000052oGBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 3.25,
+"first_m": 3.25,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 60.882,
+"gelaende_m": 53.67,
+"teile": 1
+},
+"DENIAL43000052oJBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.38,
+"first_m": 23.5,
+"neigung_grad": 46.146,
+"dachflaeche_m2": 371.052,
+"gelaende_m": 53.48,
+"first": [
+0.8994,
+-0.437
+],
+"firstlaenge_m": 21.52,
+"teile": 3
+},
+"DENIAL43000052oKBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 19.85,
+"first_m": 19.85,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 265.223,
+"gelaende_m": 53.91,
+"teile": 1
+},
+"DENIAL43000052oNBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.72,
+"first_m": 23.53,
+"neigung_grad": 53.227,
+"dachflaeche_m2": 326.789,
+"gelaende_m": 53.75,
+"first": [
+0.4439,
+0.8961
+],
+"firstlaenge_m": 20.54,
+"teile": 2
+},
+"DENIAL43000052oQBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 17.82,
+"first_m": 17.82,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 518.922,
+"gelaende_m": 54.13,
+"teile": 3
+},
+"DENIAL43000052pgBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 16.36,
+"first_m": 18.95,
+"neigung_grad": 58.749,
+"dachflaeche_m2": 252.138,
+"gelaende_m": 53.36,
+"first": [
+0.8954,
+-0.4452
+],
+"firstlaenge_m": 19.07,
+"teile": 1
+},
+"DENIAL43000052rQBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 17.72,
+"first_m": 22.63,
+"neigung_grad": 45.345,
+"dachflaeche_m2": 326.692,
+"gelaende_m": 53.41,
+"teile": 2
+},
+"DENIAL43000052rzBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.95,
+"first_m": 22.29,
+"neigung_grad": 30.571,
+"dachflaeche_m2": 187.23,
+"gelaende_m": 53.8,
+"first": [
+0.8604,
+-0.5096
+],
+"firstlaenge_m": 13.28,
+"teile": 4
+},
+"DENIAL43000052s2BL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 19.97,
+"first_m": 19.97,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 286.602,
+"gelaende_m": 53.79,
+"teile": 1
+},
+"DENIAL43000052s3BL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 20.05,
+"first_m": 20.05,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 90.311,
+"gelaende_m": 53.89,
+"teile": 5
+},
+"DENIAL43000052sCBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 18.15,
+"first_m": 22.85,
+"neigung_grad": 42.222,
+"dachflaeche_m2": 415.464,
+"gelaende_m": 53.65,
+"teile": 3
+},
+"DENIAL43000052saBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 14.43,
+"first_m": 14.43,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 516.727,
+"gelaende_m": 54.37,
+"teile": 3
+},
+"DENIAL43000052tYBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 18.82,
+"first_m": 23.84,
+"neigung_grad": 45.564,
+"dachflaeche_m2": 298.929,
+"gelaende_m": 53.39,
+"teile": 5
+},
+"DENIAL43000052tdBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.75,
+"first_m": 20.84,
+"neigung_grad": 49.767,
+"dachflaeche_m2": 180.79,
+"gelaende_m": 53.58,
+"first": [
+0.3829,
+0.9238
+],
+"firstlaenge_m": 15.48,
+"teile": 2
+},
+"DENIAL43000052tiBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 1.7,
+"first_m": 1.7,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 75.342,
+"gelaende_m": 53.78,
+"teile": 1
+},
+"DENIAL43000052uNBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 17.82,
+"first_m": 17.82,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 519.915,
+"gelaende_m": 54.06,
+"teile": 3
+},
+"DENIAL43000052uqBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 21.71,
+"first_m": 21.71,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 112.354,
+"gelaende_m": 53.75,
+"teile": 6
+},
+"DENIAL43000052v6BL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 2.35,
+"first_m": 2.35,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 37.183,
+"gelaende_m": 53.92,
+"teile": 2
+},
+"DENIAL43000052vBBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 15.92,
+"first_m": 18.98,
+"neigung_grad": 58.307,
+"dachflaeche_m2": 274.983,
+"gelaende_m": 53.25,
+"teile": 2
+},
+"DENIAL43000052wMBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.59,
+"first_m": 22.94,
+"neigung_grad": 43.671,
+"dachflaeche_m2": 276.49,
+"gelaende_m": 53.82,
+"first": [
+0.555,
+0.8318
+],
+"firstlaenge_m": 17.87,
+"teile": 4
+},
+"DENIAL43000052wNBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.78,
+"first_m": 20.78,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 327.424,
+"gelaende_m": 53.41,
+"teile": 1
+},
+"DENIAL43000052weBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 19.2,
+"first_m": 19.2,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 239.45,
+"gelaende_m": 54.09,
+"teile": 1
+},
+"DENIAL43000052wiBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.28,
+"first_m": 23.54,
+"neigung_grad": 53.67,
+"dachflaeche_m2": 331.826,
+"gelaende_m": 53.66,
+"first": [
+0.4446,
+0.8957
+],
+"firstlaenge_m": 20.43,
+"teile": 1
+},
+"DENIAL43000052ygBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 15.57,
+"first_m": 15.57,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 248.913,
+"gelaende_m": 53.93,
+"teile": 1
+},
+"DENIAL43000052zWBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 18.98,
+"first_m": 18.98,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 243.836,
+"gelaende_m": 54.13,
+"teile": 1
+},
+"DENIAL4300005308BL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 16.32,
+"first_m": 19.78,
+"neigung_grad": 51.902,
+"dachflaeche_m2": 280.477,
+"gelaende_m": 54.1,
+"teile": 2
+},
+"DENIAL430000530BBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 14.42,
+"first_m": 17.51,
+"neigung_grad": 49.733,
+"dachflaeche_m2": 280.143,
+"gelaende_m": 53.98,
+"first": [
+0.8594,
+-0.5113
+],
+"firstlaenge_m": 19.5,
+"teile": 1
+},
+"DENIAL430000530FBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 18.67,
+"first_m": 23.57,
+"neigung_grad": 42.298,
+"dachflaeche_m2": 207.589,
+"gelaende_m": 53.51,
+"teile": 4
+},
+"DENIAL430000531CBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.46,
+"first_m": 21.28,
+"neigung_grad": 45.844,
+"dachflaeche_m2": 218.81,
+"gelaende_m": 53.65,
+"first": [
+0.3336,
+-0.9427
+],
+"firstlaenge_m": 15.02,
+"teile": 5
+},
+"DENIAL4300005339BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.58,
+"first_m": 28.24,
+"neigung_grad": 41.695,
+"dachflaeche_m2": 886.304,
+"gelaende_m": 53.64,
+"first": [
+0.7878,
+-0.6159
+],
+"firstlaenge_m": 26.55,
+"teile": 14
+},
+"DENIAL430000533xBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.14,
+"first_m": 23.23,
+"neigung_grad": 45.614,
+"dachflaeche_m2": 452.756,
+"gelaende_m": 53.44,
+"first": [
+0.395,
+0.9187
+],
+"firstlaenge_m": 27.42,
+"teile": 4
+},
+"DENIAL4300005340BL": {
+"dachform": "Walmdach",
+"schluessel": "3200",
+"form": "walm",
+"traufe_m": 19.56,
+"first_m": 28.0,
+"neigung_grad": 50.062,
+"dachflaeche_m2": 1079.945,
+"gelaende_m": 53.88,
+"first": [
+0.9018,
+-0.4321
+],
+"firstlaenge_m": 22.45,
+"teile": 7
+},
+"DENIAL4300005341BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.99,
+"first_m": 23.71,
+"neigung_grad": 45.648,
+"dachflaeche_m2": 271.14,
+"gelaende_m": 53.7,
+"first": [
+0.8406,
+0.5417
+],
+"firstlaenge_m": 15.95,
+"teile": 5
+},
+"DENIAL430000534JBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 15.51,
+"first_m": 19.99,
+"neigung_grad": 51.299,
+"dachflaeche_m2": 213.373,
+"gelaende_m": 53.99,
+"first": [
+0.4871,
+-0.8734
+],
+"firstlaenge_m": 14.86,
+"teile": 1
+},
+"DENIAL430000534RBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 3.5,
+"first_m": 3.5,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 19.917,
+"gelaende_m": 54.07,
+"teile": 1
+},
+"DENIAL430000534fBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.2,
+"first_m": 20.75,
+"neigung_grad": 47.795,
+"dachflaeche_m2": 234.178,
+"gelaende_m": 54.16,
+"first": [
+0.9409,
+0.3387
+],
+"firstlaenge_m": 14.72,
+"teile": 1
+},
+"DENIAL4300005354BL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 13.13,
+"first_m": 13.13,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 7.922,
+"gelaende_m": 55.45,
+"teile": 1
+},
+"DENIAL430000535kBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.6,
+"first_m": 20.6,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 117.901,
+"gelaende_m": 53.57,
+"teile": 5
+},
+"DENIAL430000535sBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 13.12,
+"first_m": 13.12,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 8.686,
+"gelaende_m": 55.46,
+"teile": 1
+},
+"DENIAL4300005363BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.63,
+"first_m": 23.29,
+"neigung_grad": 47.022,
+"dachflaeche_m2": 406.238,
+"gelaende_m": 53.37,
+"first": [
+0.8952,
+-0.4456
+],
+"firstlaenge_m": 24.04,
+"teile": 1
+},
+"DENIAL4300005365BL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 13.29,
+"first_m": 13.29,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 10.239,
+"gelaende_m": 55.3,
+"teile": 1
+},
+"DENIAL430000536NBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 6.43,
+"first_m": 7.87,
+"neigung_grad": 47.641,
+"dachflaeche_m2": 19.476,
+"gelaende_m": 53.45,
+"first": [
+0.4007,
+0.9162
+],
+"firstlaenge_m": 4.55,
+"teile": 1
+},
+"DENIAL430000536dBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.31,
+"first_m": 22.96,
+"neigung_grad": 45.456,
+"dachflaeche_m2": 161.516,
+"gelaende_m": 53.67,
+"first": [
+0.4496,
+0.8932
+],
+"firstlaenge_m": 10.43,
+"teile": 5
+},
+"DENIAL430000537FBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.8,
+"first_m": 21.24,
+"neigung_grad": 46.135,
+"dachflaeche_m2": 352.791,
+"gelaende_m": 53.9,
+"first": [
+0.8983,
+-0.4395
+],
+"firstlaenge_m": 24.22,
+"teile": 1
+},
+"DENIAL430000538pBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.18,
+"first_m": 23.58,
+"neigung_grad": 45.512,
+"dachflaeche_m2": 191.553,
+"gelaende_m": 53.74,
+"first": [
+0.9057,
+-0.4238
+],
+"firstlaenge_m": 9.95,
+"teile": 5
+},
+"DENIAL430000539FBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 16.58,
+"first_m": 16.58,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 229.612,
+"gelaende_m": 53.87,
+"teile": 1
+},
+"DENIAL430000539mBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 15.3,
+"first_m": 18.93,
+"neigung_grad": 47.387,
+"dachflaeche_m2": 213.707,
+"gelaende_m": 54.09,
+"first": [
+0.9411,
+0.3382
+],
+"firstlaenge_m": 14.95,
+"teile": 1
+},
+"DENIAL430000539yBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 13.13,
+"first_m": 13.13,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 7.275,
+"gelaende_m": 55.48,
+"teile": 1
+},
+"DENIAL43000053ADBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 3.73,
+"first_m": 3.73,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 43.82,
+"gelaende_m": 53.96,
+"teile": 1
+},
+"DENIAL43000053AFBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.48,
+"first_m": 23.62,
+"neigung_grad": 47.482,
+"dachflaeche_m2": 355.262,
+"gelaende_m": 53.87,
+"first": [
+0.4384,
+0.8988
+],
+"firstlaenge_m": 20.45,
+"teile": 2
+},
+"DENIAL43000053AfBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.48,
+"first_m": 22.01,
+"neigung_grad": 46.352,
+"dachflaeche_m2": 286.694,
+"gelaende_m": 53.89,
+"first": [
+0.3834,
+0.9236
+],
+"firstlaenge_m": 17.69,
+"teile": 3
+},
+"DENIAL43000053AuBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.53,
+"first_m": 21.27,
+"neigung_grad": 61.322,
+"dachflaeche_m2": 256.713,
+"gelaende_m": 53.37,
+"first": [
+0.8981,
+-0.4399
+],
+"firstlaenge_m": 14.93,
+"teile": 5
+},
+"DENIAL43000053B3BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.88,
+"first_m": 23.27,
+"neigung_grad": 46.882,
+"dachflaeche_m2": 383.646,
+"gelaende_m": 53.63,
+"first": [
+0.9015,
+-0.4327
+],
+"firstlaenge_m": 21.53,
+"teile": 1
+},
+"DENIAL43000053BTBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 16.86,
+"first_m": 20.85,
+"neigung_grad": 45.962,
+"dachflaeche_m2": 204.725,
+"gelaende_m": 54.12,
+"first": [
+0.9326,
+0.361
+],
+"firstlaenge_m": 14.57,
+"teile": 3
+},
+"DENIAL43000053CVBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 13.13,
+"first_m": 13.13,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 9.4,
+"gelaende_m": 55.48,
+"teile": 1
+},
+"DENIAL43000053CpBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.65,
+"first_m": 22.02,
+"neigung_grad": 51.698,
+"dachflaeche_m2": 318.927,
+"gelaende_m": 53.45,
+"first": [
+0.4421,
+0.8969
+],
+"firstlaenge_m": 20.37,
+"teile": 1
+},
+"DENIAL43000053D0BL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 18.87,
+"first_m": 18.87,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 231.556,
+"gelaende_m": 53.95,
+"teile": 1
+},
+"DENIAL43000053D9BL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 17.6,
+"first_m": 22.32,
+"neigung_grad": 45.471,
+"dachflaeche_m2": 283.008,
+"gelaende_m": 54.01,
+"teile": 1
+},
+"DENIAL43000053DlBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 13.39,
+"first_m": 17.29,
+"neigung_grad": 51.186,
+"dachflaeche_m2": 270.59,
+"gelaende_m": 54.02,
+"teile": 2
+},
+"DENIAL43000053E0BL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 20.45,
+"first_m": 23.74,
+"neigung_grad": 51.693,
+"dachflaeche_m2": 284.735,
+"gelaende_m": 53.41,
+"teile": 3
+},
+"DENIAL43000053E2BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 16.0,
+"first_m": 20.93,
+"neigung_grad": 41.391,
+"dachflaeche_m2": 364.387,
+"gelaende_m": 53.76,
+"first": [
+0.4416,
+0.8972
+],
+"firstlaenge_m": 19.49,
+"teile": 1
+},
+"DENIAL43000053EIBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 20.72,
+"first_m": 20.72,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 244.951,
+"gelaende_m": 53.4,
+"teile": 1
+},
+"DENIAL43000053EcBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 15.57,
+"first_m": 18.97,
+"neigung_grad": 47.418,
+"dachflaeche_m2": 211.295,
+"gelaende_m": 54.05,
+"first": [
+0.9415,
+0.3371
+],
+"firstlaenge_m": 14.77,
+"teile": 1
+},
+"DENIAL43000053GMBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 20.04,
+"first_m": 23.44,
+"neigung_grad": 52.979,
+"dachflaeche_m2": 216.81,
+"gelaende_m": 53.65,
+"first": [
+0.8476,
+0.5306
+],
+"firstlaenge_m": 13.68,
+"teile": 5
+},
+"DENIAL43000053GiBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.81,
+"first_m": 20.81,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 236.118,
+"gelaende_m": 53.84,
+"teile": 1
+},
+"DENIAL43000053HYBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 6.37,
+"first_m": 6.37,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 75.645,
+"gelaende_m": 53.61,
+"teile": 1
+},
+"DENIAL43000053J8BL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 13.18,
+"first_m": 13.18,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 9.636,
+"gelaende_m": 55.41,
+"teile": 1
+},
+"DENIAL43000053JBBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.27,
+"first_m": 23.95,
+"neigung_grad": 41.839,
+"dachflaeche_m2": 303.43,
+"gelaende_m": 53.69,
+"first": [
+0.8932,
+-0.4497
+],
+"firstlaenge_m": 17.89,
+"teile": 3
+},
+"DENIAL43000053JrBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 8.16,
+"first_m": 8.16,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 44.134,
+"gelaende_m": 53.42,
+"teile": 5
+},
+"DENIAL43000053L8BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.82,
+"first_m": 23.14,
+"neigung_grad": 44.391,
+"dachflaeche_m2": 106.881,
+"gelaende_m": 53.75,
+"first": [
+0.4609,
+0.8875
+],
+"firstlaenge_m": 6.67,
+"teile": 3
+},
+"DENIAL43000053bPBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.53,
+"first_m": 20.53,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 261.788,
+"gelaende_m": 53.69,
+"teile": 1
+},
+"DENIAL43000053dABL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.97,
+"first_m": 23.68,
+"neigung_grad": 45.072,
+"dachflaeche_m2": 299.425,
+"gelaende_m": 53.53,
+"first": [
+0.9032,
+-0.4293
+],
+"firstlaenge_m": 16.33,
+"teile": 3
+},
+"DENIAL43000053dWBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.0,
+"first_m": 19.97,
+"neigung_grad": 51.176,
+"dachflaeche_m2": 207.485,
+"gelaende_m": 54.02,
+"first": [
+0.4972,
+-0.8676
+],
+"firstlaenge_m": 14.47,
+"teile": 1
+},
+"DENIAL43000053dYBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 17.55,
+"first_m": 21.27,
+"neigung_grad": 48.627,
+"dachflaeche_m2": 201.075,
+"gelaende_m": 53.9,
+"teile": 5
+},
+"DENIAL43000053eCBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 10.35,
+"first_m": 14.84,
+"neigung_grad": 50.749,
+"dachflaeche_m2": 227.285,
+"gelaende_m": 53.78,
+"teile": 1
+},
+"DENIAL43000053eUBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.65,
+"first_m": 23.75,
+"neigung_grad": 47.653,
+"dachflaeche_m2": 359.166,
+"gelaende_m": 53.57,
+"first": [
+0.7987,
+-0.6017
+],
+"firstlaenge_m": 20.25,
+"teile": 6
+},
+"DENIAL43000053evBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.67,
+"first_m": 23.23,
+"neigung_grad": 52.244,
+"dachflaeche_m2": 244.009,
+"gelaende_m": 53.4,
+"first": [
+0.3561,
+0.9344
+],
+"firstlaenge_m": 14.98,
+"teile": 3
+},
+"DENIAL43000053fABL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 14.44,
+"first_m": 14.44,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 113.929,
+"gelaende_m": 53.77,
+"teile": 3
+},
+"DENIAL43000053fPBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 19.83,
+"first_m": 19.83,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 229.784,
+"gelaende_m": 53.68,
+"teile": 1
+},
+"DENIAL43000053fjBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.16,
+"first_m": 22.56,
+"neigung_grad": 45.032,
+"dachflaeche_m2": 275.124,
+"gelaende_m": 53.5,
+"first": [
+0.8888,
+-0.4582
+],
+"firstlaenge_m": 17.19,
+"teile": 2
+},
+"DENIAL43000053g0BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 12.97,
+"first_m": 17.61,
+"neigung_grad": 49.901,
+"dachflaeche_m2": 208.635,
+"gelaende_m": 53.88,
+"first": [
+0.8608,
+-0.509
+],
+"firstlaenge_m": 14.48,
+"teile": 1
+},
+"DENIAL43000053g5BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.68,
+"first_m": 22.37,
+"neigung_grad": 51.989,
+"dachflaeche_m2": 192.133,
+"gelaende_m": 53.45,
+"first": [
+0.9139,
+-0.406
+],
+"firstlaenge_m": 13.59,
+"teile": 4
+},
+"DENIAL43000053gTBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 3.49,
+"first_m": 3.49,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 198.152,
+"gelaende_m": 53.9,
+"teile": 1
+},
+"DENIAL43000053hYBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 19.55,
+"first_m": 22.41,
+"neigung_grad": 59.238,
+"dachflaeche_m2": 248.593,
+"gelaende_m": 53.66,
+"teile": 3
+},
+"DENIAL43000053iBBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.71,
+"first_m": 20.71,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 260.799,
+"gelaende_m": 53.94,
+"teile": 1
+},
+"DENIAL43000053iFBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.64,
+"first_m": 20.64,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 294.787,
+"gelaende_m": 53.47,
+"teile": 1
+},
+"DENIAL43000053jNBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 3.32,
+"first_m": 5.88,
+"neigung_grad": 51.447,
+"dachflaeche_m2": 91.498,
+"gelaende_m": 53.82,
+"first": [
+0.4544,
+0.8908
+],
+"firstlaenge_m": 11.12,
+"teile": 1
+},
+"DENIAL43000053jPBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 3.21,
+"first_m": 3.21,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 125.342,
+"gelaende_m": 53.88,
+"teile": 3
+},
+"DENIAL43000053k9BL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 21.17,
+"first_m": 21.17,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 271.839,
+"gelaende_m": 53.78,
+"teile": 1
+},
+"DENIAL43000053kHBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.16,
+"first_m": 23.91,
+"neigung_grad": 44.561,
+"dachflaeche_m2": 465.917,
+"gelaende_m": 53.36,
+"first": [
+0.9204,
+-0.3909
+],
+"firstlaenge_m": 24.91,
+"teile": 3
+},
+"DENIAL43000053kZBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 19.85,
+"first_m": 19.85,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 115.363,
+"gelaende_m": 53.71,
+"teile": 1
+},
+"DENIAL43000053mBBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 16.58,
+"first_m": 16.58,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 246.98,
+"gelaende_m": 53.88,
+"teile": 1
+},
+"DENIAL43000053nKBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 11.81,
+"first_m": 14.85,
+"neigung_grad": 50.684,
+"dachflaeche_m2": 167.99,
+"gelaende_m": 53.77,
+"first": [
+0.3379,
+-0.9412
+],
+"firstlaenge_m": 11.85,
+"teile": 1
+},
+"DENIAL43000053noBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.54,
+"first_m": 23.83,
+"neigung_grad": 44.207,
+"dachflaeche_m2": 347.051,
+"gelaende_m": 53.4,
+"first": [
+0.8977,
+-0.4406
+],
+"firstlaenge_m": 18.95,
+"teile": 2
+},
+"DENIAL43000053pHBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.4,
+"first_m": 20.4,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 329.542,
+"gelaende_m": 53.31,
+"teile": 1
+},
+"DENIAL43000053pIBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 16.98,
+"first_m": 20.74,
+"neigung_grad": 47.633,
+"dachflaeche_m2": 235.757,
+"gelaende_m": 54.17,
+"first": [
+0.9416,
+0.3368
+],
+"firstlaenge_m": 14.79,
+"teile": 1
+},
+"DENIAL43000053pcBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 19.41,
+"first_m": 19.41,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 258.752,
+"gelaende_m": 53.95,
+"teile": 1
+},
+"DENIAL43000053q0BL": {
+"dachform": "Walmdach",
+"schluessel": "3200",
+"form": "walm",
+"traufe_m": 11.24,
+"first_m": 12.48,
+"neigung_grad": 75.802,
+"dachflaeche_m2": 72.848,
+"gelaende_m": 53.87,
+"first": [
+0.4464,
+0.8948
+],
+"firstlaenge_m": 1.02,
+"teile": 1
+},
+"DENIAL43000053qtBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 21.43,
+"first_m": 21.43,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 183.16,
+"gelaende_m": 53.44,
+"teile": 1
+},
+"DENIAL43000053rGBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.25,
+"first_m": 20.25,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 199.562,
+"gelaende_m": 53.59,
+"teile": 4
+},
+"DENIAL43000053rTBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 3.6,
+"first_m": 5.53,
+"neigung_grad": 55.506,
+"dachflaeche_m2": 65.703,
+"gelaende_m": 53.49,
+"first": [
+0.9034,
+-0.4289
+],
+"firstlaenge_m": 9.64,
+"teile": 1
+},
+"DENIAL43000053rXBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 19.04,
+"first_m": 19.04,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 303.296,
+"gelaende_m": 54.14,
+"teile": 1
+},
+"DENIAL43000053rrBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 16.65,
+"first_m": 22.4,
+"neigung_grad": 44.729,
+"dachflaeche_m2": 244.367,
+"gelaende_m": 54.14,
+"first": [
+0.7829,
+0.6222
+],
+"firstlaenge_m": 15.09,
+"teile": 1
+},
+"DENIAL43000053s7BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 12.9,
+"first_m": 17.54,
+"neigung_grad": 49.777,
+"dachflaeche_m2": 213.588,
+"gelaende_m": 53.94,
+"first": [
+0.8587,
+-0.5125
+],
+"firstlaenge_m": 14.86,
+"teile": 1
+},
+"DENIAL43000053sHBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.31,
+"first_m": 21.99,
+"neigung_grad": 51.303,
+"dachflaeche_m2": 318.632,
+"gelaende_m": 53.47,
+"first": [
+0.4416,
+0.8972
+],
+"firstlaenge_m": 20.52,
+"teile": 1
+},
+"DENIAL43000053sLBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 3.0,
+"first_m": 3.0,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 67.902,
+"gelaende_m": 53.93,
+"teile": 1
+},
+"DENIAL43000053tfBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 15.45,
+"first_m": 19.94,
+"neigung_grad": 51.646,
+"dachflaeche_m2": 211.842,
+"gelaende_m": 54.05,
+"first": [
+0.4866,
+-0.8737
+],
+"firstlaenge_m": 14.64,
+"teile": 1
+},
+"DENIAL43000053tjBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 14.44,
+"first_m": 14.44,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 519.307,
+"gelaende_m": 54.35,
+"teile": 3
+},
+"DENIAL43000053tvBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 8.16,
+"first_m": 8.16,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 40.245,
+"gelaende_m": 53.45,
+"teile": 5
+},
+"DENIAL43000053uMBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 15.44,
+"first_m": 19.12,
+"neigung_grad": 56.208,
+"dachflaeche_m2": 236.38,
+"gelaende_m": 53.38,
+"first": [
+0.4687,
+0.8834
+],
+"firstlaenge_m": 17.88,
+"teile": 1
+},
+"DENIAL43000053uRBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.66,
+"first_m": 24.45,
+"neigung_grad": 46.467,
+"dachflaeche_m2": 216.23,
+"gelaende_m": 53.43,
+"first": [
+0.9008,
+-0.4343
+],
+"firstlaenge_m": 12.72,
+"teile": 3
+},
+"DENIAL43000053ucBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.51,
+"first_m": 23.58,
+"neigung_grad": 51.093,
+"dachflaeche_m2": 243.119,
+"gelaende_m": 53.56,
+"first": [
+0.8022,
+-0.5971
+],
+"firstlaenge_m": 14.96,
+"teile": 6
+},
+"DENIAL43000053uuBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.4,
+"first_m": 22.72,
+"neigung_grad": 49.855,
+"dachflaeche_m2": 158.19,
+"gelaende_m": 53.89,
+"first": [
+0.3402,
+-0.9403
+],
+"firstlaenge_m": 8.84,
+"teile": 6
+},
+"DENIAL43000053vEBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 15.32,
+"first_m": 19.96,
+"neigung_grad": 50.735,
+"dachflaeche_m2": 224.056,
+"gelaende_m": 53.84,
+"first": [
+0.8934,
+-0.4492
+],
+"firstlaenge_m": 15.28,
+"teile": 1
+},
+"DENIAL43000053vJBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.8,
+"first_m": 20.8,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 236.504,
+"gelaende_m": 53.64,
+"teile": 1
+},
+"DENIAL43000053vzBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 22.1,
+"first_m": 22.1,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 290.016,
+"gelaende_m": 53.5,
+"teile": 1
+},
+"DENIAL43000053wSBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.74,
+"first_m": 23.53,
+"neigung_grad": 48.678,
+"dachflaeche_m2": 289.246,
+"gelaende_m": 53.83,
+"first": [
+0.8998,
+-0.4362
+],
+"firstlaenge_m": 17.89,
+"teile": 4
+},
+"DENIAL43000053wUBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 20.51,
+"first_m": 20.51,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 238.788,
+"gelaende_m": 53.41,
+"teile": 1
+},
+"DENIAL43000053wtBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 14.4,
+"first_m": 14.4,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 517.191,
+"gelaende_m": 54.37,
+"teile": 3
+},
+"DENIAL43000053xFBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 14.52,
+"first_m": 14.52,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 514.111,
+"gelaende_m": 54.29,
+"teile": 3
+},
+"DENIAL43000053y1BL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 4.52,
+"first_m": 4.52,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 57.164,
+"gelaende_m": 53.95,
+"teile": 1
+},
+"DENIAL43000053yJBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.16,
+"first_m": 23.55,
+"neigung_grad": 45.113,
+"dachflaeche_m2": 308.594,
+"gelaende_m": 53.5,
+"first": [
+0.8925,
+-0.4511
+],
+"firstlaenge_m": 18.03,
+"teile": 4
+},
+"DENIAL43000053yYBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 19.62,
+"first_m": 19.62,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 302.62,
+"gelaende_m": 53.87,
+"teile": 1
+},
+"DENIAL43000053zSBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 16.2,
+"first_m": 16.2,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 281.325,
+"gelaende_m": 53.64,
+"teile": 1
+},
+"DENIAL4300009RXIBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.36,
+"first_m": 22.66,
+"neigung_grad": 51.156,
+"dachflaeche_m2": 355.239,
+"gelaende_m": 53.53,
+"first": [
+0.3969,
+0.9178
+],
+"firstlaenge_m": 23.2,
+"teile": 1
+},
+"DENIAL4300009SEvBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 21.49,
+"first_m": 21.49,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 293.368,
+"gelaende_m": 53.34,
+"teile": 1
+},
+"DENIAL4300009SWMBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 16.19,
+"first_m": 19.17,
+"neigung_grad": 52.734,
+"dachflaeche_m2": 351.246,
+"gelaende_m": 53.41,
+"first": [
+0.5204,
+0.8539
+],
+"firstlaenge_m": 23.95,
+"teile": 2
+},
+"DENIAL4300009SaBBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.93,
+"first_m": 23.7,
+"neigung_grad": 46.243,
+"dachflaeche_m2": 354.413,
+"gelaende_m": 53.39,
+"first": [
+0.4795,
+0.8775
+],
+"firstlaenge_m": 22.05,
+"teile": 3
+},
+"DENIAL4300009SbFBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 19.27,
+"first_m": 23.69,
+"neigung_grad": 45.116,
+"dachflaeche_m2": 390.29,
+"gelaende_m": 53.34,
+"first": [
+0.8536,
+-0.521
+],
+"firstlaenge_m": 23.24,
+"teile": 3
+},
+"DENIAL4300009SusBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 18.33,
+"first_m": 23.66,
+"neigung_grad": 44.73,
+"dachflaeche_m2": 426.965,
+"gelaende_m": 53.31,
+"teile": 2
+},
+"DENIAL4300009TAaBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 19.98,
+"first_m": 19.98,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 386.74,
+"gelaende_m": 53.34,
+"teile": 1
+},
+"DENIAL4300009TDTBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.64,
+"first_m": 20.51,
+"neigung_grad": 52.481,
+"dachflaeche_m2": 205.399,
+"gelaende_m": 53.83,
+"first": [
+0.509,
+0.8607
+],
+"firstlaenge_m": 14.02,
+"teile": 7
+},
+"DENIAL4300009TJDBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 17.63,
+"first_m": 17.63,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 140.856,
+"gelaende_m": 53.66,
+"teile": 4
+},
+"DENIAL4300009TOIBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 15.47,
+"first_m": 18.86,
+"neigung_grad": 50.979,
+"dachflaeche_m2": 195.663,
+"gelaende_m": 53.68,
+"first": [
+0.8862,
+-0.4633
+],
+"firstlaenge_m": 13.61,
+"teile": 1
+},
+"DENIAL4300009UBGBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 16.57,
+"first_m": 16.57,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 759.141,
+"gelaende_m": 54.02,
+"teile": 1
+},
+"DENIAL4300009UMsBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 15.09,
+"first_m": 19.6,
+"neigung_grad": 48.306,
+"dachflaeche_m2": 240.586,
+"gelaende_m": 53.33,
+"first": [
+0.5247,
+0.8513
+],
+"firstlaenge_m": 15.58,
+"teile": 1
+},
+"DENIAL4300009Uw8BL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 19.46,
+"first_m": 19.46,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 385.472,
+"gelaende_m": 53.22,
+"teile": 1
+},
+"DENIAL4300009Uz8BL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 17.56,
+"first_m": 20.6,
+"neigung_grad": 52.143,
+"dachflaeche_m2": 203.727,
+"gelaende_m": 53.77,
+"first": [
+0.5089,
+0.8608
+],
+"firstlaenge_m": 13.98,
+"teile": 7
+},
+"DENIAL4300009UzhBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 17.21,
+"first_m": 17.21,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 910.624,
+"gelaende_m": 54.09,
+"teile": 1
+},
+"DENIAL4300009V6LBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 18.73,
+"first_m": 23.71,
+"neigung_grad": 47.366,
+"dachflaeche_m2": 416.735,
+"gelaende_m": 53.35,
+"teile": 3
+},
+"DENIAL4300009VB7BL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 19.31,
+"first_m": 19.31,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 298.447,
+"gelaende_m": 53.38,
+"teile": 1
+},
+"DENIAL4300009VLaBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 16.43,
+"first_m": 16.43,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 1163.277,
+"gelaende_m": 53.81,
+"teile": 1
+},
+"DENIAL4300009VYwBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 19.61,
+"first_m": 19.61,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 325.831,
+"gelaende_m": 53.19,
+"teile": 1
+},
+"DENIAL4300009VbrBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 21.13,
+"first_m": 21.13,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 270.695,
+"gelaende_m": 53.43,
+"teile": 1
+},
+"DENIAL4300009Vg0BL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 17.51,
+"first_m": 17.51,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 151.636,
+"gelaende_m": 53.72,
+"teile": 1
+},
+"DENIAL4300009VlsBL": {
+"dachform": "Walmdach",
+"schluessel": "3200",
+"form": "walm",
+"traufe_m": 11.84,
+"first_m": 18.3,
+"neigung_grad": 40.36,
+"dachflaeche_m2": 891.21,
+"gelaende_m": 54.07,
+"first": [
+0.857,
+-0.5153
+],
+"firstlaenge_m": 42.61,
+"teile": 3
+},
+"DENIAL4300009VvRBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 16.93,
+"first_m": 16.93,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 182.174,
+"gelaende_m": 53.38,
+"teile": 1
+},
+"DENIAL4300009W6IBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 9.71,
+"first_m": 9.71,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 285.182,
+"gelaende_m": 53.57,
+"teile": 1
+},
+"DENIAL4300009WcJBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 20.41,
+"first_m": 20.41,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 1081.622,
+"gelaende_m": 53.57,
+"teile": 1
+},
+"DENIAL4300009WiDBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 18.73,
+"first_m": 23.77,
+"neigung_grad": 47.325,
+"dachflaeche_m2": 417.425,
+"gelaende_m": 53.29,
+"teile": 2
+},
+"DENIAL4300009WmGBL": {
+"dachform": "Walmdach",
+"schluessel": "3200",
+"form": "walm",
+"traufe_m": 18.34,
+"first_m": 23.21,
+"neigung_grad": 53.402,
+"dachflaeche_m2": 707.985,
+"gelaende_m": 53.74,
+"first": [
+0.535,
+0.8449
+],
+"firstlaenge_m": 33.14,
+"teile": 5
+},
+"DENIAL4300009WqeBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 19.71,
+"first_m": 19.71,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 297.094,
+"gelaende_m": 53.09,
+"teile": 1
+},
+"DENIAL43000123T4BL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 15.08,
+"first_m": 17.2,
+"neigung_grad": 62.509,
+"dachflaeche_m2": 51.124,
+"gelaende_m": 53.62,
+"teile": 1
+},
+"DENIAL43000123T6BL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 2.44,
+"first_m": 2.44,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 27.613,
+"gelaende_m": 53.76,
+"teile": 1
+},
+"DENIAL4300012aEXBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 4.51,
+"first_m": 4.51,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 27.524,
+"gelaende_m": 54.47,
+"teile": 1
+},
+"DENIAL4300012aFjBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 2.46,
+"first_m": 2.46,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 14.079,
+"gelaende_m": 54.01,
+"teile": 1
+},
+"DENIAL430001eXF9BL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 3.94,
+"first_m": 3.94,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 1.288,
+"gelaende_m": 53.96,
+"teile": 1
+},
+"DENIAL430001fU8MBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.12,
+"first_m": 22.43,
+"neigung_grad": 45.19,
+"dachflaeche_m2": 253.171,
+"gelaende_m": 54.11,
+"first": [
+0.7448,
+0.6673
+],
+"firstlaenge_m": 15.55,
+"teile": 1
+},
+"DENIAL430001fU8OBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 18.44,
+"first_m": 22.51,
+"neigung_grad": 45.756,
+"dachflaeche_m2": 268.746,
+"gelaende_m": 54.03,
+"first": [
+0.7038,
+0.7104
+],
+"firstlaenge_m": 16.48,
+"teile": 1
+},
+"DENIAL430001fU8PBL": {
+"dachform": "Sonstiges",
+"schluessel": "9999",
+"form": null,
+"traufe_m": 19.87,
+"first_m": 19.87,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 173.986,
+"gelaende_m": 53.84,
+"teile": 1
+},
+"DENIAL430001fU8RBL": {
+"dachform": "Satteldach",
+"schluessel": "3100",
+"form": "sattel",
+"traufe_m": 15.15,
+"first_m": 20.65,
+"neigung_grad": 47.824,
+"dachflaeche_m2": 196.619,
+"gelaende_m": 53.73,
+"first": [
+0.9445,
+0.3286
+],
+"firstlaenge_m": 12.01,
+"teile": 2
+},
+"DENIAL430001fU8SBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 2.52,
+"first_m": 2.52,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 116.092,
+"gelaende_m": 53.88,
+"teile": 3
+},
+"DENIAL430001fU8TBL": {
+"dachform": "Mischform",
+"schluessel": "5000",
+"form": null,
+"traufe_m": 13.98,
+"first_m": 18.18,
+"neigung_grad": 54.97,
+"dachflaeche_m2": 246.236,
+"gelaende_m": 53.74,
+"teile": 1
+},
+"DENIAL430001fU8VBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 4.14,
+"first_m": 4.14,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 121.238,
+"gelaende_m": 54.26,
+"teile": 1
+},
+"DENIAL430001fU8XBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 3.08,
+"first_m": 3.08,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 247.511,
+"gelaende_m": 54.01,
+"teile": 2
+},
+"DENIAL430001fU8YBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 16.89,
+"first_m": 16.89,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 227.472,
+"gelaende_m": 53.9,
+"teile": 1
+},
+"DENIAL430001fU90BL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 2.84,
+"first_m": 2.84,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 41.493,
+"gelaende_m": 53.9,
+"teile": 1
+},
+"DENIAL430001jZz9BL": {
+"dachform": "Pultdach",
+"schluessel": "2100",
+"form": "flach",
+"traufe_m": 5.57,
+"first_m": 5.75,
+"neigung_grad": 79.998,
+"dachflaeche_m2": 10.75,
+"gelaende_m": 53.99,
+"teile": 1
+},
+"DENIAL430001jZzaBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 5.53,
+"first_m": 5.53,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 11.193,
+"gelaende_m": 53.97,
+"teile": 1
+},
+"DENIAL430001k0BIBL": {
+"dachform": "Flachdach",
+"schluessel": "1000",
+"form": "flach",
+"traufe_m": 2.82,
+"first_m": 2.82,
+"neigung_grad": 90.0,
+"dachflaeche_m2": 14.441,
+"gelaende_m": 53.83,
+"teile": 1
+}
+}
+}

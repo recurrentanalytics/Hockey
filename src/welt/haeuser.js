@@ -239,8 +239,8 @@ void main() {
  * `nur(haus)` limits it to some houses; `saetze` (the façade kits, with `basis` as the folder of their pictures) dresses
  * them in sprites. Returns the handle the world view works with; nothing in it rebuilds geometry.
  */
-export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, frame, pos, nur = null, saetze = null, basis = null }) {
-  const liste = viertel(gebaeude, frame, { wege }).filter((h) => !nur || nur(h));
+export function baueHaeuser({ Cesium, scene, gebaeude, wege = null, daecher = null, frame, pos, nur = null, saetze = null, basis = null }) {
+  const liste = viertel(gebaeude, frame, { wege, daecher }).filter((h) => !nur || nur(h));
   // with façade kits every house is dressed in sprites; where each picture lies on the sheet is known before one of them has loaded
   const blatt = saetze ? packe(saetze) : null;
   if (saetze) for (const h of kleideViertel(liste, saetze)) h.kleid.lage = blatt.lage;

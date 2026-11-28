@@ -235,12 +235,18 @@ function tunnelwaende(h) {
 const zahl = (v) => (v == null || v === '' || Number.isNaN(Number(v)) ? null : Number(v));
 
 /**
- * Eaves height, storeys, the height left for the roof, and where they come from. A storey is never taller than
- * 3.9 m: what a measured height has beyond that belongs to the roof. Footprints without any height are low
- * yard buildings by their size.
+ * Eaves height, storeys, the height left for the roof, and where they come from. Measured roofs (`lod2`, from the
+ * LGLN's LoD2 building model, locations/<place>/geo/daecher.json) give eaves and ridge above the ground directly;
+ * the storeys then come from OSM where they fit the height (2.6 to 4.2 m each), else from tall old-building storeys
+ * of 3.7 m. Without them a storey is never taller than 3.9 m: what a height has beyond that belongs to the roof.
+ * Footprints without any height are low yard buildings by their size.
  */
-export function hoehen(p, m2) {
+export function hoehen(p, m2, lod2 = null) {
   const etagenOsm = zahl(p.osm_building_levels), dachEtagen = zahl(p.osm_roof_levels), rund = (v) => Math.round(v * 100) / 100;
+  if (lod2 && lod2.traufe_m > 1.5) {
+    const traufe = lod2.traufe_m, passt = etagenOsm && traufe / etagenOsm >= 2.6 && traufe / etagenOsm <= 4.2;
+    return { traufe: rund(traufe), etagen: Math.max(1, passt ? etagenOsm : Math.round(traufe / 3.7)), dach: rund(Math.max(0, lod2.first_m - traufe)), quelle: 'gemessen (LoD2, LGLN)' };
+  }
   if (p.hoehe_m != null) {
     let traufe = p.hoehe_m - (dachEtagen ?? 0) * DACHETAGE;
     if (etagenOsm) traufe = Math.min(traufe, etagenOsm * 3.9);
@@ -254,19 +260,20 @@ export function hoehen(p, m2) {
 }
 
 function grundlage(teil, nummer) {
-  const p = teil.p, m2 = Math.abs(flaeche(teil.ring)) - teil.loecher.reduce((s, l) => s + Math.abs(flaeche(l)), 0);
+  const p = teil.p, lod2 = teil.lod2 ?? null, m2 = Math.abs(flaeche(teil.ring)) - teil.loecher.reduce((s, l) => s + Math.abs(flaeche(l)), 0);
   const dach = /Überdachung/.test(p.funktion ?? '');
-  const hh = dach ? { traufe: 3, etagen: 1, dach: 0, quelle: 'angenommen (Überdachung)' } : hoehen(p, m2);
+  const hh = dach ? { traufe: 3, etagen: 1, dach: 0, quelle: 'angenommen (Überdachung)' } : hoehen(p, m2, lod2);
   const fn = p.funktion ?? '';
   const eg = dach ? 'neben' : /Schule|öffentliche|Turnhalle/.test(fn) ? 'schule' : /Handel/.test(fn) ? 'laden'
-    : p.hoehe_m == null || (/Wirtschaft|Versorgung/.test(fn) && zahl(p.osm_building_levels) == null) ? 'neben' : 'wohnen';
+    : (p.hoehe_m == null && !lod2) || (/Wirtschaft|Versorgung/.test(fn) && zahl(p.osm_building_levels) == null) ? 'neben' : 'wohnen';
   const ringe = [teil.ring, ...teil.loecher], kanten = ringe.flatMap(kantenVon);
   return {
     oid: p.oid, schluessel: nummer ? `${p.oid}#${nummer}` : p.oid, art: dach ? 'ueberdachung' : 'haus', funktion: fn, name: p.name ?? null, adresse: p.adresse ?? null,
     ring: teil.ring, loecher: teil.loecher, flaeche: Math.round(m2 * 10) / 10, kasten: kasten(teil.ring), kanten, kantenRinge: ringe.map((r) => r.length), nachbarn: new Set(), durchfahrten: [],
     traufe: hh.traufe, etagen: hh.etagen, dachHoehe: hh.dach, hoeheQuelle: hh.quelle, eg, sockel: dach ? hh.traufe - 0.3 : 0,
     egHoehe: Math.round((hh.etagen === 1 ? hh.traufe : Math.min(ERDGESCHOSS, (hh.traufe / hh.etagen) * 1.15)) * 100) / 100,
-    dachWunsch: dach ? 'flach' : DACHFORM[p.osm_roof_shape] ?? 'flach', dachAngabe: p.osm_roof_shape ?? null,
+    dachWunsch: dach ? 'flach' : lod2?.form ?? DACHFORM[p.osm_roof_shape] ?? 'flach', dachAngabe: lod2?.form ? `${lod2.dachform} (LoD2)` : p.osm_roof_shape ?? null,
+    firstRichtung: lod2?.form && lod2.first ? lod2.first : null, // measured ridge direction (east, north)
     stil: Math.floor(streuung(p.oid, 'stil') * 4), saat: streuung(p.oid, 'saat'),
   };
 }
@@ -295,7 +302,9 @@ function bedache(h) {
   const d = { form: 'flach', gewuenscht: h.dachWunsch, rueckfall: false, o: r.mitte, u, v, ya: -hv, yr: 0, yb: hv, xa: -hu, xb: hu, hoehe: 0, steigung: 0, gipfel: 0 };
   h.dach = d;
   if (h.dachWunsch === 'flach') return;
-  if (h.dachWunsch === 'sattel') {
+  if (h.firstRichtung) { // measured: the ridge runs along u, the rectangle side nearer to it
+    if (Math.abs(mal(h.firstRichtung, v)) > Math.abs(mal(h.firstRichtung, u))) { [u, v] = [v, [-u[0], -u[1]]]; [hu, hv] = [hv, hu]; }
+  } else if (h.dachWunsch === 'sattel') {
     let su = 0, sv = 0;
     for (const k of h.kanten) for (const s of k.stuecke) { // eaves face the street: a street front counts three times
       const l = (s.t1 - s.t0) * (s.art === 'strasse' ? 3 : 1), cu = Math.abs(mal(k.d, u)), cv = Math.abs(mal(k.d, v));
@@ -316,7 +325,7 @@ function bedache(h) {
   if (!best || tiefe < Math.min(4, 2 * hv * 0.9) || best.summe < 0.4 * h.flaeche) { d.rueckfall = true; return; }
   const halb = tiefe / 2, laengs = h.ring.filter((p) => { const s = mal(sub(p, r.mitte), v); return s > ya - 0.3 && s < yb + 0.3; }).map((p) => mal(sub(p, r.mitte), u));
   // as high as the data leaves room for, within what a roof of this depth can be (about 19° to 50°)
-  const hoehe = Math.round(Math.min(7.5, Math.max(halb * 0.35, Math.min(halb * 1.2, h.dachHoehe > 0.5 ? h.dachHoehe : halb * 0.6))) * 100) / 100;
+  const hoehe = Math.round(Math.min(h.firstRichtung ? 9 : 7.5, Math.max(halb * 0.35, Math.min(halb * 1.2, h.dachHoehe > 0.5 ? h.dachHoehe : halb * 0.6))) * 100) / 100;
   Object.assign(d, { form: h.dachWunsch, u, v, ya, yb, yr: (ya + yb) / 2, xa: Math.min(...laengs), xb: Math.max(...laengs), hoehe, steigung: hoehe / halb });
   d.gipfel = d.form === 'walm' ? d.steigung * Math.min(halb, (d.xb - d.xa) / 2) : hoehe;
 }
@@ -365,16 +374,18 @@ function faerbe(haeuser) {
 
 /**
  * All houses of a place, described. `gebaeude` is the ALKIS layer, `wege` the OSM ways (streets decide which
- * fronts get shop windows and doors). Sorted by id, and independent of the order of the input.
+ * fronts get shop windows and doors), `daecher` the measured roofs (locations/<place>/geo/daecher.json, LoD2 of
+ * the LGLN, by ALKIS id): form, eaves and ridge height, ridge direction. Sorted by id, and independent of the
+ * order of the input.
  */
-export function viertel(gebaeude, frame, { wege = null } = {}) {
+export function viertel(gebaeude, frame, { wege = null, daecher = null } = {}) {
   const [E0, N0] = frame.ursprung_utm32, lokal = (p) => [p[0] - E0, p[1] - N0];
   const teile = [];
   for (const f of gebaeude.features) {
     const g = f.geometry, polys = g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
     polys.forEach((poly, nummer) => {
       const ring = saeubere(poly[0].map(lokal), true);
-      if (ring.length >= 3 && flaeche(ring) > 0.5) teile.push({ p: f.properties, nummer, ring, loecher: poly.slice(1).map((r) => saeubere(r.map(lokal), false)).filter((r) => r.length >= 3) });
+      if (ring.length >= 3 && flaeche(ring) > 0.5) teile.push({ p: f.properties, lod2: daecher?.haeuser?.[f.properties.oid] ?? null, nummer, ring, loecher: poly.slice(1).map((r) => saeubere(r.map(lokal), false)).filter((r) => r.length >= 3) });
     });
   }
   const haeuser = teile.filter((t) => t.p.art !== 'Bauteil').map((t) => grundlage(t, t.nummer)).sort((a, b) => (a.schluessel < b.schluessel ? -1 : 1));

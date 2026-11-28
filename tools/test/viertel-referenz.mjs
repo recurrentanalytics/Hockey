@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The built quarter as data: for every house of locations/boni/geo/gebaeude.geojson what the rules make of it
-// (body, storeys, roof, colours, kit, every wall run with its columns and rows, roof parts) and a hash of its mesh.
+// with the measured roofs (daecher.json) as in the world view (body, storeys, roof, colours, kit, every wall run with its columns and rows, roof parts) and a hash of its mesh.
 // This is the engine-neutral result of src/bau/haus.js. tests/viertel-referenz.test.mjs compares it with
 // tests/referenz/viertel.json, so moving or rewriting the rules cannot change a single house unnoticed; the same
 // file is the yardstick for any later generator (glTF, Godot). Rewrite the file on purpose with
@@ -26,7 +26,7 @@ function netzHash(m) {
 export function baueReferenz() {
   const j = (n) => JSON.parse(fs.readFileSync(path.join(ROOT, 'locations/boni/geo', n), 'utf8'));
   const saetze = JSON.parse(fs.readFileSync(path.join(ROOT, 'assets/welt/haeuser/bausaetze.json'), 'utf8'));
-  const liste = kleideViertel(viertel(j('gebaeude.geojson'), j('rahmen.json'), { wege: j('wege.geojson') }), saetze), blatt = packe(saetze);
+  const liste = kleideViertel(viertel(j('gebaeude.geojson'), j('rahmen.json'), { wege: j('wege.geojson'), daecher: j('daecher.json') }), saetze), blatt = packe(saetze);
   return liste.map((h) => {
     h.kleid.lage = blatt.lage;
     const m = netz(h), k = h.kleid;

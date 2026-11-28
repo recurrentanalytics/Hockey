@@ -23,6 +23,7 @@ Ansicht: `python3 serve.py`, dann http://localhost:8000/tools/ort/ansicht.html
 | `einfriedungen.geojson` | Zäune, Mauern, Hecken, Tore, Poller | 10 | OSM |
 | `ausstattung.geojson` | Spielgeräte, Bänke, Laternen, Läden | 272 | OSM |
 | `osm_gebaeude.geojson` | OSM-Gebäude und Gebäudeteile, nur zum Abgleich | 255 | OSM |
+| `daecher.json` | Gemessene Dachform, Trauf- und Firsthöhe über Gelände, Dachneigung, Firstrichtung je Gebäude (für die Häuser der Weltansicht) | je Gebäude mit LoD2-Eintrag | LoD2 (amtlich), eigener Schritt: `tools/ort/lod2.py` |
 
 Amtliche Nutzung: Fläche besonderer funktionaler Prägung / Bildung und Wissenschaft (3), Fläche besonderer funktionaler Prägung / Gesundheit, Kur (1), Fläche besonderer funktionaler Prägung / Religiöse Einrichtung (1), Industrie- und Gewerbefläche / Gebäude- und Freifläche Versorgungsanlage, Elektrizität (1), Industrie- und Gewerbefläche / Handel und Dienstleistung (4), Sport-, Freizeit- und Erholungsfläche / Spielplatz, Bolzplatz (1), Straßenverkehr (24), Straßenverkehr / Begleitfläche Straßenverkehr (12), Weg / Fußweg (47), Weg / Rad- und Fußweg (30), Wohnbaufläche (22).
 Wege aus OSM: footway (52), residential (32), service (26), steps (9), tertiary (3).
@@ -37,6 +38,7 @@ Wege aus OSM: footway (52), residential (32), service (26), steps (9), tertiary 
 | `roh/osm.json.gz` | 2026-11-27T10:53:12Z | © OpenStreetMap-Mitwirkende, ODbL 1.0 | 521 KB |
 
 - **ALKIS:** offener WFS »ALKIS vereinfacht« des LGLN, `https://opendata.lgln.niedersachsen.de/doorman/noauth/alkis_wfs_einfach`.
+- **LoD2:** 3D-Gebäudemodell des LGLN, 1-km-Kacheln `https://lod2.opengeodata.lgln.niedersachsen.de/LoD2_32_<E>_<N>_1_ni.gml`, © GeoBasis-DE / LGLN, Datenlizenz Deutschland – Namensnennung 2.0 (dl-de/by-2-0). `tools/ort/lod2.py` liest daraus `daecher.json`; Quelle und Stand stehen in der Datei.
 - **OSM:** Overpass-Abfrage, Wortlaut in `roh/abruf.json`. Die ODbL verlangt Namensnennung und Weitergabe unter gleichen Bedingungen für die aus OSM abgeleiteten Ebenen; ALKIS-Ebenen und OSM-Ebenen liegen deshalb in getrennten Dateien. In `gebaeude.geojson` stammen nur die Felder `hoehe_m`, `hoehe_quelle` und `osm*` aus OSM.
 
 ## Prüfung (alles bestanden)
@@ -58,7 +60,7 @@ Wege aus OSM: footway (52), residential (32), service (26), steps (9), tertiary 
 - **Bäume:** OSM kennt im Ausschnitt 84 Bäume und Baumreihen, davon 13 Einzelbäume im Umkreis von 60 m um die Platzmitte. Es sind Punkte mit leaf_type (82); Art, Stamm- und Kronenmaß fehlen, und ob jeder Baum des Platzes erfasst ist, ist nicht geprüft. Kronenhöhen gibt es nur als Raster aus dem amtlichen Oberflächenmodell (`assets/intro/boni_schatten_hoehen.png`, ±46 m um den Platz). Ein Baumkataster der Stadt habe ich nicht geprüft.
 - **Zäune und Mauern:** OSM hat 10 Einträge (bollard 1, fence 2, gate 4, hedge 1, retaining_wall 2), davon 0 Linien näher als 30 m am Platz. Der Zaun des Bolzplatzes selbst und die Klinker-Einfassung des Sandspielplatzes sind nicht kartiert.
 - **Spielgeräte:** als Punkte ohne Form und Größe (aerialrotator, climbingframe, playhouse, sandpit, swing, trampoline). Nilpferd, Edelstahl-Schale und Spielhaus sind nicht einzeln erkennbar benannt.
-- **Gebäudehöhen:** 213 von 265 amtlichen Grundrissen haben eine Höhe, davon 21 als in OSM eingetragene Höhe; der Rest ist aus Geschosszahlen geschätzt (3,2 m je Geschoss, 2,8 m je Dachgeschoss, grob ±2 m). Das amtliche 3D-Gebäudemodell (LoD2) und das Höhenmodell als Zahlen sind noch nicht eingebunden.
+- **Gebäudehöhen:** 213 von 265 amtlichen Grundrissen haben eine Höhe, davon 21 als in OSM eingetragene Höhe; der Rest ist aus Geschosszahlen geschätzt (3,2 m je Geschoss, 2,8 m je Dachgeschoss, grob ±2 m). Die Häuser der Weltansicht nehmen, wo vorhanden, die gemessenen Werte des amtlichen 3D-Gebäudemodells (LoD2, `daecher.json`) statt dieser Schätzung; das Höhenmodell als Zahlen ist noch nicht eingebunden.
 - **Gelände:** nicht enthalten und hier nicht ausgewertet. Geländehöhen gibt es bisher nur als Farbskala aus dem LGLN-Kartendienst (`tools/ort/abrufen.py`), nicht als Zahlen.
 - **Höfe und Durchfahrten:** ALKIS führt Durchfahrten und Arkaden als eigene Bauteile (`art` = Bauteil). Innenhöfe ergeben sich als Lücken zwischen den Grundrissen, nicht als eigene Flächen.
 - **Aktualität:** ALKIS-Objekte tragen ihr Fortführungsdatum im Feld `stand`. Der OSM-Stand hängt vom antwortenden Spiegelserver ab und steht oben in der Quellentabelle.
